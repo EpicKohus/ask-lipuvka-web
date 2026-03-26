@@ -17,7 +17,7 @@ export default function AskLipuvkaWeb() {
       result: '1. místo v turnaji',
       articleTitle: 'Halový turnaj Blansko',
       article: 'Naši nejmenší fotbalisté odehráli poslední halový turnaj zimní přípravy. Ve všech zápasech prokázali bojovnost a fotbalové srdce. Nakonec se  probojovali do finále, kdy rozhodujícím gólem Tobíka Hudce v posledních minutách vybojovali krásné první místo. Děkujeme hráčům  a v neposlední řadě rodičům za podporu.',
-      photos: ['/zapasy/blansko1.jpg', '/zapasy/blansko2.jpg'],
+      photos: [],
     },
     {
       date: '2. 4. 2026',
@@ -380,8 +380,26 @@ export default function AskLipuvkaWeb() {
             )}
             </div>
 
-            <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="order-2 lg:order-1">
+            <div className="grid gap-8 xl:grid-cols-2">
+              <div>
+                <h3 className="mb-3 text-xl font-bold text-green-600">Fotky</h3>
+                {selectedMatch.photos.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {selectedMatch.photos.map((photo, index) => (
+                      <img
+                        key={`${photo}-${index}`}
+                        src={photo}
+                        alt={`Fotka k zápasu ${index + 1}`}
+                        className="h-64 w-full rounded-2xl object-cover shadow-sm"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">Fotky k zápasu budou doplněny.</div>
+                )}
+              </div>
+
+              <div>
                 <h3 className="mb-3 text-xl font-bold text-green-600">Článek k zápasu</h3>
                 <div className="rounded-2xl bg-gray-50 p-5">
                   {parseMatchDate(selectedMatch.date) < todayStart ? (
@@ -393,24 +411,6 @@ export default function AskLipuvkaWeb() {
                     <div className="text-gray-500">Komentář zápasu bude doplněn</div>
                   )}
                 </div>
-              </div>
-
-              <div className="order-1 lg:order-2">
-                <h3 className="mb-3 text-xl font-bold text-green-600">Fotky</h3>
-                {selectedMatch.photos.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-4">
-                    {selectedMatch.photos.map((photo, index) => (
-                      <img
-                        key={`${photo}-${index}`}
-                        src={photo}
-                        alt={`Fotka k zápasu ${index + 1}`}
-                        className="min-h-[220px] w-full rounded-2xl object-cover shadow-sm"
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">Fotky k zápasu budou doplněny.</div>
-                )}
               </div>
             </div>
           </div>
