@@ -221,7 +221,32 @@ export default function AskLipuvkaWeb() {
 
       <section id="top" className="relative flex h-[80vh] items-center justify-center text-center">
         <img src="/field.png" alt="hřiště" className="absolute inset-0 h-full w-full object-cover" />
+<section className="mx-auto max-w-5xl px-6 py-10 text-center">
+  <h2 className="text-3xl font-bold text-green-600 mb-4">Kde nás najdete</h2>
 
+  <p className="text-gray-700 mb-6">
+    Fotbalový areál ASK Lipůvka<br />
+    Lipůvka 390
+  </p>
+
+  <div className="flex justify-center gap-4 flex-wrap">
+    <a
+      href="https://mapy.cz/s/lipuvka"
+      target="_blank"
+      className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white"
+    >
+      Otevřít v Mapy.cz
+    </a>
+
+    <a
+      href="https://www.google.com/maps/search/?api=1&query=Lipuvka+390"
+      target="_blank"
+      className="rounded-xl border border-gray-400 px-6 py-3 font-semibold text-gray-700"
+    >
+      Navigovat (Google)
+    </a>
+  </div>
+</section>
         <div className="relative z-10 rounded-2xl bg-white/70 p-8 backdrop-blur-md">
           <img src="/logo.png" alt="logo" className="mx-auto mb-4 w-28" />
           <h1 className="mb-3 text-4xl font-black text-green-700 md:text-6xl">ASK Lipůvka</h1>
