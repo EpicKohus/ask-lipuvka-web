@@ -68,11 +68,10 @@ export default function AskLipuvkaWeb() {
     return new Date(Number(year), Number(month) - 1, Number(day));
   };
 
-  const isSameDay = (dateA, dateB) => (
+  const isSameDay = (dateA, dateB) =>
     dateA.getFullYear() === dateB.getFullYear() &&
     dateA.getMonth() === dateB.getMonth() &&
-    dateA.getDate() === dateB.getDate()
-  );
+    dateA.getDate() === dateB.getDate();
 
   const upcomingMatches = matches
     .filter((m) => parseMatchDate(m.date) >= todayStart)
@@ -249,8 +248,12 @@ export default function AskLipuvkaWeb() {
         </div>
 
         <div className="space-y-4">
-          {upcomingMatches.length > 0 ? upcomingMatches.map((m) => renderMatchCard(m, false)) : (
-            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">Zatím nejsou naplánované žádné nadcházející zápasy.</div>
+          {upcomingMatches.length > 0 ? (
+            upcomingMatches.map((m) => renderMatchCard(m, false))
+          ) : (
+            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+              Zatím nejsou naplánované žádné nadcházející zápasy.
+            </div>
           )}
         </div>
       </section>
@@ -258,8 +261,12 @@ export default function AskLipuvkaWeb() {
       <section className="mx-auto max-w-5xl px-6 py-14">
         <h2 className="mb-6 text-3xl font-bold text-green-600">Odehrané zápasy</h2>
         <div className="space-y-4">
-          {playedMatches.length > 0 ? playedMatches.map((m) => renderMatchCard(m, true)) : (
-            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">Zatím tu nejsou žádné odehrané zápasy.</div>
+          {playedMatches.length > 0 ? (
+            playedMatches.map((m) => renderMatchCard(m, true))
+          ) : (
+            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+              Zatím tu nejsou žádné odehrané zápasy.
+            </div>
           )}
         </div>
       </section>
