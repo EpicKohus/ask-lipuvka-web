@@ -17,7 +17,7 @@ export default function AskLipuvkaWeb() {
       result: '1. místo v turnaji',
       articleTitle: 'Halový turnaj Blansko',
       article: 'Naši nejmenší fotbalisté odehráli poslední halový turnaj zimní přípravy. Ve všech zápasech prokázali bojovnost a fotbalové srdce. Nakonec se  probojovali do finále, kdy rozhodujícím gólem Tobíka Hudce v posledních minutách vybojovali krásné první místo. Děkujeme hráčům  a v neposlední řadě rodičům za podporu.',
-      photos: [],
+      photos: ['/zapasy/blansko1.jpg', '/zapasy/blansko2.jpg'],
     },
     {
       date: '2. 4. 2026',
