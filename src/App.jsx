@@ -327,8 +327,8 @@ export default function AskLipuvkaWeb() {
                   <h3 className="mb-3 text-xl font-bold">Vedoucí mládeže</h3>
                   <div className="rounded-xl bg-gray-100 p-4">
                     <div className="font-bold">Radek Mánek</div>
-                    <a href="tel:606148368" className="block text-green-600">606 148 368</a>
-                    <a href="mailto:radek.manek@email.cz" className="text-green-600">radek.manek@email.cz</a>
+                    <a href="tel:606148368" className="block font-semibold text-green-600 hover:underline">606 148 368</a>
+                    <a href="mailto:radek.manek@email.cz" className="font-semibold text-green-600 hover:underline">radek.manek@email.cz</a>
                   </div>
                 </div>
 
@@ -337,11 +337,11 @@ export default function AskLipuvkaWeb() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-xl bg-gray-100 p-4">
                       <div className="font-bold">Jan Gebauer</div>
-                      <a href="tel:737146918" className="text-green-600">737 146 918</a>
+                      <a href="tel:737146918" className="block font-semibold text-green-600 hover:underline">737 146 918</a>
                     </div>
                     <div className="rounded-xl bg-gray-100 p-4">
                       <div className="font-bold">Jiří Filipčík</div>
-                      <a href="tel:737235850" className="text-green-600">737 235 850</a>
+                      <a href="tel:737235850" className="block font-semibold text-green-600 hover:underline">737 235 850</a>
                     </div>
                   </div>
                 </div>
@@ -349,17 +349,32 @@ export default function AskLipuvkaWeb() {
                 <div>
                   <h3 className="mb-3 text-xl font-bold">Mladší přípravka</h3>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-xl bg-gray-100 p-4">Zdenko Adámek</div>
-                    <div className="rounded-xl bg-gray-100 p-4">Dalibor Hudec</div>
-                    <div className="rounded-xl bg-gray-100 p-4">Radek Slavík</div>
-                    <div className="rounded-xl bg-gray-100 p-4">Jan Večeřa</div>
+                    <div className="rounded-xl bg-gray-100 p-4">
+                      <div className="font-bold">Zdenko Adámek</div>
+                      <a href="tel:727836386" className="block font-semibold text-green-600 hover:underline">727 836 386</a>
+                    </div>
+                    <div className="rounded-xl bg-gray-100 p-4">
+                      <div className="font-bold">Dalibor Hudec</div>
+                      <a href="tel:737337966" className="block font-semibold text-green-600 hover:underline">737 337 966</a>
+                    </div>
+                    <div className="rounded-xl bg-gray-100 p-4">
+                      <div className="font-bold">Honza Večeřa</div>
+                      <a href="tel:733165250" className="block font-semibold text-green-600 hover:underline">733 165 250</a>
+                    </div>
+                    <div className="rounded-xl bg-gray-100 p-4">
+                      <div className="font-bold">Radek Slavík</div>
+                      <a href="tel:776423813" className="block font-semibold text-green-600 hover:underline">776 423 813</a>
+                    </div>
                   </div>
                 </div>
 
                 <div>
                   <h3 className="mb-3 text-xl font-bold">Starší přípravka</h3>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-xl bg-gray-100 p-4">Libor Vinkler</div>
+                    <div className="rounded-xl bg-gray-100 p-4">
+                      <div className="font-bold">Libor Vinkler</div>
+                      <a href="tel:736205150" className="block font-semibold text-green-600 hover:underline">736 205 150</a>
+                    </div>
                   </div>
                 </div>
               </div>
