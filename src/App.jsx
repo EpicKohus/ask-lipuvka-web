@@ -381,32 +381,36 @@ export default function AskLipuvkaWeb() {
             </div>
 
             <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-              <div>
+              <div className="order-2 lg:order-1">
                 <h3 className="mb-3 text-xl font-bold text-green-600">Článek k zápasu</h3>
                 <div className="rounded-2xl bg-gray-50 p-5">
                   {parseMatchDate(selectedMatch.date) < todayStart ? (
-                  <>
-                    <div className="mb-2 text-lg font-semibold text-gray-900">{selectedMatch.articleTitle}</div>
-                    <p className="leading-7 text-gray-700">{selectedMatch.article}</p>
-                  </>
-                ) : (
-                  <div className="text-gray-500">Komentář zápasu bude doplněn</div>
-                )}
+                    <>
+                      <div className="mb-2 text-lg font-semibold text-gray-900">{selectedMatch.articleTitle}</div>
+                      <p className="leading-7 text-gray-700">{selectedMatch.article}</p>
+                    </>
+                  ) : (
+                    <div className="text-gray-500">Komentář zápasu bude doplněn</div>
+                  )}
                 </div>
               </div>
 
-              <div>
+              <div className="order-1 lg:order-2">
                 <h3 className="mb-3 text-xl font-bold text-green-600">Fotky</h3>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-1">
-                  {selectedMatch.photos.map((photo, index) => (
-                    <img
-                      key={`${photo}-${index}`}
-                      src={photo}
-                      alt={`Fotka k zápasu ${index + 1}`}
-                      className="h-52 w-full rounded-2xl object-cover shadow-sm"
-                    />
-                  ))}
-                </div>
+                {selectedMatch.photos.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-4">
+                    {selectedMatch.photos.map((photo, index) => (
+                      <img
+                        key={`${photo}-${index}`}
+                        src={photo}
+                        alt={`Fotka k zápasu ${index + 1}`}
+                        className="min-h-[220px] w-full rounded-2xl object-cover shadow-sm"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">Fotky k zápasu budou doplněny.</div>
+                )}
               </div>
             </div>
           </div>
