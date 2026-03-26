@@ -68,10 +68,11 @@ export default function AskLipuvkaWeb() {
     return new Date(Number(year), Number(month) - 1, Number(day));
   };
 
-  const isSameDay = (dateA, dateB) =>
+  const isSameDay = (dateA, dateB) => (
     dateA.getFullYear() === dateB.getFullYear() &&
     dateA.getMonth() === dateB.getMonth() &&
-    dateA.getDate() === dateB.getDate();
+    dateA.getDate() === dateB.getDate()
+  );
 
   const upcomingMatches = matches
     .filter((m) => parseMatchDate(m.date) >= todayStart)
@@ -200,6 +201,23 @@ export default function AskLipuvkaWeb() {
             </button>
           </nav>
         </div>
+
+        <div className="flex gap-3 border-t px-4 py-3 md:hidden">
+          <button
+            type="button"
+            onClick={() => setIsRegistrationOpen(true)}
+            className="flex-1 rounded-xl bg-green-600 px-4 py-3 font-semibold text-white"
+          >
+            Registrace hráče
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsContactsOpen(true)}
+            className="flex-1 rounded-xl border border-red-500 px-4 py-3 font-semibold text-red-500"
+          >
+            Kontakty
+          </button>
+        </div>
       </header>
 
       <section id="top" className="relative flex h-[80vh] items-center justify-center text-center">
@@ -231,12 +249,8 @@ export default function AskLipuvkaWeb() {
         </div>
 
         <div className="space-y-4">
-          {upcomingMatches.length > 0 ? (
-            upcomingMatches.map((m) => renderMatchCard(m, false))
-          ) : (
-            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
-              Zatím nejsou naplánované žádné nadcházející zápasy.
-            </div>
+          {upcomingMatches.length > 0 ? upcomingMatches.map((m) => renderMatchCard(m, false)) : (
+            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">Zatím nejsou naplánované žádné nadcházející zápasy.</div>
           )}
         </div>
       </section>
@@ -244,12 +258,8 @@ export default function AskLipuvkaWeb() {
       <section className="mx-auto max-w-5xl px-6 py-14">
         <h2 className="mb-6 text-3xl font-bold text-green-600">Odehrané zápasy</h2>
         <div className="space-y-4">
-          {playedMatches.length > 0 ? (
-            playedMatches.map((m) => renderMatchCard(m, true))
-          ) : (
-            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
-              Zatím tu nejsou žádné odehrané zápasy.
-            </div>
+          {playedMatches.length > 0 ? playedMatches.map((m) => renderMatchCard(m, true)) : (
+            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">Zatím tu nejsou žádné odehrané zápasy.</div>
           )}
         </div>
       </section>
@@ -339,32 +349,17 @@ export default function AskLipuvkaWeb() {
                 <div>
                   <h3 className="mb-3 text-xl font-bold">Mladší přípravka</h3>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-xl bg-gray-100 p-4">
-                      <div className="font-bold">Zdenko Adámek</div>
-                      <a href="tel:727836386" className="text-green-600">727 836 386</a>
-                    </div>
-                    <div className="rounded-xl bg-gray-100 p-4">
-                      <div className="font-bold">Dalibor Hudec</div>
-                      <a href="tel:737337966" className="text-green-600">737 337 966</a>
-                    </div>
-                    <div className="rounded-xl bg-gray-100 p-4">
-                      <div className="font-bold">Honza Večeřa</div>
-                      <a href="tel:733165250" className="text-green-600">733 165 250</a>
-                    </div>
-                    <div className="rounded-xl bg-gray-100 p-4">
-                      <div className="font-bold">Radek Slavík</div>
-                      <a href="tel:776423813" className="text-green-600">776 423 813</a>
-                    </div>
+                    <div className="rounded-xl bg-gray-100 p-4">Zdenko Adámek</div>
+                    <div className="rounded-xl bg-gray-100 p-4">Dalibor Hudec</div>
+                    <div className="rounded-xl bg-gray-100 p-4">Radek Slavík</div>
+                    <div className="rounded-xl bg-gray-100 p-4">Jan Večeřa</div>
                   </div>
                 </div>
 
                 <div>
                   <h3 className="mb-3 text-xl font-bold">Starší přípravka</h3>
                   <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-xl bg-gray-100 p-4">
-                      <div className="font-bold">Libor Vinkler</div>
-                      <a href="tel:736205150" className="text-green-600">736 205 150</a>
-                    </div>
+                    <div className="rounded-xl bg-gray-100 p-4">Libor Vinkler</div>
                   </div>
                 </div>
               </div>
