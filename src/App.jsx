@@ -1536,54 +1536,48 @@ export default function AskLipuvkaWeb() {
         </div>
       )}
 
-      <section className="mx-auto max-w-5xl px-6 pb-10">
-        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-8 text-center shadow-sm">
-          <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
-            Návštěvnost webu
-          </div>
+      <section className="mx-auto max-w-5xl px-6 pb-6">
+  <div className="text-center text-sm text-gray-500">
+    Návštěvnost webu:{' '}
+    <span className="font-semibold text-gray-700">
+      {visitCount !== null ? visitCount.toLocaleString('cs-CZ') : '...'}
+    </span>
+  </div>
+</section>
 
-          <div className="mt-3 text-4xl font-black text-gray-900 md:text-5xl">
-            {visitCount !== null ? visitCount.toLocaleString('cs-CZ') : '...'}
-          </div>
+<footer className="py-8 text-center text-gray-500">
+  <div className="mb-4 flex flex-wrap items-center justify-center gap-5">
+    <a
+      href="https://www.facebook.com/people/ASK-Lip%C5%AFvka/100093969443650/"
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-base font-bold text-white transition hover:scale-105 hover:bg-green-700"
+      aria-label="Facebook ASK Lipůvka"
+      title="Facebook ASK Lipůvka"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="currentColor"
+        className="h-5 w-5"
+      >
+        <path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.88 3.77-3.88 1.09 0 2.23.19 2.23.19v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.89h-2.33v6.99A10 10 0 0 0 22 12Z" />
+      </svg>
+      Facebook
+    </a>
 
-          <p className="mt-3 text-gray-600">
-            Děkujeme za podporu ASK Lipůvka 💚
-          </p>
-        </div>
-      </section>
+    <a
+      href="https://asklipuvka.cz"
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center rounded-xl border border-green-600 px-5 py-3 text-base font-bold text-green-700 transition hover:scale-105 hover:bg-green-50"
+    >
+      A tým
+    </a>
+  </div>
 
-      <footer className="py-6 text-center text-gray-500">
-        <div className="flex flex-wrap items-center justify-center gap-4">
-          <span>© 2026 ASK Lipůvka</span>
-
-          <a
-            href="https://www.facebook.com/people/ASK-Lip%C5%AFvka/100093969443650/"
-            target="_blank"
-            rel="noreferrer"
-            className="text-gray-600 transition hover:text-green-600"
-            aria-label="Facebook ASK Lipůvka"
-            title="Facebook ASK Lipůvka"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-              className="h-6 w-6"
-            >
-              <path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.88 3.77-3.88 1.09 0 2.23.19 2.23.19v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.89h-2.33v6.99A10 10 0 0 0 22 12Z" />
-            </svg>
-          </a>
-
-          <a
-            href="https://asklipuvka.cz"
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium text-gray-600 transition hover:text-green-600"
-          >
-            A tým
-          </a>
-        </div>
-      </footer>
+  <div>© 2026 ASK Lipůvka</div>
+</footer>
     </div>
   );
 }
