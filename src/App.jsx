@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 export default function AskLipuvkaWeb() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isContactsOpen, setIsContactsOpen] = useState(false);
+  const [isArealOpen, setIsArealOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
 
   const today = new Date();
@@ -92,6 +93,7 @@ export default function AskLipuvkaWeb() {
       if (event.key === 'Escape') {
         setIsRegistrationOpen(false);
         setIsContactsOpen(false);
+        setIsArealOpen(false);
         setSelectedMatch(null);
       }
     };
@@ -199,6 +201,9 @@ export default function AskLipuvkaWeb() {
           <nav className="hidden gap-6 text-sm md:flex">
             <a href="#novinky" className="hover:text-green-600">Novinky</a>
             <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
+            <button type="button" onClick={() => setIsArealOpen(true)} className="hover:text-green-600">
+              Areál
+            </button>
             <button type="button" onClick={() => setIsRegistrationOpen(true)} className="hover:text-green-600">
               Registrace hráče
             </button>
@@ -206,6 +211,30 @@ export default function AskLipuvkaWeb() {
               Kontakty
             </button>
           </nav>
+        </div>
+
+        <div className="flex flex-wrap gap-3 border-t px-4 py-3 md:hidden">
+          <button
+            type="button"
+            onClick={() => setIsArealOpen(true)}
+            className="flex-1 rounded-xl border border-gray-400 px-4 py-3 font-semibold text-gray-700"
+          >
+            Areál
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsRegistrationOpen(true)}
+            className="flex-1 rounded-xl bg-green-600 px-4 py-3 font-semibold text-white"
+          >
+            Registrace hráče
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsContactsOpen(true)}
+            className="flex-1 rounded-xl border border-red-500 px-4 py-3 font-semibold text-red-500"
+          >
+            Kontakty
+          </button>
         </div>
       </header>
 
@@ -267,6 +296,80 @@ export default function AskLipuvkaWeb() {
           )}
         </div>
       </section>
+
+      {isArealOpen && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          onClick={() => setIsArealOpen(false)}
+        >
+          <div className="flex min-h-full items-start justify-center">
+            <div
+              className="relative my-4 w-full max-w-5xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setIsArealOpen(false)}
+                className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-black"
+              >
+                ×
+              </button>
+
+              <h2 className="mb-6 pr-10 text-3xl font-bold text-green-600">Fotbalový areál ASK Lipůvka</h2>
+
+              <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+                <div>
+                  <p className="mb-4 text-lg font-semibold text-gray-900">Kde nás najdete</p>
+                  <p className="mb-6 text-gray-700">
+                    Lipůvka 390
+                    <br />
+                    679 22 Lipůvka
+                  </p>
+
+                  <div className="mb-6 flex flex-wrap gap-4">
+                    <a
+                      href="https://mapy.cz/zakladni?source=addr&id=10845160&x=16.5539949&y=49.3398458&z=17"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white"
+                    >
+                      Otevřít v Mapy.cz
+                    </a>
+
+                    <a
+                      href="https://www.google.com/maps/search/?api=1&query=Lipuvka+390+679+22+Lipuvka"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-xl border border-gray-400 px-6 py-3 font-semibold text-gray-700"
+                    >
+                      Navigovat (Google)
+                    </a>
+                  </div>
+
+                  <div className="rounded-2xl bg-gray-50 p-5">
+                    <h3 className="mb-2 text-lg font-bold text-gray-900">Praktické info</h3>
+                    <ul className="space-y-2 text-gray-700">
+                      <li>• Příjezd je možný přímo k areálu.</li>
+                      <li>• Parkování je možné v okolí hřiště.</li>
+                      <li>• V areálu probíhají nejen zápasy mládeže, ale i další klubové akce.</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                  <iframe
+                    title="Mapa areálu ASK Lipůvka"
+                    src="https://www.google.com/maps?q=Lipuvka%20390%20679%2022%20Lipuvka&z=16&output=embed"
+                    className="h-[320px] w-full border-0"
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isRegistrationOpen && (
         <div
