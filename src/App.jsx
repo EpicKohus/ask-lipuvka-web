@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export default function AskLipuvkaWeb() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
@@ -6,18 +6,81 @@ export default function AskLipuvkaWeb() {
   const [isArealOpen, setIsArealOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
+  const [activeCategory, setActiveCategory] = useState('mladsi-pripravka');
 
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-  const news = {
-    title: 'Otevření nové hospody na Zelený čtvrtek',
-    text: 'Na Zelený čtvrtek, tedy 2. 4., bude na areálu otevřena nová hospoda. Na otvíračku bude připravené i zelené pivo.',
-    date: '2. 4. 2026',
-  };
+  const categories = [
+    { id: 'mladsi-pripravka', label: 'Mladší přípravka' },
+    { id: 'predpripravka', label: 'Předpřípravka' },
+    { id: 'starsi-pripravka', label: 'Starší přípravka' },
+  ];
+
+  const newsItems = [
+    {
+      category: 'mladsi-pripravka',
+      title: 'Otevření nové hospody na Zelený čtvrtek',
+      text: 'Na Zelený čtvrtek, tedy 2. 4., bude na areálu otevřena nová hospoda. Na otvíračku bude připravené i zelené pivo.',
+      date: '2. 4. 2026',
+    },
+    {
+      category: 'predpripravka',
+      title: 'Předpřípravka se připravuje na další sezonu',
+      text: 'Kategorie je na webu připravená. Zápasy doplníme, jakmile bude rozlosování na příští ročník.',
+      date: '1. 4. 2026',
+    },
+    {
+      category: 'starsi-pripravka',
+      title: 'Starší přípravka je připravena do budoucna',
+      text: 'Kategorie je založená dopředu, aby bylo možné snadno přidat zápasy, novinky i další informace pro příští sezonu.',
+      date: '1. 4. 2026',
+    },
+  ];
+
+  const contacts = [
+    {
+      category: 'predpripravka',
+      section: 'Předpřípravka',
+      people: [
+        { name: 'Jan Gebauer', phone: '737146918', phoneLabel: '737 146 918' },
+        { name: 'Jiří Filipčík', phone: '737235850', phoneLabel: '737 235 850' },
+      ],
+    },
+    {
+      category: 'mladsi-pripravka',
+      section: 'Vedoucí mládeže',
+      people: [
+        {
+          name: 'Radek Mánek',
+          phone: '606148368',
+          phoneLabel: '606 148 368',
+          email: 'radek.manek@email.cz',
+        },
+      ],
+    },
+    {
+      category: 'mladsi-pripravka',
+      section: 'Mladší přípravka',
+      people: [
+        { name: 'Zdenko Adámek', phone: '727836386', phoneLabel: '727 836 386' },
+        { name: 'Dalibor Hudec', phone: '737337966', phoneLabel: '737 337 966' },
+        { name: 'Honza Večeřa', phone: '733165250', phoneLabel: '733 165 250' },
+        { name: 'Radek Slavík', phone: '776423813', phoneLabel: '776 423 813' },
+      ],
+    },
+    {
+      category: 'starsi-pripravka',
+      section: 'Starší přípravka',
+      people: [
+        { name: 'Libor Vinkler', phone: '736205150', phoneLabel: '736 205 150' },
+      ],
+    },
+  ];
 
   const matches = [
     {
+      category: 'mladsi-pripravka',
       date: '15. 3. 2026',
       opponent: 'Halový turnaj Blansko',
       time: '---',
@@ -29,6 +92,7 @@ export default function AskLipuvkaWeb() {
       photos: ['/zapasy/blansko1.jpg', '/zapasy/blansko2.jpg'],
     },
     {
+      category: 'mladsi-pripravka',
       date: '2. 4. 2026',
       opponent: 'RDR RJY/RJ',
       time: '17:00 / 18:00',
@@ -39,6 +103,7 @@ export default function AskLipuvkaWeb() {
       photos: ['/field.png'],
     },
     {
+      category: 'mladsi-pripravka',
       date: '9. 4. 2026',
       opponent: 'RDR DX/D',
       time: '17:00 / 18:00',
@@ -49,6 +114,7 @@ export default function AskLipuvkaWeb() {
       photos: ['/field.png'],
     },
     {
+      category: 'mladsi-pripravka',
       date: '14. 4. 2026',
       opponent: 'Olomučany/Babice',
       time: '17:00 / 18:00',
@@ -59,6 +125,7 @@ export default function AskLipuvkaWeb() {
       photos: ['/field.png'],
     },
     {
+      category: 'mladsi-pripravka',
       date: '23. 4. 2026',
       opponent: 'Ostrov/Lipovec',
       time: '17:00 / 18:00',
@@ -81,11 +148,26 @@ export default function AskLipuvkaWeb() {
     dateA.getMonth() === dateB.getMonth() &&
     dateA.getDate() === dateB.getDate();
 
-  const upcomingMatches = matches
+  const filteredNews = useMemo(
+    () => newsItems.filter((item) => item.category === activeCategory),
+    [newsItems, activeCategory]
+  );
+
+  const filteredContacts = useMemo(
+    () => contacts.filter((item) => item.category === activeCategory),
+    [contacts, activeCategory]
+  );
+
+  const filteredMatches = useMemo(
+    () => matches.filter((match) => match.category === activeCategory),
+    [matches, activeCategory]
+  );
+
+  const upcomingMatches = filteredMatches
     .filter((m) => parseMatchDate(m.date) >= todayStart)
     .sort((a, b) => parseMatchDate(a.date) - parseMatchDate(b.date));
 
-  const playedMatches = matches
+  const playedMatches = filteredMatches
     .filter((m) => parseMatchDate(m.date) < todayStart)
     .sort((a, b) => parseMatchDate(b.date) - parseMatchDate(a.date));
 
@@ -207,6 +289,9 @@ export default function AskLipuvkaWeb() {
       </button>
     );
   };
+
+  const activeCategoryLabel =
+    categories.find((category) => category.id === activeCategory)?.label || '';
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -352,18 +437,58 @@ export default function AskLipuvkaWeb() {
         </div>
       </section>
 
-      <section id="novinky" className="mx-auto max-w-5xl px-6 py-14">
-        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-8 shadow-sm">
-          <h2 className="mb-4 text-3xl font-bold text-green-600">Novinky z areálu</h2>
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">{news.date}</div>
-            <h3 className="mb-2 text-xl font-bold text-gray-900">{news.title}</h3>
-            <p className="text-gray-700">{news.text}</p>
+      <section className="mx-auto max-w-5xl px-6 pt-10">
+        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
+          <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-green-600">Kategorie</div>
+          <div className="flex flex-wrap gap-3">
+            {categories.map((category) => {
+              const isActive = activeCategory === category.id;
+              return (
+                <button
+                  key={category.id}
+                  type="button"
+                  onClick={() => setActiveCategory(category.id)}
+                  className={`rounded-xl px-4 py-3 font-semibold transition ${
+                    isActive
+                      ? 'bg-green-600 text-white'
+                      : 'border border-gray-300 bg-white text-gray-700 hover:border-green-500 hover:text-green-600'
+                  }`}
+                >
+                  {category.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </section>
 
+      <section id="novinky" className="mx-auto max-w-5xl px-6 py-14">
+        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-8 shadow-sm">
+          <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">
+            {activeCategoryLabel}
+          </div>
+          <h2 className="mb-4 text-3xl font-bold text-green-600">Novinky z areálu</h2>
+
+          {filteredNews.length > 0 ? (
+            filteredNews.map((item) => (
+              <div key={`${item.category}-${item.title}`} className="rounded-2xl bg-white p-5 shadow-sm">
+                <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">{item.date}</div>
+                <h3 className="mb-2 text-xl font-bold text-gray-900">{item.title}</h3>
+                <p className="text-gray-700">{item.text}</p>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
+              Pro tuto kategorii zatím nejsou doplněné žádné novinky.
+            </div>
+          )}
+        </div>
+      </section>
+
       <section id="zapasy" className="mx-auto max-w-5xl px-6 py-14">
+        <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-green-600">
+          {activeCategoryLabel}
+        </div>
         <div className="mb-6">
           <h2 className="mb-2 text-3xl font-bold text-green-600">Nadcházející zápasy</h2>
         </div>
@@ -373,20 +498,23 @@ export default function AskLipuvkaWeb() {
             upcomingMatches.map((m) => renderMatchCard(m, false))
           ) : (
             <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
-              Zatím nejsou naplánované žádné nadcházející zápasy.
+              Pro tuto kategorii zatím nejsou naplánované žádné nadcházející zápasy.
             </div>
           )}
         </div>
       </section>
 
       <section className="mx-auto max-w-5xl px-6 py-14">
+        <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-green-600">
+          {activeCategoryLabel}
+        </div>
         <h2 className="mb-6 text-3xl font-bold text-green-600">Odehrané zápasy</h2>
         <div className="space-y-4">
           {playedMatches.length > 0 ? (
             playedMatches.map((m) => renderMatchCard(m, true))
           ) : (
             <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
-              Zatím tu nejsou žádné odehrané zápasy.
+              Pro tuto kategorii zatím nejsou žádné odehrané zápasy.
             </div>
           )}
         </div>
@@ -569,81 +697,46 @@ export default function AskLipuvkaWeb() {
                 ×
               </button>
 
-              <h2 className="mb-6 pr-10 text-3xl font-bold text-green-600">Kontakty</h2>
+              <h2 className="mb-2 pr-10 text-3xl font-bold text-green-600">Kontakty</h2>
+              <div className="mb-6 text-sm font-semibold uppercase tracking-wide text-green-600">
+                {activeCategoryLabel}
+              </div>
 
               <div className="flex-1 space-y-8 overflow-y-scroll pr-2">
-                <div>
-                  <h3 className="mb-3 text-xl font-bold">Vedoucí mládeže</h3>
-                  <div className="rounded-xl bg-gray-100 p-4">
-                    <div className="font-bold">Radek Mánek</div>
-                    <a href="tel:606148368" className="block font-semibold text-green-600 hover:underline">
-                      606 148 368
-                    </a>
-                    <a href="mailto:radek.manek@email.cz" className="font-semibold text-green-600 hover:underline">
-                      radek.manek@email.cz
-                    </a>
+                {filteredContacts.length > 0 ? (
+                  filteredContacts.map((group) => (
+                    <div key={`${group.category}-${group.section}`}>
+                      <h3 className="mb-3 text-xl font-bold">{group.section}</h3>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        {group.people.map((person) => (
+                          <div key={person.name} className="rounded-xl bg-gray-100 p-4">
+                            <div className="font-bold">{person.name}</div>
+                            {person.phone && (
+                              <a
+                                href={`tel:${person.phone}`}
+                                className="block font-semibold text-green-600 hover:underline"
+                              >
+                                {person.phoneLabel}
+                              </a>
+                            )}
+                            {person.email && (
+                              <a
+                                href={`mailto:${person.email}`}
+                                className="font-semibold text-green-600 hover:underline"
+                              >
+                                {person.email}
+                              </a>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+                    Pro tuto kategorii zatím nejsou doplněné kontakty.
                   </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-3 text-xl font-bold">Předpřípravka</h3>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-xl bg-gray-100 p-4">
-                      <div className="font-bold">Jan Gebauer</div>
-                      <a href="tel:737146918" className="block font-semibold text-green-600 hover:underline">
-                        737 146 918
-                      </a>
-                    </div>
-                    <div className="rounded-xl bg-gray-100 p-4">
-                      <div className="font-bold">Jiří Filipčík</div>
-                      <a href="tel:737235850" className="block font-semibold text-green-600 hover:underline">
-                        737 235 850
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-3 text-xl font-bold">Mladší přípravka</h3>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-xl bg-gray-100 p-4">
-                      <div className="font-bold">Zdenko Adámek</div>
-                      <a href="tel:727836386" className="block font-semibold text-green-600 hover:underline">
-                        727 836 386
-                      </a>
-                    </div>
-                    <div className="rounded-xl bg-gray-100 p-4">
-                      <div className="font-bold">Dalibor Hudec</div>
-                      <a href="tel:737337966" className="block font-semibold text-green-600 hover:underline">
-                        737 337 966
-                      </a>
-                    </div>
-                    <div className="rounded-xl bg-gray-100 p-4">
-                      <div className="font-bold">Honza Večeřa</div>
-                      <a href="tel:733165250" className="block font-semibold text-green-600 hover:underline">
-                        733 165 250
-                      </a>
-                    </div>
-                    <div className="rounded-xl bg-gray-100 p-4">
-                      <div className="font-bold">Radek Slavík</div>
-                      <a href="tel:776423813" className="block font-semibold text-green-600 hover:underline">
-                        776 423 813
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="mb-3 text-xl font-bold">Starší přípravka</h3>
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div className="rounded-xl bg-gray-100 p-4">
-                      <div className="font-bold">Libor Vinkler</div>
-                      <a href="tel:736205150" className="block font-semibold text-green-600 hover:underline">
-                        736 205 150
-                      </a>
-                    </div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -668,7 +761,9 @@ export default function AskLipuvkaWeb() {
             </button>
 
             <div className="mb-6 border-b border-gray-200 pb-4 pr-10">
-              <div className="text-sm font-semibold uppercase tracking-wide text-green-600">Detail zápasu</div>
+              <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+                Detail zápasu • {activeCategoryLabel}
+              </div>
               <h2 className="mt-2 text-3xl font-bold text-gray-900">ASK Lipůvka vs. {selectedMatch.opponent}</h2>
               <div className="mt-2 text-gray-600">
                 {selectedMatch.date} • {selectedMatch.time} • {selectedMatch.home ? 'Domácí zápas' : 'Venkovní zápas'}
