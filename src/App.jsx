@@ -249,7 +249,7 @@ export default function AskLipuvkaWeb() {
     const data = Object.fromEntries(formData.entries());
 
     try {
-      const response = await fetch('http://localhost:3001/send', {
+      const response = await fetch('/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ typ: 'registrace', ...data }),
@@ -275,7 +275,7 @@ export default function AskLipuvkaWeb() {
     const data = Object.fromEntries(formData.entries());
 
     try {
-      const response = await fetch('http://localhost:3001/send', {
+      const response = await fetch('/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ typ: 'podnet', ...data }),
