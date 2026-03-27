@@ -3,17 +3,10 @@ import { useEffect, useState } from 'react';
 export default function AskLipuvkaWeb() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isContactsOpen, setIsContactsOpen] = useState(false);
-  const [isArealOpen, setIsArealOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
 
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-  const news = {
-    title: 'Otevření nové hospody na Zelený čtvrtek',
-    text: 'Na Zelený čtvrtek, tedy 2. 4., bude na areálu otevřena nová hospoda. Na otvíračku bude připravené i zelené pivo.',
-    date: '2. 4. 2026',
-  };
 
   const matches = [
     {
@@ -75,10 +68,11 @@ export default function AskLipuvkaWeb() {
     return new Date(Number(year), Number(month) - 1, Number(day));
   };
 
-  const isSameDay = (dateA, dateB) =>
+  const isSameDay = (dateA, dateB) => (
     dateA.getFullYear() === dateB.getFullYear() &&
     dateA.getMonth() === dateB.getMonth() &&
-    dateA.getDate() === dateB.getDate();
+    dateA.getDate() === dateB.getDate()
+  );
 
   const upcomingMatches = matches
     .filter((m) => parseMatchDate(m.date) >= todayStart)
@@ -93,7 +87,6 @@ export default function AskLipuvkaWeb() {
       if (event.key === 'Escape') {
         setIsRegistrationOpen(false);
         setIsContactsOpen(false);
-        setIsArealOpen(false);
         setSelectedMatch(null);
       }
     };
@@ -178,7 +171,7 @@ export default function AskLipuvkaWeb() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-white pb-24 text-gray-900 md:pb-0">
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -199,11 +192,7 @@ export default function AskLipuvkaWeb() {
           </a>
 
           <nav className="hidden gap-6 text-sm md:flex">
-            <a href="#novinky" className="hover:text-green-600">Novinky</a>
             <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
-            <button type="button" onClick={() => setIsArealOpen(true)} className="hover:text-green-600">
-              Areál
-            </button>
             <button type="button" onClick={() => setIsRegistrationOpen(true)} className="hover:text-green-600">
               Registrace hráče
             </button>
@@ -213,14 +202,10 @@ export default function AskLipuvkaWeb() {
           </nav>
         </div>
 
-        <div className="flex flex-wrap gap-3 border-t px-4 py-3 md:hidden">
-          <button
-            type="button"
-            onClick={() => setIsArealOpen(true)}
-            className="flex-1 rounded-xl border border-gray-400 px-4 py-3 font-semibold text-gray-700"
-          >
-            Areál
-          </button>
+        </header>
+
+      <div className="fixed bottom-0 left-0 right-0 z-30 border-t bg-white/95 px-4 py-3 shadow-[0_-4px_16px_rgba(0,0,0,0.08)] backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-7xl gap-3">
           <button
             type="button"
             onClick={() => setIsRegistrationOpen(true)}
@@ -236,7 +221,7 @@ export default function AskLipuvkaWeb() {
             Kontakty
           </button>
         </div>
-      </header>
+      </div>
 
       <section id="top" className="relative flex h-[80vh] items-center justify-center text-center">
         <img src="/field.png" alt="hřiště" className="absolute inset-0 h-full w-full object-cover" />
@@ -247,23 +232,16 @@ export default function AskLipuvkaWeb() {
           <p className="mb-6 text-gray-700">Oficiální klubový web mládeže ASK Lipůvka</p>
 
           <div className="flex justify-center gap-4">
-            <a href="#novinky" className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white">
-              Novinky
-            </a>
             <a href="#zapasy" className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white">
               Zápasy
             </a>
-          </div>
-        </div>
-      </section>
-
-      <section id="novinky" className="mx-auto max-w-5xl px-6 py-14">
-        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-8 shadow-sm">
-          <h2 className="mb-4 text-3xl font-bold text-green-600">Novinky z areálu</h2>
-          <div className="rounded-2xl bg-white p-5 shadow-sm">
-            <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">{news.date}</div>
-            <h3 className="mb-2 text-xl font-bold text-gray-900">{news.title}</h3>
-            <p className="text-gray-700">{news.text}</p>
+            <button
+              type="button"
+              onClick={() => setIsContactsOpen(true)}
+              className="rounded-xl border border-red-500 px-6 py-3 text-red-500"
+            >
+              Kontakty
+            </button>
           </div>
         </div>
       </section>
@@ -274,12 +252,8 @@ export default function AskLipuvkaWeb() {
         </div>
 
         <div className="space-y-4">
-          {upcomingMatches.length > 0 ? (
-            upcomingMatches.map((m) => renderMatchCard(m, false))
-          ) : (
-            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
-              Zatím nejsou naplánované žádné nadcházející zápasy.
-            </div>
+          {upcomingMatches.length > 0 ? upcomingMatches.map((m) => renderMatchCard(m, false)) : (
+            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">Zatím nejsou naplánované žádné nadcházející zápasy.</div>
           )}
         </div>
       </section>
@@ -287,89 +261,11 @@ export default function AskLipuvkaWeb() {
       <section className="mx-auto max-w-5xl px-6 py-14">
         <h2 className="mb-6 text-3xl font-bold text-green-600">Odehrané zápasy</h2>
         <div className="space-y-4">
-          {playedMatches.length > 0 ? (
-            playedMatches.map((m) => renderMatchCard(m, true))
-          ) : (
-            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
-              Zatím tu nejsou žádné odehrané zápasy.
-            </div>
+          {playedMatches.length > 0 ? playedMatches.map((m) => renderMatchCard(m, true)) : (
+            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">Zatím tu nejsou žádné odehrané zápasy.</div>
           )}
         </div>
       </section>
-
-      {isArealOpen && (
-        <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
-          onClick={() => setIsArealOpen(false)}
-        >
-          <div className="flex min-h-full items-start justify-center">
-            <div
-              className="relative my-4 w-full max-w-5xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                type="button"
-                onClick={() => setIsArealOpen(false)}
-                className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-black"
-              >
-                ×
-              </button>
-
-              <h2 className="mb-6 pr-10 text-3xl font-bold text-green-600">Fotbalový areál ASK Lipůvka</h2>
-
-              <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-                <div>
-                  <p className="mb-4 text-lg font-semibold text-gray-900">Kde nás najdete</p>
-                  <p className="mb-6 text-gray-700">
-                    Lipůvka 390
-                    <br />
-                    679 22 Lipůvka
-                  </p>
-
-                  <div className="mb-6 flex flex-wrap gap-4">
-                    <a
-                      href="https://mapy.cz/zakladni?source=addr&id=10845160&x=16.5539949&y=49.3398458&z=17"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white"
-                    >
-                      Otevřít v Mapy.cz
-                    </a>
-
-                    <a
-                      href="https://www.google.com/maps/search/?api=1&query=Lipuvka+390+679+22+Lipuvka"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-xl border border-gray-400 px-6 py-3 font-semibold text-gray-700"
-                    >
-                      Navigovat (Google)
-                    </a>
-                  </div>
-
-                  <div className="rounded-2xl bg-gray-50 p-5">
-                    <h3 className="mb-2 text-lg font-bold text-gray-900">Praktické info</h3>
-                    <ul className="space-y-2 text-gray-700">
-                      <li>• Příjezd je možný přímo k areálu.</li>
-                      <li>• Parkování je možné v okolí hřiště.</li>
-                      <li>• V areálu probíhají nejen zápasy mládeže, ale i další klubové akce.</li>
-                    </ul>
-                  </div>
-                </div>
-
-                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-                  <iframe
-                    title="Mapa areálu ASK Lipůvka"
-                    src="https://www.google.com/maps?q=Lipuvka%20390%20679%2022%20Lipuvka&z=16&output=embed"
-                    className="h-[320px] w-full border-0"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
       {isRegistrationOpen && (
         <div
@@ -392,61 +288,14 @@ export default function AskLipuvkaWeb() {
             <p className="mt-3 text-gray-600">Vyplňte formulář a my se vám ozveme.</p>
 
             <form onSubmit={handleSubmit} className="mx-auto mt-8 space-y-4 text-left">
-              <input
-                type="text"
-                name="jmeno"
-                placeholder="Jméno"
-                required
-                className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
-              />
-              <input
-                type="text"
-                name="prijmeni"
-                placeholder="Příjmení"
-                required
-                className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
-              />
-              <input
-                type="text"
-                name="adresa"
-                placeholder="Adresa (ulice a číslo popisné)"
-                required
-                className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
-              />
-              <input
-                type="date"
-                name="datum_narozeni"
-                required
-                className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black"
-              />
-              <input
-                type="text"
-                name="mesto_narozeni"
-                placeholder="Město narození"
-                required
-                className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
-              />
-              <input
-                type="text"
-                name="rodne_cislo"
-                placeholder="Rodné číslo"
-                required
-                className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
-              />
-              <input
-                type="text"
-                name="rodic"
-                placeholder="Jméno a příjmení rodiče / zákonného zástupce"
-                required
-                className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
-              />
-              <input
-                type="tel"
-                name="telefon"
-                placeholder="Telefon zákonného zástupce"
-                required
-                className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
-              />
+              <input type="text" name="jmeno" placeholder="Jméno" required className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500" />
+              <input type="text" name="prijmeni" placeholder="Příjmení" required className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500" />
+              <input type="text" name="adresa" placeholder="Adresa (ulice a číslo popisné)" required className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500" />
+              <input type="date" name="datum_narozeni" required className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black" />
+              <input type="text" name="mesto_narozeni" placeholder="Město narození" required className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500" />
+              <input type="text" name="rodne_cislo" placeholder="Rodné číslo" required className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500" />
+              <input type="text" name="rodic" placeholder="Jméno a příjmení rodiče / zákonného zástupce" required className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500" />
+              <input type="tel" name="telefon" placeholder="Telefon zákonného zástupce" required className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500" />
 
               <button type="submit" className="w-full rounded-xl bg-green-600 py-3 font-semibold text-white">
                 Odeslat registraci
@@ -481,12 +330,8 @@ export default function AskLipuvkaWeb() {
                   <h3 className="mb-3 text-xl font-bold">Vedoucí mládeže</h3>
                   <div className="rounded-xl bg-gray-100 p-4">
                     <div className="font-bold">Radek Mánek</div>
-                    <a href="tel:606148368" className="block font-semibold text-green-600 hover:underline">
-                      606 148 368
-                    </a>
-                    <a href="mailto:radek.manek@email.cz" className="font-semibold text-green-600 hover:underline">
-                      radek.manek@email.cz
-                    </a>
+                    <a href="tel:606148368" className="block font-semibold text-green-600 hover:underline">606 148 368</a>
+                    <a href="mailto:radek.manek@email.cz" className="font-semibold text-green-600 hover:underline">radek.manek@email.cz</a>
                   </div>
                 </div>
 
@@ -495,15 +340,11 @@ export default function AskLipuvkaWeb() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-xl bg-gray-100 p-4">
                       <div className="font-bold">Jan Gebauer</div>
-                      <a href="tel:737146918" className="block font-semibold text-green-600 hover:underline">
-                        737 146 918
-                      </a>
+                      <a href="tel:737146918" className="block font-semibold text-green-600 hover:underline">737 146 918</a>
                     </div>
                     <div className="rounded-xl bg-gray-100 p-4">
                       <div className="font-bold">Jiří Filipčík</div>
-                      <a href="tel:737235850" className="block font-semibold text-green-600 hover:underline">
-                        737 235 850
-                      </a>
+                      <a href="tel:737235850" className="block font-semibold text-green-600 hover:underline">737 235 850</a>
                     </div>
                   </div>
                 </div>
@@ -513,27 +354,19 @@ export default function AskLipuvkaWeb() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-xl bg-gray-100 p-4">
                       <div className="font-bold">Zdenko Adámek</div>
-                      <a href="tel:727836386" className="block font-semibold text-green-600 hover:underline">
-                        727 836 386
-                      </a>
+                      <a href="tel:727836386" className="block font-semibold text-green-600 hover:underline">727 836 386</a>
                     </div>
                     <div className="rounded-xl bg-gray-100 p-4">
                       <div className="font-bold">Dalibor Hudec</div>
-                      <a href="tel:737337966" className="block font-semibold text-green-600 hover:underline">
-                        737 337 966
-                      </a>
+                      <a href="tel:737337966" className="block font-semibold text-green-600 hover:underline">737 337 966</a>
                     </div>
                     <div className="rounded-xl bg-gray-100 p-4">
                       <div className="font-bold">Honza Večeřa</div>
-                      <a href="tel:733165250" className="block font-semibold text-green-600 hover:underline">
-                        733 165 250
-                      </a>
+                      <a href="tel:733165250" className="block font-semibold text-green-600 hover:underline">733 165 250</a>
                     </div>
                     <div className="rounded-xl bg-gray-100 p-4">
                       <div className="font-bold">Radek Slavík</div>
-                      <a href="tel:776423813" className="block font-semibold text-green-600 hover:underline">
-                        776 423 813
-                      </a>
+                      <a href="tel:776423813" className="block font-semibold text-green-600 hover:underline">776 423 813</a>
                     </div>
                   </div>
                 </div>
@@ -543,9 +376,7 @@ export default function AskLipuvkaWeb() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="rounded-xl bg-gray-100 p-4">
                       <div className="font-bold">Libor Vinkler</div>
-                      <a href="tel:736205150" className="block font-semibold text-green-600 hover:underline">
-                        736 205 150
-                      </a>
+                      <a href="tel:736205150" className="block font-semibold text-green-600 hover:underline">736 205 150</a>
                     </div>
                   </div>
                 </div>
