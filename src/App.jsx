@@ -35,8 +35,8 @@ export default function AskLipuvkaWeb() {
     },
     {
       category: 'starsi-pripravka',
-      title: 'Starší přípravka je připravena do budoucna!',
-      text: 'Kategorie je založená dopředu, aby bylo možné snadno přidat zápasy, kontakty i další novinky pro příští sezonu.',
+      title: 'Starší přípravka je připravena do budoucna',
+      text: 'Kategorie je založená dopředu, aby bylo možné snadno přidat zápasy, trenéry i další novinky pro příští sezonu.',
       date: '1. 4. 2026',
     },
   ];
