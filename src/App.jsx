@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 export default function AskLipuvkaWeb() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
-  const [isContactsOpen, setIsContactsOpen] = useState(false);
+  const [isTrainersOpen, setIsTrainersOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
 
@@ -36,12 +36,12 @@ export default function AskLipuvkaWeb() {
     {
       category: 'starsi-pripravka',
       title: 'Starší přípravka je připravena do budoucna',
-      text: 'Kategorie je založená dopředu, aby bylo možné snadno přidat zápasy, kontakty i další novinky pro příští sezonu.',
+      text: 'Kategorie je založená dopředu, aby bylo možné snadno přidat zápasy, trenéry i další novinky pro příští sezonu.',
       date: '1. 4. 2026',
     },
   ];
 
-  const contacts = [
+  const trainers = [
     {
       category: 'predpripravka',
       section: 'Vedoucí mládeže',
@@ -180,8 +180,8 @@ export default function AskLipuvkaWeb() {
     [activeCategory]
   );
 
-  const filteredContacts = useMemo(
-    () => contacts.filter((item) => item.category === activeCategory),
+  const filteredTrainers = useMemo(
+    () => trainers.filter((item) => item.category === activeCategory),
     [activeCategory]
   );
 
@@ -206,7 +206,7 @@ export default function AskLipuvkaWeb() {
     const handleEsc = (event) => {
       if (event.key === 'Escape') {
         setIsRegistrationOpen(false);
-        setIsContactsOpen(false);
+        setIsTrainersOpen(false);
         setIsMobileMenuOpen(false);
         setSelectedMatch(null);
         setClubPopupContent(null);
@@ -230,7 +230,7 @@ export default function AskLipuvkaWeb() {
   useEffect(() => {
     const shouldLock =
       isRegistrationOpen ||
-      isContactsOpen ||
+      isTrainersOpen ||
       isMobileMenuOpen ||
       selectedMatch ||
       clubPopupContent;
@@ -240,7 +240,7 @@ export default function AskLipuvkaWeb() {
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isRegistrationOpen, isContactsOpen, isMobileMenuOpen, selectedMatch, clubPopupContent]);
+  }, [isRegistrationOpen, isTrainersOpen, isMobileMenuOpen, selectedMatch, clubPopupContent]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -251,10 +251,8 @@ export default function AskLipuvkaWeb() {
     try {
       const response = await fetch('http://localhost:3001/send', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ typ: 'registrace', ...data }),
       });
 
       if (!response.ok) {
@@ -270,14 +268,40 @@ export default function AskLipuvkaWeb() {
     }
   };
 
+  const handleSubmitPodnet = async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+
+    try {
+      const response = await fetch('http://localhost:3001/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ typ: 'podnet', ...data }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Nepodařilo se odeslat podnět.');
+      }
+
+      alert('Podnět byl odeslán');
+      e.target.reset();
+      setClubPopupContent(null);
+    } catch (err) {
+      alert('Chyba při odesílání');
+      console.error(err);
+    }
+  };
+
   const openRegistration = () => {
     setIsMobileMenuOpen(false);
     setIsRegistrationOpen(true);
   };
 
-  const openContacts = () => {
+  const openTrainers = () => {
     setIsMobileMenuOpen(false);
-    setIsContactsOpen(true);
+    setIsTrainersOpen(true);
   };
 
   const openClubPopup = (content) => {
@@ -369,7 +393,7 @@ export default function AskLipuvkaWeb() {
               </button>
 
               {isClubDropdownOpen && (
-                <div className="absolute left-0 top-full mt-2 min-w-[210px] rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+                <div className="absolute left-0 top-full mt-2 min-w-[230px] rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
                   <button
                     type="button"
                     onClick={() => openClubPopup('fylozofie')}
@@ -388,17 +412,25 @@ export default function AskLipuvkaWeb() {
 
                   <button
                     type="button"
-                    onClick={() => openClubPopup('areal')}
+                    onClick={() => openClubPopup('podnety')}
                     className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
                   >
-                    Areál
+                    Kniha podnětů
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openClubPopup('kde-nas-najdete')}
+                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                  >
+                    Kde nás najdete
                   </button>
                 </div>
               )}
             </div>
 
-            <button type="button" onClick={openContacts} className="hover:text-green-600">
-              Kontakty
+            <button type="button" onClick={openTrainers} className="hover:text-green-600">
+              Trenéři
             </button>
 
             <button type="button" onClick={openRegistration} className="hover:text-green-600">
@@ -486,18 +518,26 @@ export default function AskLipuvkaWeb() {
 
               <button
                 type="button"
-                onClick={() => openClubPopup('areal')}
+                onClick={() => openClubPopup('podnety')}
                 className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
-                Areál
+                Kniha podnětů
               </button>
 
               <button
                 type="button"
-                onClick={openContacts}
+                onClick={() => openClubPopup('kde-nas-najdete')}
                 className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
-                Kontakty
+                Kde nás najdete
+              </button>
+
+              <button
+                type="button"
+                onClick={openTrainers}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
+              >
+                Trenéři
               </button>
 
               <button
@@ -780,15 +820,53 @@ export default function AskLipuvkaWeb() {
                 </>
               )}
 
-              {clubPopupContent === 'areal' && (
+              {clubPopupContent === 'podnety' && (
                 <>
                   <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
-                    <h2 className="text-3xl font-bold text-green-600">Fotbalový areál ASK Lipůvka</h2>
+                    <h2 className="text-3xl font-bold text-green-600">Kniha podnětů</h2>
+                  </div>
+
+                  <p className="mb-6 text-gray-600">
+                    Máte podnět, připomínku nebo nápad, jak zlepšit fungování mládeže ASK Lipůvka?
+                    Napište nám.
+                  </p>
+
+                  <form onSubmit={handleSubmitPodnet} className="space-y-4">
+                    <input
+                      type="text"
+                      name="jmeno"
+                      placeholder="Jméno"
+                      required
+                      className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
+                    />
+
+                    <textarea
+                      name="zprava"
+                      placeholder="Napište nám váš podnět..."
+                      required
+                      rows="7"
+                      className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
+                    />
+
+                    <button
+                      type="submit"
+                      className="w-full rounded-xl bg-green-600 py-3 font-semibold text-white"
+                    >
+                      Odeslat
+                    </button>
+                  </form>
+                </>
+              )}
+
+              {clubPopupContent === 'kde-nas-najdete' && (
+                <>
+                  <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
+                    <h2 className="text-3xl font-bold text-green-600">Kde nás najdete</h2>
                   </div>
 
                   <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
                     <div>
-                      <p className="mb-4 text-lg font-semibold text-gray-900">Kde nás najdete</p>
+                      <p className="mb-4 text-lg font-semibold text-gray-900">Adresa</p>
                       <p className="mb-6 text-gray-700">
                         Lipůvka 390
                         <br />
@@ -927,10 +1005,10 @@ export default function AskLipuvkaWeb() {
         </div>
       )}
 
-      {isContactsOpen && (
+      {isTrainersOpen && (
         <div
           className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
-          onClick={() => setIsContactsOpen(false)}
+          onClick={() => setIsTrainersOpen(false)}
         >
           <div className="flex min-h-full items-start justify-center">
             <div
@@ -939,14 +1017,14 @@ export default function AskLipuvkaWeb() {
             >
               <button
                 type="button"
-                onClick={() => setIsContactsOpen(false)}
+                onClick={() => setIsTrainersOpen(false)}
                 className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-black"
               >
                 ×
               </button>
 
               <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
-                <h2 className="text-3xl font-bold text-green-600">Kontakty</h2>
+                <h2 className="text-3xl font-bold text-green-600">Trenéři</h2>
                 <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
                   {activeCategoryShortLabel}
                 </span>
@@ -957,8 +1035,8 @@ export default function AskLipuvkaWeb() {
               </div>
 
               <div className="flex-1 space-y-8 overflow-y-scroll pr-2">
-                {filteredContacts.length > 0 ? (
-                  filteredContacts.map((group) => (
+                {filteredTrainers.length > 0 ? (
+                  filteredTrainers.map((group) => (
                     <div key={`${group.category}-${group.section}`}>
                       <h3 className="mb-3 text-xl font-bold">{group.section}</h3>
 
@@ -991,7 +1069,7 @@ export default function AskLipuvkaWeb() {
                   ))
                 ) : (
                   <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
-                    Pro tuto kategorii zatím nejsou doplněné kontakty.
+                    Pro tuto kategorii zatím nejsou doplnění žádní trenéři.
                   </div>
                 )}
               </div>
@@ -1080,7 +1158,7 @@ export default function AskLipuvkaWeb() {
       )}
 
       <footer className="py-6 text-center text-gray-500">
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex flex-wrap items-center justify-center gap-4">
           <span>© 2026 ASK Lipůvka</span>
 
           <a
@@ -1099,6 +1177,15 @@ export default function AskLipuvkaWeb() {
             >
               <path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.88 3.77-3.88 1.09 0 2.23.19 2.23.19v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.89h-2.33v6.99A10 10 0 0 0 22 12Z" />
             </svg>
+          </a>
+
+          <a
+            href="https://asklipuvka.cz"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium text-gray-600 transition hover:text-green-600"
+          >
+            A tým
           </a>
         </div>
       </footer>

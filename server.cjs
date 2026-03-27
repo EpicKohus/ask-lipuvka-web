@@ -10,6 +10,7 @@ app.use(express.json());
 app.post("/send", async (req, res) => {
   try {
     const {
+      typ,
       jmeno,
       prijmeni,
       adresa,
@@ -18,9 +19,9 @@ app.post("/send", async (req, res) => {
       rodne_cislo,
       rodic,
       telefon,
+      zprava,
     } = req.body;
 
-    // 🔥 SEZNAM EMAIL NASTAVENÍ
     const transporter = nodemailer.createTransport({
       host: "smtp.seznam.cz",
       port: 465,
@@ -31,11 +32,28 @@ app.post("/send", async (req, res) => {
       },
     });
 
-    const mailOptions = {
-      from: "radek.manek@email.cz",
-      to: "radek.manek@email.cz",
-      subject: "⚽ Nová registrace hráče - ASK Lipůvka",
-      text: `
+    let mailOptions;
+
+    if (typ === "podnet") {
+      mailOptions = {
+        from: "radek.manek@email.cz",
+        to: "radek.manek@email.cz",
+        subject: "📩 Nový podnět z webu ASK Lipůvka",
+        text: `
+Nový podnět z webu ASK Lipůvka:
+
+Jméno: ${jmeno}
+
+Zpráva:
+${zprava}
+        `,
+      };
+    } else {
+      mailOptions = {
+        from: "radek.manek@email.cz",
+        to: "radek.manek@email.cz",
+        subject: "⚽ Nová registrace hráče - ASK Lipůvka",
+        text: `
 Nová registrace hráče:
 
 Jméno: ${jmeno}
@@ -46,8 +64,9 @@ Město narození: ${mesto_narozeni}
 Rodné číslo: ${rodne_cislo}
 Rodič: ${rodic}
 Telefon: ${telefon}
-      `,
-    };
+        `,
+      };
+    }
 
     await transporter.sendMail(mailOptions);
 
@@ -55,7 +74,6 @@ Telefon: ${telefon}
       success: true,
       message: "Email byl odeslán",
     });
-
   } catch (error) {
     console.error("Chyba:", error);
     res.status(500).json({
@@ -65,7 +83,6 @@ Telefon: ${telefon}
   }
 });
 
-// 🔥 SPUŠTĚNÍ SERVERU
 app.listen(3001, () => {
   console.log("✅ Backend běží na http://localhost:3001");
 });
