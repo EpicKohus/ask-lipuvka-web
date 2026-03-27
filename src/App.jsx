@@ -36,7 +36,7 @@ export default function AskLipuvkaWeb() {
     {
       category: 'starsi-pripravka',
       title: 'Starší přípravka je připravena do budoucna',
-      text: 'Kategorie je založená dopředu, aby bylo možné snadno přidat zápasy, trenéry i další novinky pro příští sezonu.',
+      text: 'Kategorie je založená dopředu, aby bylo možné snadno přidat zápasy, kontakty i další novinky pro příští sezonu.',
       date: '1. 4. 2026',
     },
   ];
@@ -396,10 +396,10 @@ export default function AskLipuvkaWeb() {
                 <div className="absolute left-0 top-full mt-2 min-w-[230px] rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
                   <button
                     type="button"
-                    onClick={() => openClubPopup('fylozofie')}
+                    onClick={() => openClubPopup('filozofie')}
                     className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
                   >
-                    Fylozofie
+                    Filozofie
                   </button>
 
                   <button
@@ -502,10 +502,10 @@ export default function AskLipuvkaWeb() {
 
               <button
                 type="button"
-                onClick={() => openClubPopup('fylozofie')}
+                onClick={() => openClubPopup('filozofie')}
                 className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
-                Fylozofie
+                Filozofie
               </button>
 
               <button
@@ -725,10 +725,10 @@ export default function AskLipuvkaWeb() {
                 ×
               </button>
 
-              {clubPopupContent === 'fylozofie' && (
+              {clubPopupContent === 'filozofie' && (
                 <>
                   <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
-                    <h2 className="text-3xl font-bold text-green-600">Fylozofie</h2>
+                    <h2 className="text-3xl font-bold text-green-600">Filozofie</h2>
                     <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
                       {activeCategoryShortLabel}
                     </span>
