@@ -40,7 +40,31 @@ export default function AskLipuvkaWeb() {
 
   const contacts = [
     {
+      category: 'predpripravka',
+      section: 'Vedoucí mládeže',
+      people: [
+        {
+          name: 'Radek Mánek',
+          phone: '606148368',
+          phoneLabel: '606 148 368',
+          email: 'radek.manek@email.cz',
+        },
+      ],
+    },
+    {
       category: 'mladsi-pripravka',
+      section: 'Vedoucí mládeže',
+      people: [
+        {
+          name: 'Radek Mánek',
+          phone: '606148368',
+          phoneLabel: '606 148 368',
+          email: 'radek.manek@email.cz',
+        },
+      ],
+    },
+    {
+      category: 'starsi-pripravka',
       section: 'Vedoucí mládeže',
       people: [
         {
@@ -65,7 +89,7 @@ export default function AskLipuvkaWeb() {
       people: [
         { name: 'Zdenko Adámek', phone: '727836386', phoneLabel: '727 836 386' },
         { name: 'Dalibor Hudec', phone: '737337966', phoneLabel: '737 337 966' },
-        { name: 'Honza Večeřa', phone: '733165250', phoneLabel: '733 165 250' },
+        { name: 'Jan Večeřa', phone: '733165250', phoneLabel: '733 165 250' },
         { name: 'Radek Slavík', phone: '776423813', phoneLabel: '776 423 813' },
       ],
     },
@@ -470,7 +494,7 @@ export default function AskLipuvkaWeb() {
             </span>
           </div>
 
-          <h2 className="mb-4 text-3xl font-bold text-green-600">Novinky z areálu</h2>
+          <h2 className="mb-4 text-3xl font-bold text-green-600">Novinky</h2>
 
           {filteredNews.length > 0 ? (
             filteredNews.map((item) => (
