@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 export default function AskLipuvkaWeb() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
@@ -9,7 +9,14 @@ export default function AskLipuvkaWeb() {
   const [isClubDropdownOpen, setIsClubDropdownOpen] = useState(false);
   const [clubPopupContent, setClubPopupContent] = useState(null);
 
+  const [isGalleryOpen, setIsGalleryOpen] = useState(false);
+  const [selectedAlbum, setSelectedAlbum] = useState(null);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null);
+
   const [activeCategory, setActiveCategory] = useState('mladsi-pripravka');
+
+  const touchStartX = useRef(null);
+  const touchEndX = useRef(null);
 
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -118,6 +125,27 @@ export default function AskLipuvkaWeb() {
     ],
   };
 
+  const galleryAlbums = [
+    {
+      id: 'zima_26',
+      title: 'Zima 2026',
+      cover: '/galerie/zima_26/1.jpg',
+      photos: [
+        '/galerie/zima_26/1.jpg',
+        '/galerie/zima_26/2.jpg',
+      ],
+    },
+    {
+      id: '1zapas',
+      title: '1. kolo',
+      cover: '/galerie/1zapas/1.jpg',
+      photos: [
+        '/galerie/1zapas/1.jpg',
+        '/galerie/1zapas/2.jpg',
+      ],
+    },
+  ];
+
   const matches = [
     {
       category: 'mladsi-pripravka',
@@ -210,6 +238,42 @@ export default function AskLipuvkaWeb() {
   const activeCategoryLabel = activeCategoryData?.label || '';
   const activeCategoryShortLabel = activeCategoryData?.shortLabel || '';
 
+  const selectedPhoto =
+    selectedAlbum && selectedPhotoIndex !== null
+      ? selectedAlbum.photos[selectedPhotoIndex]
+      : null;
+
+  const goToPrevPhoto = () => {
+    if (!selectedAlbum || selectedPhotoIndex === null) return;
+    setSelectedPhotoIndex((prev) =>
+      prev === 0 ? selectedAlbum.photos.length - 1 : prev - 1
+    );
+  };
+
+  const goToNextPhoto = () => {
+    if (!selectedAlbum || selectedPhotoIndex === null) return;
+    setSelectedPhotoIndex((prev) =>
+      prev === selectedAlbum.photos.length - 1 ? 0 : prev + 1
+    );
+  };
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.changedTouches[0].screenX;
+  };
+
+  const handleTouchEnd = (e) => {
+    touchEndX.current = e.changedTouches[0].screenX;
+    const diff = touchStartX.current - touchEndX.current;
+
+    if (Math.abs(diff) < 50) return;
+
+    if (diff > 0) {
+      goToNextPhoto();
+    } else {
+      goToPrevPhoto();
+    }
+  };
+
   useEffect(() => {
     const handleEsc = (event) => {
       if (event.key === 'Escape') {
@@ -219,6 +283,9 @@ export default function AskLipuvkaWeb() {
         setSelectedMatch(null);
         setClubPopupContent(null);
         setIsClubDropdownOpen(false);
+        setSelectedPhotoIndex(null);
+        setSelectedAlbum(null);
+        setIsGalleryOpen(false);
       }
     };
 
@@ -226,14 +293,28 @@ export default function AskLipuvkaWeb() {
       setIsClubDropdownOpen(false);
     };
 
+    const handleArrowKeys = (event) => {
+      if (selectedPhotoIndex === null) return;
+
+      if (event.key === 'ArrowLeft') {
+        goToPrevPhoto();
+      }
+
+      if (event.key === 'ArrowRight') {
+        goToNextPhoto();
+      }
+    };
+
     window.addEventListener('keydown', handleEsc);
+    window.addEventListener('keydown', handleArrowKeys);
     document.addEventListener('click', handleClickOutside);
 
     return () => {
       window.removeEventListener('keydown', handleEsc);
+      window.removeEventListener('keydown', handleArrowKeys);
       document.removeEventListener('click', handleClickOutside);
     };
-  }, []);
+  }, [selectedPhotoIndex, selectedAlbum]);
 
   useEffect(() => {
     const shouldLock =
@@ -241,14 +322,24 @@ export default function AskLipuvkaWeb() {
       isTrainersOpen ||
       isMobileMenuOpen ||
       selectedMatch ||
-      clubPopupContent;
+      clubPopupContent ||
+      isGalleryOpen ||
+      selectedPhoto;
 
     document.body.style.overflow = shouldLock ? 'hidden' : '';
 
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isRegistrationOpen, isTrainersOpen, isMobileMenuOpen, selectedMatch, clubPopupContent]);
+  }, [
+    isRegistrationOpen,
+    isTrainersOpen,
+    isMobileMenuOpen,
+    selectedMatch,
+    clubPopupContent,
+    isGalleryOpen,
+    selectedPhoto,
+  ]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -310,6 +401,13 @@ export default function AskLipuvkaWeb() {
   const openTrainers = () => {
     setIsMobileMenuOpen(false);
     setIsTrainersOpen(true);
+  };
+
+  const openGallery = () => {
+    setIsMobileMenuOpen(false);
+    setIsGalleryOpen(true);
+    setSelectedAlbum(null);
+    setSelectedPhotoIndex(null);
   };
 
   const openClubPopup = (content) => {
@@ -390,6 +488,10 @@ export default function AskLipuvkaWeb() {
           <nav className="hidden gap-6 text-sm md:flex">
             <a href="#novinky" className="hover:text-green-600">Novinky</a>
             <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
+
+            <button type="button" onClick={openGallery} className="hover:text-green-600">
+              Galerie
+            </button>
 
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
@@ -507,6 +609,14 @@ export default function AskLipuvkaWeb() {
               >
                 Zápasy
               </a>
+
+              <button
+                type="button"
+                onClick={openGallery}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
+              >
+                Galerie
+              </button>
 
               <button
                 type="button"
@@ -714,6 +824,162 @@ export default function AskLipuvkaWeb() {
           </div>
         </div>
       </section>
+
+      {isGalleryOpen && !selectedAlbum && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          onClick={() => setIsGalleryOpen(false)}
+        >
+          <div className="flex min-h-full items-start justify-center">
+            <div
+              className="relative my-4 w-full max-w-5xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setIsGalleryOpen(false)}
+                className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-black"
+              >
+                ×
+              </button>
+
+              <h2 className="mb-6 text-3xl font-bold text-green-600">Galerie ASK Lipůvka</h2>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                {galleryAlbums.map((album) => (
+                  <button
+                    type="button"
+                    key={album.id}
+                    onClick={() => {
+                      setSelectedAlbum(album);
+                      setSelectedPhotoIndex(null);
+                    }}
+                    className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                  >
+                    <img
+                      src={album.cover}
+                      alt={album.title}
+                      className="h-56 w-full object-cover"
+                    />
+                    <div className="p-5">
+                      <div className="text-xl font-bold text-gray-900">{album.title}</div>
+                      <div className="mt-1 text-sm text-gray-500">
+                        {album.photos.length} fotek
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isGalleryOpen && selectedAlbum && selectedPhotoIndex === null && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          onClick={() => {
+            setSelectedAlbum(null);
+          }}
+        >
+          <div className="flex min-h-full items-start justify-center">
+            <div
+              className="relative my-4 w-full max-w-6xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="mb-4 flex items-center justify-between gap-4 pr-10">
+                <button
+                  type="button"
+                  onClick={() => setSelectedAlbum(null)}
+                  className="rounded-xl border border-gray-300 px-4 py-2 font-semibold text-gray-700 hover:bg-gray-100"
+                >
+                  ← Zpět na alba
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedAlbum(null);
+                    setIsGalleryOpen(false);
+                  }}
+                  className="text-2xl text-gray-500 hover:text-black"
+                >
+                  ×
+                </button>
+              </div>
+
+              <h2 className="mb-6 text-3xl font-bold text-green-600">{selectedAlbum.title}</h2>
+
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+                {selectedAlbum.photos.map((photo, index) => (
+                  <button
+                    type="button"
+                    key={`${photo}-${index}`}
+                    onClick={() => setSelectedPhotoIndex(index)}
+                    className="overflow-hidden rounded-2xl"
+                  >
+                    <img
+                      src={photo}
+                      alt={`${selectedAlbum.title} ${index + 1}`}
+                      className="h-40 w-full rounded-2xl object-cover transition hover:scale-105"
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedPhoto && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/90 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          onClick={() => setSelectedPhotoIndex(null)}
+        >
+          <div className="flex h-full w-full items-center justify-center">
+            <div
+              className="relative flex max-h-full max-w-6xl items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
+            >
+              <button
+                type="button"
+                onClick={() => setSelectedPhotoIndex(null)}
+                className="absolute right-0 top-[-48px] text-3xl text-white"
+              >
+                ×
+              </button>
+
+              <button
+                type="button"
+                onClick={goToPrevPhoto}
+                className="absolute left-[-10px] top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-white/20 px-4 py-3 text-2xl text-white backdrop-blur md:block"
+              >
+                ‹
+              </button>
+
+              <img
+                src={selectedPhoto}
+                alt="Zvětšená fotka"
+                className="max-h-[85vh] max-w-[92vw] rounded-2xl object-contain"
+              />
+
+              <button
+                type="button"
+                onClick={goToNextPhoto}
+                className="absolute right-[-10px] top-1/2 z-10 hidden -translate-y-1/2 rounded-full bg-white/20 px-4 py-3 text-2xl text-white backdrop-blur md:block"
+              >
+                ›
+              </button>
+
+              <div className="absolute bottom-[-42px] left-1/2 -translate-x-1/2 text-sm text-white/80">
+                {selectedPhotoIndex + 1} / {selectedAlbum?.photos.length}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {clubPopupContent && (
         <div
