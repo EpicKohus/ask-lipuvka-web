@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 export default function AskLipuvkaWeb() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isContactsOpen, setIsContactsOpen] = useState(false);
+  const [isAreaOpen, setIsAreaOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
 
   const today = new Date();
@@ -87,6 +88,7 @@ export default function AskLipuvkaWeb() {
       if (event.key === 'Escape') {
         setIsRegistrationOpen(false);
         setIsContactsOpen(false);
+        setIsAreaOpen(false);
         setSelectedMatch(null);
       }
     };
@@ -171,7 +173,7 @@ export default function AskLipuvkaWeb() {
   };
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className="min-h-screen bg-white pb-24 text-gray-900 md:pb-0">
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -199,24 +201,10 @@ export default function AskLipuvkaWeb() {
             <button type="button" onClick={() => setIsContactsOpen(true)} className="hover:text-green-600">
               Kontakty
             </button>
+            <button type="button" onClick={() => setIsAreaOpen(true)} className="hover:text-green-600">
+              Areál
+            </button>
           </nav>
-        </div>
-
-        <div className="flex gap-3 border-t px-4 py-3 md:hidden">
-          <button
-            type="button"
-            onClick={() => setIsRegistrationOpen(true)}
-            className="flex-1 rounded-xl bg-green-600 px-4 py-3 font-semibold text-white"
-          >
-            Registrace hráče
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsContactsOpen(true)}
-            className="flex-1 rounded-xl border border-red-500 px-4 py-3 font-semibold text-red-500"
-          >
-            Kontakty
-          </button>
         </div>
       </header>
 
@@ -228,7 +216,7 @@ export default function AskLipuvkaWeb() {
           <h1 className="mb-3 text-4xl font-black text-green-700 md:text-6xl">ASK Lipůvka</h1>
           <p className="mb-6 text-gray-700">Oficiální klubový web mládeže ASK Lipůvka</p>
 
-          <div className="flex justify-center gap-4">
+          <div className="flex flex-wrap justify-center gap-4">
             <a href="#zapasy" className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white">
               Zápasy
             </a>
@@ -383,6 +371,86 @@ export default function AskLipuvkaWeb() {
         </div>
       )}
 
+      {isAreaOpen && (
+        <div
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          onClick={() => setIsAreaOpen(false)}
+        >
+          <div className="flex min-h-full items-start justify-center">
+            <div
+              className="relative my-4 w-full max-w-4xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setIsAreaOpen(false)}
+                className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-black"
+              >
+                ×
+              </button>
+
+              <h2 className="mb-6 pr-10 text-3xl font-bold text-green-600">Areál ASK Lipůvka</h2>
+
+              <div className="grid gap-6 lg:grid-cols-2">
+                <div className="space-y-5">
+                  <div className="rounded-2xl bg-gray-100 p-5">
+                    <div className="text-sm font-semibold uppercase tracking-wide text-gray-500">Adresa</div>
+                    <div className="mt-2 text-lg font-bold text-gray-900">
+                      Lipůvka 390, 679 22 Lipůvka
+                    </div>
+                    <div className="mt-2 text-gray-600">
+                      Fotbalový areál ASK Lipůvka
+                    </div>
+
+                    <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+                      <a
+                        href="https://maps.google.com/?q=Lipůvka+390,+679+22+Lipůvka"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center rounded-xl bg-green-600 px-4 py-3 font-semibold text-white hover:bg-green-700"
+                      >
+                        Otevřít v Google Maps
+                      </a>
+
+                      <a
+                        href="https://www.google.com/maps/dir/?api=1&destinationL= Lipůvka+390,+679+22+Lipůvka"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center justify-center rounded-xl border border-gray-300 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-50"
+                      >
+                        Navigovat
+                      </a>
+                    </div>
+                  </div>
+
+                  <div className="overflow-hidden rounded-2xl border border-gray-200">
+                    <img
+                      src="/areal.jpg"
+                      alt="Areál ASK Lipůvka"
+                      className="h-64 w-full object-cover"
+                    />
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-2xl border border-gray-200">
+                  <iframe
+                    title="Mapa areálu ASK Lipůvka"
+                    src="https://www.google.com/maps?q=Lipůvka+390,+679+22+Lipůvka&z=16&output=embed"
+                    width="100%"
+                    height="100%"
+                    className="min-h-[420px]"
+                    style={{ border: 0 }}
+                    allowFullScreen=""
+                    loading="lazy"
+                    referrerPolicy="no-referrer-when-downgrade"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {selectedMatch && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 animate-[fadeIn_0.2s_ease-out]"
@@ -449,6 +517,32 @@ export default function AskLipuvkaWeb() {
           </div>
         </div>
       )}
+
+      <div className="fixed bottom-0 left-0 right-0 z-40 border-t bg-white/95 p-3 shadow-2xl backdrop-blur md:hidden">
+        <div className="grid grid-cols-3 gap-2">
+          <button
+            type="button"
+            onClick={() => setIsRegistrationOpen(true)}
+            className="rounded-xl bg-green-600 px-3 py-3 text-sm font-semibold text-white"
+          >
+            Registrace
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsContactsOpen(true)}
+            className="rounded-xl border border-red-500 px-3 py-3 text-sm font-semibold text-red-500"
+          >
+            Kontakt
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsAreaOpen(true)}
+            className="rounded-xl border border-gray-300 px-3 py-3 text-sm font-semibold text-gray-700"
+          >
+            Areál
+          </button>
+        </div>
+      </div>
 
       <footer className="py-6 text-center text-gray-500">© 2026 ASK Lipůvka</footer>
     </div>
