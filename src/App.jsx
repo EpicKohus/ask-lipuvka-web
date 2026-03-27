@@ -16,6 +16,7 @@ export default function AskLipuvkaWeb() {
   const [activeCategory, setActiveCategory] = useState('mladsi-pripravka');
   const [visitCount, setVisitCount] = useState(null);
   const [isTermsOpen, setIsTermsOpen] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
@@ -155,10 +156,7 @@ export default function AskLipuvkaWeb() {
       id: '1zapas',
       title: '1. kolo',
       cover: '/galerie/1zapas/1.jpg',
-      photos: [
-        '/galerie/1zapas/1.jpg',
-        '/galerie/1zapas/2.jpg',
-      ],
+      photos: ['/galerie/1zapas/1.jpg', '/galerie/1zapas/2.jpg'],
     },
   ];
 
@@ -424,6 +422,7 @@ export default function AskLipuvkaWeb() {
 
       alert('Registrace byla odeslána');
       e.target.reset();
+      setTermsAccepted(false);
       setIsRegistrationOpen(false);
     } catch (err) {
       alert('Chyba při odesílání');
@@ -1267,7 +1266,7 @@ export default function AskLipuvkaWeb() {
         >
           <div className="flex min-h-full items-start justify-center">
             <div
-              className="relative my-4 w-full max-w-4xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              className="relative my-4 w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -1278,121 +1277,78 @@ export default function AskLipuvkaWeb() {
                 ×
               </button>
 
-              <div className="pr-10">
-                <h2 className="text-3xl font-bold text-green-600">Registrační list hráče</h2>
-                <p className="mt-2 text-gray-600">
-                  Přihláška a souhlasy člena fotbalové přípravky
-                </p>
-              </div>
+              <h2 className="mb-6 text-3xl font-bold text-green-600">
+                Registrační podmínky
+              </h2>
 
-              <div className="mt-6 space-y-5 rounded-2xl bg-gray-50 p-6 text-gray-700">
-                <div>
-                  <div className="font-semibold text-gray-900">Hráč (jméno a datum narození):</div>
-                  <div className="mt-2 h-8 rounded-lg border border-dashed border-gray-300 bg-white" />
-                </div>
-
-                <div>
-                  <div className="font-semibold text-gray-900">
-                    Zákonný zástupce (jméno, telefon, e-mail):
-                  </div>
-                  <div className="mt-2 h-8 rounded-lg border border-dashed border-gray-300 bg-white" />
-                </div>
-
+              <div className="space-y-5 rounded-2xl bg-gray-50 p-6 text-gray-700">
                 <div>
                   <h3 className="font-bold text-green-600">1. Zdravotní stav</h3>
                   <p className="mt-1 leading-7">
-                    Prohlašuji, že dítě je zdravotně způsobilé k pravidelnému sportování.
-                    Zavazuji se dodat kopii lékařského posudku do 14 dnů. Informoval/a jsem
-                    trenéry o případných omezeních (alergie, astma apod.).
+                    Prohlašuji, že dítě je zdravotně způsobilé k pravidelnému sportování a zavazuji se dodat lékařský posudek do 14 dnů.
                   </p>
                 </div>
 
                 <div>
                   <h3 className="font-bold text-green-600">2. První pomoc</h3>
                   <p className="mt-1 leading-7">
-                    Souhlasím, aby v případě úrazu či náhlého onemocnění trenér zajistil první pomoc
-                    a nezbytné lékařské ošetření včetně případného transportu do nemocnice.
+                    Souhlasím, aby trenér v případě úrazu zajistil první pomoc a případné lékařské ošetření.
                   </p>
                 </div>
 
                 <div>
                   <h3 className="font-bold text-green-600">3. Doprava na zápasy</h3>
                   <p className="mt-1 leading-7">
-                    Souhlasím s přepravou dítěte na turnaje a zápasy soukromými vozidly trenérů
-                    nebo jiných pověřených rodičů. Beru na vědomí, že klub neodpovídá za škody
-                    vzniklé při přepravě nad rámec zákonného pojištění vozidla.
+                    Souhlasím s přepravou dítěte na zápasy soukromými vozidly trenérů nebo rodičů.
                   </p>
                 </div>
 
                 <div>
                   <h3 className="font-bold text-green-600">4. GDPR a média</h3>
                   <p className="mt-1 leading-7">
-                    Souhlasím se zpracováním osobních údajů pro potřeby klubu a FAČR.
-                    Dále souhlasím s pořizováním a zveřejňováním fotografií a videozáznamů dítěte
-                    z tréninků a zápasů pro účely propagace klubu, zejména na webu a sociálních sítích.
+                    Souhlasím se zpracováním osobních údajů a zveřejněním fotografií pro potřeby klubu.
                   </p>
                 </div>
 
                 <div>
-                  <h3 className="font-bold text-green-600">5. Povinnosti a pokyny</h3>
+                  <h3 className="font-bold text-green-600">5. Povinnosti</h3>
                   <p className="mt-1 leading-7">
-                    Beru na vědomí, že dítě je povinno dodržovat pokyny trenérů a vnitřní řád klubu.
+                    Dítě je povinno dodržovat pokyny trenérů a pravidla klubu.
                   </p>
                 </div>
 
                 <div>
                   <h3 className="font-bold text-green-600">6. Turnaje a akce</h3>
                   <p className="mt-1 leading-7">
-                    Souhlasím s účastí dítěte na trénincích, turnajích a dalších klubových akcích.
+                    Souhlasím s účastí dítěte na trénincích, zápasech a akcích klubu.
                   </p>
                 </div>
 
                 <div>
                   <h3 className="font-bold text-green-600">7. Odchody</h3>
                   <p className="mt-1 leading-7">
-                    Beru na vědomí, že jsem plně zodpovědný/á za odchod dítěte z tréninku,
-                    zápasu či společné akce po jejich oficiálním skončení.
+                    Jsem zodpovědný za odchod dítěte po skončení akce.
                   </p>
                 </div>
 
                 <div>
                   <h3 className="font-bold text-green-600">8. Odpovědnost trenérů</h3>
                   <p className="mt-1 leading-7">
-                    Trenéři zodpovídají za děti pouze v předem oznámený čas konání fotbalových akcí.
+                    Trenéři zodpovídají za děti pouze v čase tréninků a zápasů.
                   </p>
-                </div>
-
-                <div className="border-t border-gray-200 pt-4">
-                  <p className="font-semibold text-gray-900">
-                    Zákonný zástupce odpovídá za pravdivost uvedených údajů.
-                  </p>
-
-                  <div className="mt-5 grid gap-4 md:grid-cols-2">
-                    <div>
-                      <div className="mb-2 text-sm font-semibold text-gray-700">V</div>
-                      <div className="h-10 rounded-lg border border-dashed border-gray-300 bg-white" />
-                    </div>
-
-                    <div>
-                      <div className="mb-2 text-sm font-semibold text-gray-700">Dne</div>
-                      <div className="h-10 rounded-lg border border-dashed border-gray-300 bg-white" />
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <div className="mb-2 text-sm font-semibold text-gray-700">Podpis rodiče</div>
-                    <div className="h-10 rounded-lg border border-dashed border-gray-300 bg-white" />
-                  </div>
                 </div>
               </div>
 
               <div className="mt-6 flex justify-end">
                 <button
                   type="button"
-                  onClick={() => setIsTermsOpen(false)}
+                  onClick={() => {
+                    setTermsAccepted(true);
+                    setIsTermsOpen(false);
+                  }}
                   className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700"
                 >
-                  Zavřít
+                  Rozumím a souhlasím
                 </button>
               </div>
             </div>
@@ -1484,6 +1440,8 @@ export default function AskLipuvkaWeb() {
                     id="souhlas-podminky"
                     type="checkbox"
                     name="souhlas"
+                    checked={termsAccepted}
+                    onChange={(e) => setTermsAccepted(e.target.checked)}
                     required
                     className="mt-1 h-4 w-4 rounded border-gray-300"
                   />
@@ -1502,7 +1460,10 @@ export default function AskLipuvkaWeb() {
                 </button>
               </div>
 
-              <button type="submit" className="w-full rounded-xl bg-green-600 py-3 font-semibold text-white">
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-green-600 py-3 font-semibold text-white"
+              >
                 Odeslat registraci
               </button>
             </form>
