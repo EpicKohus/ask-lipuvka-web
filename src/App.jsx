@@ -429,22 +429,7 @@ export default function AskLipuvkaWeb() {
           <h1 className="mb-3 text-4xl font-black text-green-700 md:text-6xl">ASK Lipůvka</h1>
           <p className="mb-6 text-gray-700">Oficiální klubový web mládeže ASK Lipůvka</p>
 
-          <div className="flex justify-center gap-4">
-            <a href="#novinky" className="rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white">
-              Novinky
-            </a>
-            <a href="#zapasy" className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white">
-              Zápasy
-            </a>
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-5xl px-6 pt-10">
-        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
-          <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-green-600">Kategorie</div>
-
-          <div className="flex flex-wrap gap-3">
+          <div className="mx-auto flex max-w-2xl flex-wrap justify-center gap-3">
             {categories.map((category) => {
               const isActive = activeCategory === category.id;
 
@@ -456,7 +441,7 @@ export default function AskLipuvkaWeb() {
                   className={`flex items-center gap-2 rounded-xl px-4 py-3 font-semibold transition ${
                     isActive
                       ? 'bg-green-600 text-white'
-                      : 'border border-gray-300 bg-white text-gray-700 hover:border-green-500 hover:text-green-600'
+                      : 'border border-gray-300 bg-white/90 text-gray-700 hover:border-green-500 hover:text-green-600'
                   }`}
                 >
                   <span>{category.label}</span>
