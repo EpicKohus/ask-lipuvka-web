@@ -129,13 +129,14 @@ export default function AskLipuvkaWeb() {
     {
       id: 'zima_26',
       title: 'Zima 2026',
-      cover: '/galerie/zima_26/1.jpg',
+      cover: photos: ['/galerie/zima_26/1.jpg',
 '/galerie/zima_26/2.jpg',
 '/galerie/zima_26/3.jpg',
 '/galerie/zima_26/4.jpg',
 '/galerie/zima_26/5.jpg',
 '/galerie/zima_26/6.jpg',
 '/galerie/zima_26/7.jpg',
+],
       photos: [
         '/galerie/zima_26/1.jpg',
         '/galerie/zima_26/2.jpg',
