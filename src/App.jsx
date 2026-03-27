@@ -1299,11 +1299,11 @@ export default function AskLipuvkaWeb() {
                 className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
               />
               <input
-                type="date"
-                name="datum_narozeni"
-                required
-                className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black"
-              />
+  type="date"
+  name="datum_narozeni"
+  required
+  className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black"
+/>
               <input
                 type="text"
                 name="mesto_narozeni"
