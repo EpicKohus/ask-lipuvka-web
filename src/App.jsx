@@ -4,6 +4,7 @@ export default function AskLipuvkaWeb() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isContactsOpen, setIsContactsOpen] = useState(false);
   const [isArealOpen, setIsArealOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
 
   const today = new Date();
@@ -94,6 +95,7 @@ export default function AskLipuvkaWeb() {
         setIsRegistrationOpen(false);
         setIsContactsOpen(false);
         setIsArealOpen(false);
+        setIsMobileMenuOpen(false);
         setSelectedMatch(null);
       }
     };
@@ -101,6 +103,20 @@ export default function AskLipuvkaWeb() {
     window.addEventListener('keydown', handleEsc);
     return () => window.removeEventListener('keydown', handleEsc);
   }, []);
+
+  useEffect(() => {
+    const shouldLock =
+      isRegistrationOpen ||
+      isContactsOpen ||
+      isArealOpen ||
+      isMobileMenuOpen ||
+      selectedMatch;
+
+    document.body.style.overflow = shouldLock ? 'hidden' : '';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isRegistrationOpen, isContactsOpen, isArealOpen, isMobileMenuOpen, selectedMatch]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -128,6 +144,21 @@ export default function AskLipuvkaWeb() {
       alert('Chyba při odesílání');
       console.error(err);
     }
+  };
+
+  const openRegistration = () => {
+    setIsMobileMenuOpen(false);
+    setIsRegistrationOpen(true);
+  };
+
+  const openContacts = () => {
+    setIsMobileMenuOpen(false);
+    setIsContactsOpen(true);
+  };
+
+  const openAreal = () => {
+    setIsMobileMenuOpen(false);
+    setIsArealOpen(true);
   };
 
   const renderMatchCard = (m, showResult = true) => {
@@ -211,8 +242,96 @@ export default function AskLipuvkaWeb() {
               Kontakty
             </button>
           </nav>
+
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-300 md:hidden"
+            aria-label="Otevřít menu"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6 text-gray-700"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
         </div>
       </header>
+
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        >
+          <div
+            className="ml-auto flex h-full w-[85%] max-w-sm flex-col bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b px-5 py-4">
+              <div className="flex items-center gap-3">
+                <img src="/logo.png" alt="logo" className="h-10 w-10 rounded-full" />
+                <div className="text-lg font-bold text-green-600">ASK Lipůvka</div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-300 text-2xl text-gray-600"
+                aria-label="Zavřít menu"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="flex flex-col">
+              <a
+                href="#novinky"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="border-b px-5 py-4 text-lg font-medium text-gray-800"
+              >
+                Novinky
+              </a>
+
+              <a
+                href="#zapasy"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="border-b px-5 py-4 text-lg font-medium text-gray-800"
+              >
+                Zápasy
+              </a>
+
+              <button
+                type="button"
+                onClick={openAreal}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
+              >
+                Areál
+              </button>
+
+              <button
+                type="button"
+                onClick={openRegistration}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
+              >
+                Registrace hráče
+              </button>
+
+              <button
+                type="button"
+                onClick={openContacts}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
+              >
+                Kontakty
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section id="top" className="relative flex h-[80vh] items-center justify-center text-center">
         <img src="/field.png" alt="hřiště" className="absolute inset-0 h-full w-full object-cover" />
@@ -270,34 +389,6 @@ export default function AskLipuvkaWeb() {
               Zatím tu nejsou žádné odehrané zápasy.
             </div>
           )}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-5xl px-6 pb-14 pt-4 md:hidden">
-        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <button
-              type="button"
-              onClick={() => setIsArealOpen(true)}
-              className="rounded-xl border border-gray-400 px-4 py-3 font-semibold text-gray-700"
-            >
-              Areál
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsRegistrationOpen(true)}
-              className="rounded-xl bg-green-600 px-4 py-3 font-semibold text-white"
-            >
-              Registrace hráče
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsContactsOpen(true)}
-              className="rounded-xl border border-red-500 px-4 py-3 font-semibold text-red-500"
-            >
-              Kontakty
-            </button>
-          </div>
         </div>
       </section>
 
