@@ -212,30 +212,6 @@ export default function AskLipuvkaWeb() {
             </button>
           </nav>
         </div>
-
-        <div className="flex flex-wrap gap-3 border-t px-4 py-3 md:hidden">
-          <button
-            type="button"
-            onClick={() => setIsArealOpen(true)}
-            className="flex-1 rounded-xl border border-gray-400 px-4 py-3 font-semibold text-gray-700"
-          >
-            Areál
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsRegistrationOpen(true)}
-            className="flex-1 rounded-xl bg-green-600 px-4 py-3 font-semibold text-white"
-          >
-            Registrace hráče
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsContactsOpen(true)}
-            className="flex-1 rounded-xl border border-red-500 px-4 py-3 font-semibold text-red-500"
-          >
-            Kontakty
-          </button>
-        </div>
       </header>
 
       <section id="top" className="relative flex h-[80vh] items-center justify-center text-center">
@@ -294,6 +270,34 @@ export default function AskLipuvkaWeb() {
               Zatím tu nejsou žádné odehrané zápasy.
             </div>
           )}
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-6 pb-14 pt-4 md:hidden">
+        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <button
+              type="button"
+              onClick={() => setIsArealOpen(true)}
+              className="rounded-xl border border-gray-400 px-4 py-3 font-semibold text-gray-700"
+            >
+              Areál
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsRegistrationOpen(true)}
+              className="rounded-xl bg-green-600 px-4 py-3 font-semibold text-white"
+            >
+              Registrace hráče
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsContactsOpen(true)}
+              className="rounded-xl border border-red-500 px-4 py-3 font-semibold text-red-500"
+            >
+              Kontakty
+            </button>
+          </div>
         </div>
       </section>
 
