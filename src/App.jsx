@@ -372,10 +372,10 @@ export default function AskLipuvkaWeb() {
                 <div className="absolute left-0 top-full mt-2 min-w-[210px] rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
                   <button
                     type="button"
-                    onClick={() => openClubPopup('filosofie')}
+                    onClick={() => openClubPopup('fylozofie')}
                     className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
                   >
-                    Filosofie
+                    Fylozofie
                   </button>
 
                   <button
@@ -470,10 +470,10 @@ export default function AskLipuvkaWeb() {
 
               <button
                 type="button"
-                onClick={() => openClubPopup('filosofie')}
+                onClick={() => openClubPopup('fylozofie')}
                 className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
-                Filosofie
+                Fylozofie
               </button>
 
               <button
@@ -629,6 +629,44 @@ export default function AskLipuvkaWeb() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-5xl px-6 pb-14">
+        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-8 shadow-sm">
+          <div className="mb-2 flex flex-wrap items-center gap-3">
+            <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+              {activeCategoryLabel}
+            </div>
+            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+              {activeCategoryShortLabel}
+            </span>
+          </div>
+
+          <h2 className="mb-4 text-3xl font-bold text-green-600">Kdy trénujeme</h2>
+
+          <div className="rounded-2xl bg-white p-6 shadow-sm text-lg">
+            {activeCategory === 'predpripravka' && (
+              <>
+                <div className="mb-2 font-bold text-gray-900">Předpřípravka (U7)</div>
+                <div className="text-gray-700">Čtvrtek 17:00–18:00</div>
+              </>
+            )}
+
+            {activeCategory === 'mladsi-pripravka' && (
+              <>
+                <div className="mb-2 font-bold text-gray-900">Mladší přípravka (U9)</div>
+                <div className="text-gray-700">Úterý a čtvrtek 16:30–18:00</div>
+              </>
+            )}
+
+            {activeCategory === 'starsi-pripravka' && (
+              <>
+                <div className="mb-2 font-bold text-gray-900">Starší přípravka (U11)</div>
+                <div className="text-gray-700">Středa 17:00–18:00</div>
+              </>
+            )}
+          </div>
+        </div>
+      </section>
+
       {clubPopupContent && (
         <div
           className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
@@ -647,10 +685,10 @@ export default function AskLipuvkaWeb() {
                 ×
               </button>
 
-              {clubPopupContent === 'filosofie' && (
+              {clubPopupContent === 'fylozofie' && (
                 <>
                   <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
-                    <h2 className="text-3xl font-bold text-green-600">Filosofie</h2>
+                    <h2 className="text-3xl font-bold text-green-600">Fylozofie</h2>
                     <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
                       {activeCategoryShortLabel}
                     </span>
@@ -1041,7 +1079,29 @@ export default function AskLipuvkaWeb() {
         </div>
       )}
 
-      <footer className="py-6 text-center text-gray-500">© 2026 ASK Lipůvka</footer>
+      <footer className="py-6 text-center text-gray-500">
+        <div className="flex items-center justify-center gap-4">
+          <span>© 2026 ASK Lipůvka</span>
+
+          <a
+            href="https://www.facebook.com/people/ASK-Lip%C5%AFvka/100093969443650/"
+            target="_blank"
+            rel="noreferrer"
+            className="text-gray-600 transition hover:text-green-600"
+            aria-label="Facebook ASK Lipůvka"
+            title="Facebook ASK Lipůvka"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-6 w-6"
+            >
+              <path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.88 3.77-3.88 1.09 0 2.23.19 2.23.19v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.89h-2.33v6.99A10 10 0 0 0 22 12Z" />
+            </svg>
+          </a>
+        </div>
+      </footer>
     </div>
   );
 }
