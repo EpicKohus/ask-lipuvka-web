@@ -126,33 +126,30 @@ export default function AskLipuvkaWeb() {
   };
 
   const galleryAlbums = [
-    {
-      id: 'zima_26',
-      title: 'Zima 2026',
-      cover: photos: ['/galerie/zima_26/1.jpg',
-'/galerie/zima_26/2.jpg',
-'/galerie/zima_26/3.jpg',
-'/galerie/zima_26/4.jpg',
-'/galerie/zima_26/5.jpg',
-'/galerie/zima_26/6.jpg',
-'/galerie/zima_26/7.jpg',
-],
-      photos: [
-        '/galerie/zima_26/1.jpg',
-        '/galerie/zima_26/2.jpg',
-      ],
-    },
-    {
-      id: '1zapas',
-      title: '1. kolo',
-      cover: '/galerie/1zapas/1.jpg',
-      photos: [
-        '/galerie/1zapas/1.jpg',
-        '/galerie/1zapas/2.jpg',
-      ],
-    },
-  ];
-
+  {
+    id: 'zima_26',
+    title: 'Zima 2026',
+    cover: '/galerie/zima_26/1.jpg',
+    photos: [
+      '/galerie/zima_26/1.jpg',
+      '/galerie/zima_26/2.jpg',
+      '/galerie/zima_26/3.jpg',
+      '/galerie/zima_26/4.jpg',
+      '/galerie/zima_26/5.jpg',
+      '/galerie/zima_26/6.jpg',
+      '/galerie/zima_26/7.jpg',
+    ],
+  },
+  {
+    id: '1zapas',
+    title: '1. kolo',
+    cover: '/galerie/1zapas/1.jpg',
+    photos: [
+      '/galerie/1zapas/1.jpg',
+      '/galerie/1zapas/2.jpg',
+    ],
+  },
+];
   const matches = [
     {
       category: 'mladsi-pripravka',
