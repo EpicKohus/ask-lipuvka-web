@@ -65,7 +65,7 @@ export default function AskLipuvkaWeb() {
       people: [
         { name: 'Zdenko Adámek', phone: '727836386', phoneLabel: '727 836 386' },
         { name: 'Dalibor Hudec', phone: '737337966', phoneLabel: '737 337 966' },
-        { name: 'Honza Večeřa', phone: '733165250', phoneLabel: '733 165 250' },
+        { name: 'Jan Večeřa', phone: '733165250', phoneLabel: '733 165 250' },
         { name: 'Radek Slavík', phone: '776423813', phoneLabel: '776 423 813' },
       ],
     },
