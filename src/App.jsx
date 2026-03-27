@@ -1299,10 +1299,11 @@ export default function AskLipuvkaWeb() {
                 className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
               />
               <input
-  type="date"
+  type="text"
   name="datum_narozeni"
+  placeholder="Datum narození (např. 12.3.2018)"
   required
-  className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black"
+  className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
 />
               <input
                 type="text"
