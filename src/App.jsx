@@ -2,11 +2,10 @@ import { useEffect, useMemo, useState } from 'react';
 
 export default function AskLipuvkaWeb() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
-  const [isContactsOpen, setIsContactsOpen] = useState(false);
-  const [isArealOpen, setIsArealOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [activeCategory, setActiveCategory] = useState('mladsi-pripravka');
+  const [activeClubTab, setActiveClubTab] = useState('filosofie');
 
   const today = new Date();
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -15,6 +14,13 @@ export default function AskLipuvkaWeb() {
     { id: 'predpripravka', label: 'Předpřípravka', shortLabel: 'U7' },
     { id: 'mladsi-pripravka', label: 'Mladší přípravka', shortLabel: 'U9' },
     { id: 'starsi-pripravka', label: 'Starší přípravka', shortLabel: 'U11' },
+  ];
+
+  const clubTabs = [
+    { id: 'filosofie', label: 'Filosofie' },
+    { id: 'rodice', label: 'Pro rodiče' },
+    { id: 'kontakty', label: 'Kontakty' },
+    { id: 'areal', label: 'Areál' },
   ];
 
   const newsItems = [
@@ -203,8 +209,6 @@ export default function AskLipuvkaWeb() {
     const handleEsc = (event) => {
       if (event.key === 'Escape') {
         setIsRegistrationOpen(false);
-        setIsContactsOpen(false);
-        setIsArealOpen(false);
         setIsMobileMenuOpen(false);
         setSelectedMatch(null);
       }
@@ -215,19 +219,13 @@ export default function AskLipuvkaWeb() {
   }, []);
 
   useEffect(() => {
-    const shouldLock =
-      isRegistrationOpen ||
-      isContactsOpen ||
-      isArealOpen ||
-      isMobileMenuOpen ||
-      selectedMatch;
-
+    const shouldLock = isRegistrationOpen || isMobileMenuOpen || selectedMatch;
     document.body.style.overflow = shouldLock ? 'hidden' : '';
 
     return () => {
       document.body.style.overflow = '';
     };
-  }, [isRegistrationOpen, isContactsOpen, isArealOpen, isMobileMenuOpen, selectedMatch]);
+  }, [isRegistrationOpen, isMobileMenuOpen, selectedMatch]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -260,16 +258,6 @@ export default function AskLipuvkaWeb() {
   const openRegistration = () => {
     setIsMobileMenuOpen(false);
     setIsRegistrationOpen(true);
-  };
-
-  const openContacts = () => {
-    setIsMobileMenuOpen(false);
-    setIsContactsOpen(true);
-  };
-
-  const openAreal = () => {
-    setIsMobileMenuOpen(false);
-    setIsArealOpen(true);
   };
 
   const renderMatchCard = (m, showResult = true) => {
@@ -323,6 +311,10 @@ export default function AskLipuvkaWeb() {
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <style>{`
+        html {
+          scroll-behavior: smooth;
+        }
+
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -344,14 +336,9 @@ export default function AskLipuvkaWeb() {
           <nav className="hidden gap-6 text-sm md:flex">
             <a href="#novinky" className="hover:text-green-600">Novinky</a>
             <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
-            <button type="button" onClick={() => setIsArealOpen(true)} className="hover:text-green-600">
-              Areál
-            </button>
+            <a href="#klub" className="hover:text-green-600">Klub</a>
             <button type="button" onClick={() => setIsRegistrationOpen(true)} className="hover:text-green-600">
               Registrace hráče
-            </button>
-            <button type="button" onClick={() => setIsContactsOpen(true)} className="hover:text-green-600">
-              Kontakty
             </button>
           </nav>
 
@@ -417,13 +404,13 @@ export default function AskLipuvkaWeb() {
                 Zápasy
               </a>
 
-              <button
-                type="button"
-                onClick={openAreal}
+              <a
+                href="#klub"
+                onClick={() => setIsMobileMenuOpen(false)}
                 className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
-                Areál
-              </button>
+                Klub
+              </a>
 
               <button
                 type="button"
@@ -431,14 +418,6 @@ export default function AskLipuvkaWeb() {
                 className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
                 Registrace hráče
-              </button>
-
-              <button
-                type="button"
-                onClick={openContacts}
-                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
-              >
-                Kontakty
               </button>
             </div>
           </div>
@@ -497,15 +476,17 @@ export default function AskLipuvkaWeb() {
           <h2 className="mb-4 text-3xl font-bold text-green-600">Novinky</h2>
 
           {filteredNews.length > 0 ? (
-            filteredNews.map((item) => (
-              <div key={`${item.category}-${item.title}`} className="rounded-2xl bg-white p-5 shadow-sm">
-                <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">
-                  {item.date}
+            <div className="space-y-4">
+              {filteredNews.map((item) => (
+                <div key={`${item.category}-${item.title}`} className="rounded-2xl bg-white p-5 shadow-sm">
+                  <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">
+                    {item.date}
+                  </div>
+                  <h3 className="mb-2 text-xl font-bold text-gray-900">{item.title}</h3>
+                  <p className="text-gray-700">{item.text}</p>
                 </div>
-                <h3 className="mb-2 text-xl font-bold text-gray-900">{item.title}</h3>
-                <p className="text-gray-700">{item.text}</p>
-              </div>
-            ))
+              ))}
+            </div>
           ) : (
             <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
               Pro tuto kategorii zatím nejsou doplněné žádné novinky.
@@ -562,79 +543,213 @@ export default function AskLipuvkaWeb() {
         </div>
       </section>
 
-      {isArealOpen && (
-        <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
-          onClick={() => setIsArealOpen(false)}
-        >
-          <div className="flex min-h-full items-start justify-center">
-            <div
-              className="relative my-4 w-full max-w-5xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                type="button"
-                onClick={() => setIsArealOpen(false)}
-                className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-black"
-              >
-                ×
-              </button>
+      <section id="klub" className="mx-auto max-w-5xl px-6 py-14">
+        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-8 shadow-sm">
+          <div className="mb-2 flex flex-wrap items-center gap-3">
+            <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+              {activeCategoryLabel}
+            </div>
+            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+              {activeCategoryShortLabel}
+            </span>
+          </div>
 
-              <h2 className="mb-6 pr-10 text-3xl font-bold text-green-600">Fotbalový areál ASK Lipůvka</h2>
+          <h2 className="mb-6 text-3xl font-bold text-green-600">Klub</h2>
 
-              <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-                <div>
-                  <p className="mb-4 text-lg font-semibold text-gray-900">Kde nás najdete</p>
-                  <p className="mb-6 text-gray-700">
-                    Lipůvka 390
-                    <br />
-                    679 22 Lipůvka
-                  </p>
+          <div className="mb-8 flex flex-wrap gap-3">
+            {clubTabs.map((tab) => {
+              const isActive = activeClubTab === tab.id;
 
-                  <div className="mb-6 flex flex-wrap gap-4">
-                    <a
-                      href="https://mapy.cz/zakladni?source=addr&id=10845160&x=16.5539949&y=49.3398458&z=17"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white"
-                    >
-                      Otevřít v Mapy.cz
-                    </a>
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveClubTab(tab.id)}
+                  className={`rounded-xl px-4 py-3 font-semibold transition ${
+                    isActive
+                      ? 'bg-green-600 text-white'
+                      : 'border border-gray-300 bg-white text-gray-700 hover:border-green-500 hover:text-green-600'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
 
-                    <a
-                      href="https://www.google.com/maps/search/?api=1&query=Lipuvka+390+679+22+Lipuvka"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="rounded-xl border border-gray-400 px-6 py-3 font-semibold text-gray-700"
-                    >
-                      Navigovat (Google)
-                    </a>
-                  </div>
+          {activeClubTab === 'filosofie' && (
+            <div className="rounded-2xl bg-white p-6 shadow-sm">
+              <h3 className="mb-4 text-2xl font-bold text-gray-900">Naše filosofie</h3>
+              <div className="space-y-4 leading-7 text-gray-700">
+                <p>
+                  V ASK Lipůvka vedeme děti k radosti ze sportu, pohybu a hry v kolektivu.
+                  Důraz klademe především na zábavu, všestranný rozvoj, fair play a pozitivní
+                  vztah ke sportu.
+                </p>
+                <p>
+                  Výsledky nejsou v mládežnickém fotbale to nejdůležitější — mnohem více nám
+                  záleží na tom, aby děti sport bavil, rozvíjely své dovednosti a cítily se v
+                  týmu dobře.
+                </p>
+                <p>
+                  Chceme vytvářet prostředí, ve kterém se děti nebojí dělat chyby, učí se
+                  spolupracovat a postupně si budují zdravé sebevědomí.
+                </p>
+              </div>
+            </div>
+          )}
 
-                  <div className="rounded-2xl bg-gray-50 p-5">
-                    <h3 className="mb-2 text-lg font-bold text-gray-900">Praktické info</h3>
-                    <ul className="space-y-2 text-gray-700">
-                      <li>• Příjezd je možný přímo k areálu.</li>
-                      <li>• Parkování je možné v okolí hřiště.</li>
-                      <li>• V areálu probíhají nejen zápasy mládeže, ale i další klubové akce.</li>
-                    </ul>
-                  </div>
+          {activeClubTab === 'rodice' && (
+            <div className="space-y-5">
+              <div className="rounded-2xl bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-2xl font-bold text-gray-900">Pro rodiče</h3>
+                <p className="leading-7 text-gray-700">
+                  Vážení rodiče, děkujeme vám za důvěru, kterou vkládáte do našeho klubu.
+                  Společně chceme vytvořit prostředí, ve kterém se děti cítí dobře, mají
+                  radost ze sportu a přirozeně se rozvíjejí.
+                </p>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <div className="rounded-2xl bg-white p-6 shadow-sm">
+                  <h4 className="mb-3 text-xl font-bold text-green-600">Na čem si zakládáme</h4>
+                  <ul className="space-y-2 text-gray-700">
+                    <li>• radost ze hry a pohybu</li>
+                    <li>• všestranný sportovní rozvoj</li>
+                    <li>• respekt k trenérům, spoluhráčům i soupeřům</li>
+                    <li>• fair play a pozitivní přístup</li>
+                  </ul>
                 </div>
 
-                <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
-                  <iframe
-                    title="Mapa areálu ASK Lipůvka"
-                    src="https://www.google.com/maps?q=Lipuvka%20390%20679%2022%20Lipuvka&z=16&output=embed"
-                    className="h-[320px] w-full border-0"
-                    loading="lazy"
-                    referrerPolicy="no-referrer-when-downgrade"
-                  />
+                <div className="rounded-2xl bg-white p-6 shadow-sm">
+                  <h4 className="mb-3 text-xl font-bold text-green-600">Co od vás potřebujeme</h4>
+                  <ul className="space-y-2 text-gray-700">
+                    <li>• podporujte děti bez zbytečného tlaku na výkon</li>
+                    <li>• respektujte trenéry a jejich rozhodnutí</li>
+                    <li>• veďte děti k samostatnosti a zodpovědnosti</li>
+                    <li>• pomáhejte vytvářet pozitivní atmosféru na hřišti</li>
+                  </ul>
+                </div>
+
+                <div className="rounded-2xl bg-white p-6 shadow-sm">
+                  <h4 className="mb-3 text-xl font-bold text-green-600">Co nabízíme</h4>
+                  <ul className="space-y-2 text-gray-700">
+                    <li>• přátelské a bezpečné prostředí</li>
+                    <li>• individuální přístup ke každému dítěti</li>
+                    <li>• kvalifikované trenéry</li>
+                    <li>• smysluplné využití volného času</li>
+                  </ul>
+                </div>
+
+                <div className="rounded-2xl bg-white p-6 shadow-sm">
+                  <h4 className="mb-3 text-xl font-bold text-green-600">Důležité</h4>
+                  <p className="leading-7 text-gray-700">
+                    Každé dítě se vyvíjí jiným tempem. Naším cílem není pouze vyhrávat, ale
+                    především vychovat děti, které mají vztah ke sportu, pohybu a týmové
+                    spolupráci.
+                  </p>
                 </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {activeClubTab === 'kontakty' && (
+            <div className="space-y-8">
+              {filteredContacts.length > 0 ? (
+                filteredContacts.map((group) => (
+                  <div key={`${group.category}-${group.section}`} className="rounded-2xl bg-white p-6 shadow-sm">
+                    <h3 className="mb-4 text-2xl font-bold text-gray-900">{group.section}</h3>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {group.people.map((person) => (
+                        <div key={`${group.section}-${person.name}`} className="rounded-xl bg-gray-50 p-4">
+                          <div className="mb-2 text-lg font-bold text-gray-900">{person.name}</div>
+
+                          {person.phone && (
+                            <a
+                              href={`tel:${person.phone}`}
+                              className="block font-semibold text-green-600 hover:underline"
+                            >
+                              {person.phoneLabel}
+                            </a>
+                          )}
+
+                          {person.email && (
+                            <a
+                              href={`mailto:${person.email}`}
+                              className="mt-1 block font-semibold text-green-600 hover:underline"
+                            >
+                              {person.email}
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl bg-white p-6 text-gray-600 shadow-sm">
+                  Pro tuto kategorii zatím nejsou doplněné kontakty.
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeClubTab === 'areal' && (
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+              <div className="rounded-2xl bg-white p-6 shadow-sm">
+                <h3 className="mb-4 text-2xl font-bold text-gray-900">Fotbalový areál ASK Lipůvka</h3>
+
+                <p className="mb-3 text-lg font-semibold text-gray-900">Kde nás najdete</p>
+                <p className="mb-6 text-gray-700">
+                  Lipůvka 390
+                  <br />
+                  679 22 Lipůvka
+                </p>
+
+                <div className="mb-6 flex flex-wrap gap-4">
+                  <a
+                    href="https://mapy.cz/zakladni?source=addr&id=10845160&x=16.5539949&y=49.3398458&z=17"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white"
+                  >
+                    Otevřít v Mapy.cz
+                  </a>
+
+                  <a
+                    href="https://www.google.com/maps/search/?api=1&query=Lipuvka+390+679+22+Lipuvka"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-xl border border-gray-400 px-6 py-3 font-semibold text-gray-700"
+                  >
+                    Navigovat (Google)
+                  </a>
+                </div>
+
+                <div className="rounded-2xl bg-gray-50 p-5">
+                  <h4 className="mb-2 text-lg font-bold text-gray-900">Praktické info</h4>
+                  <ul className="space-y-2 text-gray-700">
+                    <li>• Příjezd je možný přímo k areálu.</li>
+                    <li>• Parkování je možné v okolí hřiště.</li>
+                    <li>• V areálu probíhají nejen zápasy mládeže, ale i další klubové akce.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
+                <iframe
+                  title="Mapa areálu ASK Lipůvka"
+                  src="https://www.google.com/maps?q=Lipuvka%20390%20679%2022%20Lipuvka&z=16&output=embed"
+                  className="h-[360px] w-full border-0 lg:h-full"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </section>
 
       {isRegistrationOpen && (
         <div
@@ -717,79 +832,6 @@ export default function AskLipuvkaWeb() {
                 Odeslat registraci
               </button>
             </form>
-          </div>
-        </div>
-      )}
-
-      {isContactsOpen && (
-        <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
-          onClick={() => setIsContactsOpen(false)}
-        >
-          <div className="flex min-h-full items-start justify-center">
-            <div
-              className="relative my-4 flex h-[85vh] w-full max-w-4xl flex-col rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                type="button"
-                onClick={() => setIsContactsOpen(false)}
-                className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-black"
-              >
-                ×
-              </button>
-
-              <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
-                <h2 className="text-3xl font-bold text-green-600">Kontakty</h2>
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
-                  {activeCategoryShortLabel}
-                </span>
-              </div>
-
-              <div className="mb-6 text-sm font-semibold uppercase tracking-wide text-green-600">
-                {activeCategoryLabel}
-              </div>
-
-              <div className="flex-1 space-y-8 overflow-y-scroll pr-2">
-                {filteredContacts.length > 0 ? (
-                  filteredContacts.map((group) => (
-                    <div key={`${group.category}-${group.section}`}>
-                      <h3 className="mb-3 text-xl font-bold">{group.section}</h3>
-
-                      <div className="grid gap-4 md:grid-cols-2">
-                        {group.people.map((person) => (
-                          <div key={person.name} className="rounded-xl bg-gray-100 p-4">
-                            <div className="font-bold">{person.name}</div>
-
-                            {person.phone && (
-                              <a
-                                href={`tel:${person.phone}`}
-                                className="block font-semibold text-green-600 hover:underline"
-                              >
-                                {person.phoneLabel}
-                              </a>
-                            )}
-
-                            {person.email && (
-                              <a
-                                href={`mailto:${person.email}`}
-                                className="font-semibold text-green-600 hover:underline"
-                              >
-                                {person.email}
-                              </a>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
-                    Pro tuto kategorii zatím nejsou doplněné kontakty.
-                  </div>
-                )}
-              </div>
-            </div>
           </div>
         </div>
       )}
