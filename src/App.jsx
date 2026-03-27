@@ -12,8 +12,8 @@ export default function AskLipuvkaWeb() {
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
   const categories = [
-    { id: 'mladsi-pripravka', label: 'Mladší přípravka', shortLabel: 'U9' },
     { id: 'predpripravka', label: 'Předpřípravka', shortLabel: 'U7' },
+    { id: 'mladsi-pripravka', label: 'Mladší přípravka', shortLabel: 'U9' },
     { id: 'starsi-pripravka', label: 'Starší přípravka', shortLabel: 'U11' },
   ];
 
@@ -26,27 +26,19 @@ export default function AskLipuvkaWeb() {
     },
     {
       category: 'predpripravka',
-      title: 'Předpřípravka se připravuje na další sezonu',
-      text: 'Kategorie je na webu připravená. Zápasy doplníme, jakmile bude rozlosování na příští ročník.',
+      title: 'Předpřípravka je připravena na další ročník',
+      text: 'Kategorie je na webu nachystaná. Jakmile bude známý program a další informace, snadno doplníme novinky i zápasy.',
       date: '1. 4. 2026',
     },
     {
       category: 'starsi-pripravka',
       title: 'Starší přípravka je připravena do budoucna',
-      text: 'Kategorie je založená dopředu, aby bylo možné snadno přidat zápasy, novinky i další informace pro příští sezonu.',
+      text: 'Kategorie je založená dopředu, aby bylo možné snadno přidat zápasy, kontakty i další novinky pro příští sezonu.',
       date: '1. 4. 2026',
     },
   ];
 
   const contacts = [
-    {
-      category: 'predpripravka',
-      section: 'Předpřípravka',
-      people: [
-        { name: 'Jan Gebauer', phone: '737146918', phoneLabel: '737 146 918' },
-        { name: 'Jiří Filipčík', phone: '737235850', phoneLabel: '737 235 850' },
-      ],
-    },
     {
       category: 'mladsi-pripravka',
       section: 'Vedoucí mládeže',
@@ -57,6 +49,14 @@ export default function AskLipuvkaWeb() {
           phoneLabel: '606 148 368',
           email: 'radek.manek@email.cz',
         },
+      ],
+    },
+    {
+      category: 'predpripravka',
+      section: 'Předpřípravka',
+      people: [
+        { name: 'Jan Gebauer', phone: '737146918', phoneLabel: '737 146 918' },
+        { name: 'Jiří Filipčík', phone: '737235850', phoneLabel: '737 235 850' },
       ],
     },
     {
@@ -171,6 +171,10 @@ export default function AskLipuvkaWeb() {
     .filter((m) => parseMatchDate(m.date) < todayStart)
     .sort((a, b) => parseMatchDate(b.date) - parseMatchDate(a.date));
 
+  const activeCategoryData = categories.find((category) => category.id === activeCategory);
+  const activeCategoryLabel = activeCategoryData?.label || '';
+  const activeCategoryShortLabel = activeCategoryData?.shortLabel || '';
+
   useEffect(() => {
     const handleEsc = (event) => {
       if (event.key === 'Escape') {
@@ -195,6 +199,7 @@ export default function AskLipuvkaWeb() {
       selectedMatch;
 
     document.body.style.overflow = shouldLock ? 'hidden' : '';
+
     return () => {
       document.body.style.overflow = '';
     };
@@ -265,6 +270,7 @@ export default function AskLipuvkaWeb() {
                 </span>
               )}
             </div>
+
             <div className="mt-1 text-sm text-gray-500">
               {m.date} • {m.time} • {m.home ? 'Domácí zápas' : 'Venkovní zápas'}
             </div>
@@ -289,10 +295,6 @@ export default function AskLipuvkaWeb() {
       </button>
     );
   };
-
-  const activeCategoryData = categories.find((category) => category.id === activeCategory);
-  const activeCategoryLabel = activeCategoryData?.label || '';
-  const activeCategoryShortLabel = activeCategoryData?.shortLabel || '';
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -378,7 +380,7 @@ export default function AskLipuvkaWeb() {
               <a
                 href="#novinky"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="border-b px-5 py-4 text-lg font-medium text-gray-800"
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
                 Novinky
               </a>
@@ -386,7 +388,7 @@ export default function AskLipuvkaWeb() {
               <a
                 href="#zapasy"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="border-b px-5 py-4 text-lg font-medium text-gray-800"
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
                 Zápasy
               </a>
@@ -441,6 +443,7 @@ export default function AskLipuvkaWeb() {
       <section className="mx-auto max-w-5xl px-6 pt-10">
         <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
           <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-green-600">Kategorie</div>
+
           <div className="flex flex-wrap gap-3">
             {categories.map((category) => {
               const isActive = activeCategory === category.id;
@@ -487,7 +490,9 @@ export default function AskLipuvkaWeb() {
           {filteredNews.length > 0 ? (
             filteredNews.map((item) => (
               <div key={`${item.category}-${item.title}`} className="rounded-2xl bg-white p-5 shadow-sm">
-                <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">{item.date}</div>
+                <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">
+                  {item.date}
+                </div>
                 <h3 className="mb-2 text-xl font-bold text-gray-900">{item.title}</h3>
                 <p className="text-gray-700">{item.text}</p>
               </div>
@@ -536,6 +541,7 @@ export default function AskLipuvkaWeb() {
         </div>
 
         <h2 className="mb-6 text-3xl font-bold text-green-600">Odehrané zápasy</h2>
+
         <div className="space-y-4">
           {playedMatches.length > 0 ? (
             playedMatches.map((m) => renderMatchCard(m, true))
@@ -740,10 +746,12 @@ export default function AskLipuvkaWeb() {
                   filteredContacts.map((group) => (
                     <div key={`${group.category}-${group.section}`}>
                       <h3 className="mb-3 text-xl font-bold">{group.section}</h3>
+
                       <div className="grid gap-4 md:grid-cols-2">
                         {group.people.map((person) => (
                           <div key={person.name} className="rounded-xl bg-gray-100 p-4">
                             <div className="font-bold">{person.name}</div>
+
                             {person.phone && (
                               <a
                                 href={`tel:${person.phone}`}
@@ -752,6 +760,7 @@ export default function AskLipuvkaWeb() {
                                 {person.phoneLabel}
                               </a>
                             )}
+
                             {person.email && (
                               <a
                                 href={`mailto:${person.email}`}
@@ -804,9 +813,11 @@ export default function AskLipuvkaWeb() {
               </div>
 
               <h2 className="mt-2 text-3xl font-bold text-gray-900">ASK Lipůvka vs. {selectedMatch.opponent}</h2>
+
               <div className="mt-2 text-gray-600">
                 {selectedMatch.date} • {selectedMatch.time} • {selectedMatch.home ? 'Domácí zápas' : 'Venkovní zápas'}
               </div>
+
               {parseMatchDate(selectedMatch.date) < todayStart && (
                 <div className="mt-3 inline-flex rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
                   Výsledek: {selectedMatch.result}
@@ -817,6 +828,7 @@ export default function AskLipuvkaWeb() {
             <div className="grid gap-8 xl:grid-cols-2">
               <div>
                 <h3 className="mb-3 text-xl font-bold text-green-600">Fotky</h3>
+
                 {selectedMatch.photos.length > 0 ? (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {selectedMatch.photos.map((photo, index) => (
@@ -835,6 +847,7 @@ export default function AskLipuvkaWeb() {
 
               <div>
                 <h3 className="mb-3 text-xl font-bold text-green-600">Článek k zápasu</h3>
+
                 <div className="rounded-2xl bg-gray-50 p-5">
                   {parseMatchDate(selectedMatch.date) < todayStart ? (
                     <>
