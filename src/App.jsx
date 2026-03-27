@@ -47,7 +47,6 @@ export default function AskLipuvkaWeb() {
         name: 'Roman Skovajsa',
         role: 'Předseda mládeže',
         photo: '/treneri/skovajsa.jpg',
-        bio: 'Zodpovídá za chod mládežnické sekce a její celkový rozvoj.',
       },
       {
         name: 'Radek Mánek',
@@ -57,57 +56,63 @@ export default function AskLipuvkaWeb() {
         phoneLabel: '606 148 368',
         email: 'radek.manek@email.cz',
         photo: '/treneri/manek.jpg',
-        bio: 'Dlouhodobě se věnuje práci s dětmi a klade důraz na rozvoj, radost ze hry a pozitivní prostředí.',
       },
     ],
     trainers: [
       {
         name: 'Jan Gebauer',
+        role: 'Trenér',
+        licence: 'Grassroots',
         phone: '737146918',
         phoneLabel: '737 146 918',
-        licence: 'Grassroots',
         photo: '/treneri/gebauer.jpg',
       },
       {
         name: 'Jiří Filipčík',
+        role: 'Trenér',
+        licence: 'Grassroots',
         phone: '737235850',
         phoneLabel: '737 235 850',
-        licence: 'Grassroots',
         photo: '/treneri/filipcik.jpg',
       },
       {
         name: 'Zdenko Adámek',
+        role: 'Trenér',
+        licence: 'Grassroots',
         phone: '727836386',
         phoneLabel: '727 836 386',
-        licence: 'Grassroots',
         photo: '/treneri/adamek.jpg',
       },
       {
         name: 'Dalibor Hudec',
+        role: 'Trenér',
+        licence: 'Grassroots',
         phone: '737337966',
         phoneLabel: '737 337 966',
-        licence: 'Grassroots',
         photo: '/treneri/hudec.jpg',
       },
       {
         name: 'Jan Večeřa',
+        role: 'Trenér',
+        licence: 'Grassroots',
         phone: '733165250',
         phoneLabel: '733 165 250',
-        licence: 'Grassroots',
         photo: '/treneri/vecera.jpg',
       },
       {
         name: 'Radek Slavík',
+        role: 'Trenér',
+        licence: 'Grassroots',
         phone: '776423813',
         phoneLabel: '776 423 813',
-        licence: 'Grassroots',
         photo: '/treneri/slavik.jpg',
       },
       {
         name: 'Libor Vinkler',
+        role: 'Trenér',
+        licence: 'Grassroots',
         phone: '736205150',
         phoneLabel: '736 205 150',
-        licence: 'Grassroots',
         photo: '/treneri/vinkler.jpg',
       },
     ],
@@ -1034,23 +1039,21 @@ export default function AskLipuvkaWeb() {
 
               <div className="mb-8 grid gap-6 md:grid-cols-2">
                 {team.management.map((person) => (
-                  <div key={person.name} className="rounded-2xl bg-gray-100 p-5">
+                  <div key={person.name} className="rounded-2xl bg-gray-100 p-5 text-center">
                     <img
                       src={person.photo}
                       alt={person.name}
-                      className="mb-4 h-40 w-full rounded-xl object-cover"
+                      className="mx-auto mb-4 h-24 w-24 rounded-full object-cover"
                     />
 
                     <div className="text-lg font-bold">{person.name}</div>
-                    <div className="font-semibold text-green-600">{person.role}</div>
+                    <div className="text-sm text-gray-600">{person.role}</div>
 
                     {person.licence && (
                       <div className="mt-2 inline-block rounded-full bg-green-600 px-3 py-1 text-xs font-bold text-white">
                         {person.licence}
                       </div>
                     )}
-
-                    <p className="mt-3 text-gray-700">{person.bio}</p>
 
                     {person.phone && (
                       <a
@@ -1064,7 +1067,7 @@ export default function AskLipuvkaWeb() {
                     {person.email && (
                       <a
                         href={`mailto:${person.email}`}
-                        className="block font-semibold text-green-600 hover:underline"
+                        className="block text-green-600 hover:underline"
                       >
                         {person.email}
                       </a>
@@ -1075,31 +1078,32 @@ export default function AskLipuvkaWeb() {
 
               <h3 className="mb-4 text-xl font-bold">Trenéři</h3>
 
-              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {team.trainers.map((person) => (
-                  <div key={person.name} className="rounded-2xl bg-gray-100 p-5">
+                  <div key={person.name} className="rounded-2xl bg-gray-100 p-5 text-center">
                     <img
                       src={person.photo}
                       alt={person.name}
-                      className="mb-4 h-40 w-full rounded-xl object-cover"
+                      className="mx-auto mb-4 h-24 w-24 rounded-full object-cover"
                     />
 
                     <div className="text-lg font-bold">{person.name}</div>
+                    <div className="text-sm text-gray-600">{person.role}</div>
 
-                    <div className="mt-2 inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                      {person.licence}
-                    </div>
+                    {person.licence && (
+                      <div className="mt-2 inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
+                        {person.licence}
+                      </div>
+                    )}
 
-                    <p className="mt-3 text-gray-700">
-                      Trenér mládeže ASK Lipůvka. Zaměřuje se na rozvoj dovedností a radost ze sportu.
-                    </p>
-
-                    <a
-                      href={`tel:${person.phone}`}
-                      className="mt-3 block font-semibold text-green-600 hover:underline"
-                    >
-                      {person.phoneLabel}
-                    </a>
+                    {person.phone && (
+                      <a
+                        href={`tel:${person.phone}`}
+                        className="mt-2 block font-semibold text-green-600 hover:underline"
+                      >
+                        {person.phoneLabel}
+                      </a>
+                    )}
                   </div>
                 ))}
               </div>
