@@ -18,8 +18,10 @@ export default function AskLipuvkaWeb() {
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
 
-  const today = new Date();
-  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const todayStart = useMemo(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  }, []);
 
   const categories = [
     { id: 'predpripravka', label: 'Předpřípravka', shortLabel: 'U7' },
@@ -67,6 +69,7 @@ export default function AskLipuvkaWeb() {
     ],
     trainers: [
       {
+        category: 'predpripravka',
         name: 'Jan Gebauer',
         role: 'Trenér',
         licence: 'Grassroots',
@@ -75,6 +78,7 @@ export default function AskLipuvkaWeb() {
         photo: '/treneri/gebauer.jpg',
       },
       {
+        category: 'predpripravka',
         name: 'Jiří Filipčík',
         role: 'Trenér',
         licence: 'Grassroots',
@@ -83,6 +87,7 @@ export default function AskLipuvkaWeb() {
         photo: '/treneri/filipcik.jpg',
       },
       {
+        category: 'mladsi-pripravka',
         name: 'Zdenko Adámek',
         role: 'Trenér',
         licence: 'Grassroots',
@@ -91,6 +96,7 @@ export default function AskLipuvkaWeb() {
         photo: '/treneri/adamek.jpg',
       },
       {
+        category: 'mladsi-pripravka',
         name: 'Dalibor Hudec',
         role: 'Trenér',
         licence: 'Grassroots',
@@ -99,6 +105,7 @@ export default function AskLipuvkaWeb() {
         photo: '/treneri/hudec.jpg',
       },
       {
+        category: 'mladsi-pripravka',
         name: 'Jan Večeřa',
         role: 'Trenér',
         licence: 'Grassroots',
@@ -107,6 +114,7 @@ export default function AskLipuvkaWeb() {
         photo: '/treneri/vecera.jpg',
       },
       {
+        category: 'mladsi-pripravka',
         name: 'Radek Slavík',
         role: 'Trenér',
         licence: 'Grassroots',
@@ -115,6 +123,7 @@ export default function AskLipuvkaWeb() {
         photo: '/treneri/slavik.jpg',
       },
       {
+        category: 'starsi-pripravka',
         name: 'Libor Vinkler',
         role: 'Trenér',
         licence: 'Grassroots',
@@ -126,30 +135,31 @@ export default function AskLipuvkaWeb() {
   };
 
   const galleryAlbums = [
-  {
-    id: 'zima_26',
-    title: 'Zima 2026',
-    cover: '/galerie/zima_26/1.jpg',
-    photos: [
-      '/galerie/zima_26/1.jpg',
-      '/galerie/zima_26/2.jpg',
-      '/galerie/zima_26/3.jpg',
-      '/galerie/zima_26/4.jpg',
-      '/galerie/zima_26/5.jpg',
-      '/galerie/zima_26/6.jpg',
-      '/galerie/zima_26/7.jpg',
-    ],
-  },
-  {
-    id: '1zapas',
-    title: '1. kolo',
-    cover: '/galerie/1zapas/1.jpg',
-    photos: [
-      '/galerie/1zapas/1.jpg',
-      '/galerie/1zapas/2.jpg',
-    ],
-  },
-];
+    {
+      id: 'zima_26',
+      title: 'Zima 2026',
+      cover: '/galerie/zima_26/1.jpg',
+      photos: [
+        '/galerie/zima_26/1.jpg',
+        '/galerie/zima_26/2.jpg',
+        '/galerie/zima_26/3.jpg',
+        '/galerie/zima_26/4.jpg',
+        '/galerie/zima_26/5.jpg',
+        '/galerie/zima_26/6.jpg',
+        '/galerie/zima_26/7.jpg',
+      ],
+    },
+    {
+      id: '1zapas',
+      title: '1. kolo',
+      cover: '/galerie/1zapas/1.jpg',
+      photos: [
+        '/galerie/1zapas/1.jpg',
+        '/galerie/1zapas/2.jpg',
+      ],
+    },
+  ];
+
   const matches = [
     {
       category: 'mladsi-pripravka',
@@ -230,14 +240,6 @@ export default function AskLipuvkaWeb() {
     [activeCategory]
   );
 
-  const upcomingMatches = filteredMatches
-    .filter((m) => parseMatchDate(m.date) >= todayStart)
-    .sort((a, b) => parseMatchDate(a.date) - parseMatchDate(b.date));
-
-  const playedMatches = filteredMatches
-    .filter((m) => parseMatchDate(m.date) < todayStart)
-    .sort((a, b) => parseMatchDate(b.date) - parseMatchDate(a.date));
-
   const activeCategoryData = categories.find((category) => category.id === activeCategory);
   const activeCategoryLabel = activeCategoryData?.label || '';
   const activeCategoryShortLabel = activeCategoryData?.shortLabel || '';
@@ -246,6 +248,32 @@ export default function AskLipuvkaWeb() {
     selectedAlbum && selectedPhotoIndex !== null
       ? selectedAlbum.photos[selectedPhotoIndex]
       : null;
+
+  const upcomingMatches = filteredMatches
+    .filter((m) => parseMatchDate(m.date) >= todayStart)
+    .sort((a, b) => parseMatchDate(a.date) - parseMatchDate(b.date));
+
+  const playedMatches = filteredMatches
+    .filter((m) => parseMatchDate(m.date) < todayStart)
+    .sort((a, b) => parseMatchDate(b.date) - parseMatchDate(a.date));
+
+  const getCategoryShortLabel = (categoryId) => {
+    const cat = categories.find((c) => c.id === categoryId);
+    return cat?.shortLabel || '';
+  };
+
+  const getCategoryColor = (categoryId) => {
+    switch (categoryId) {
+      case 'predpripravka':
+        return 'bg-blue-600';
+      case 'mladsi-pripravka':
+        return 'bg-green-600';
+      case 'starsi-pripravka':
+        return 'bg-orange-500';
+      default:
+        return 'bg-gray-500';
+    }
+  };
 
   const goToPrevPhoto = () => {
     if (!selectedAlbum || selectedPhotoIndex === null) return;
@@ -726,15 +754,17 @@ export default function AskLipuvkaWeb() {
           <h2 className="mb-4 text-3xl font-bold text-green-600">Novinky</h2>
 
           {filteredNews.length > 0 ? (
-            filteredNews.map((item) => (
-              <div key={`${item.category}-${item.title}`} className="rounded-2xl bg-white p-5 shadow-sm">
-                <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">
-                  {item.date}
+            <div className="space-y-4">
+              {filteredNews.map((item) => (
+                <div key={`${item.category}-${item.title}`} className="rounded-2xl bg-white p-5 shadow-sm">
+                  <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">
+                    {item.date}
+                  </div>
+                  <h3 className="mb-2 text-xl font-bold text-gray-900">{item.title}</h3>
+                  <p className="text-gray-700">{item.text}</p>
                 </div>
-                <h3 className="mb-2 text-xl font-bold text-gray-900">{item.title}</h3>
-                <p className="text-gray-700">{item.text}</p>
-              </div>
-            ))
+              ))}
+            </div>
           ) : (
             <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
               Pro tuto kategorii zatím nejsou doplněné žádné novinky.
@@ -804,7 +834,7 @@ export default function AskLipuvkaWeb() {
 
           <h2 className="mb-4 text-3xl font-bold text-green-600">Kdy trénujeme</h2>
 
-          <div className="rounded-2xl bg-white p-6 shadow-sm text-lg">
+          <div className="rounded-2xl bg-white p-6 text-lg shadow-sm">
             {activeCategory === 'predpripravka' && (
               <>
                 <div className="mb-2 font-bold text-gray-900">Předpřípravka (U7)</div>
@@ -1309,7 +1339,10 @@ export default function AskLipuvkaWeb() {
 
               <div className="mb-8 grid gap-6 md:grid-cols-2">
                 {team.management.map((person) => (
-                  <div key={person.name} className="rounded-2xl bg-gray-100 p-5 text-center">
+                  <div
+                    key={person.name}
+                    className="rounded-2xl bg-gray-100 p-5 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                  >
                     <img
                       src={person.photo}
                       alt={person.name}
@@ -1350,7 +1383,10 @@ export default function AskLipuvkaWeb() {
 
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {team.trainers.map((person) => (
-                  <div key={person.name} className="rounded-2xl bg-gray-100 p-5 text-center">
+                  <div
+                    key={person.name}
+                    className="rounded-2xl bg-gray-100 p-5 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                  >
                     <img
                       src={person.photo}
                       alt={person.name}
@@ -1358,7 +1394,18 @@ export default function AskLipuvkaWeb() {
                     />
 
                     <div className="text-lg font-bold">{person.name}</div>
-                    <div className="text-sm text-gray-600">{person.role}</div>
+
+                    <div className="mt-1 flex items-center justify-center gap-2">
+                      <div className="text-sm text-gray-600">{person.role}</div>
+
+                      {person.category && (
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-bold text-white ${getCategoryColor(person.category)}`}
+                        >
+                          {getCategoryShortLabel(person.category)}
+                        </span>
+                      )}
+                    </div>
 
                     {person.licence && (
                       <div className="mt-2 inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
