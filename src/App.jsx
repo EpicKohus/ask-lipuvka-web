@@ -14,6 +14,7 @@ export default function AskLipuvkaWeb() {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null);
 
   const [activeCategory, setActiveCategory] = useState('mladsi-pripravka');
+  const [visitCount, setVisitCount] = useState(null);
 
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
@@ -305,6 +306,33 @@ export default function AskLipuvkaWeb() {
       goToPrevPhoto();
     }
   };
+
+  useEffect(() => {
+    const loadVisits = async () => {
+      try {
+        const alreadyCounted = sessionStorage.getItem('ask-lipuvka-visit-counted');
+
+        const response = await fetch('/api/visits', {
+          method: alreadyCounted ? 'GET' : 'POST',
+        });
+
+        if (!response.ok) {
+          throw new Error('Nepodařilo se načíst návštěvnost');
+        }
+
+        const data = await response.json();
+        setVisitCount(data.count);
+
+        if (!alreadyCounted) {
+          sessionStorage.setItem('ask-lipuvka-visit-counted', 'true');
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    loadVisits();
+  }, []);
 
   useEffect(() => {
     const handleEsc = (event) => {
@@ -1507,6 +1535,22 @@ export default function AskLipuvkaWeb() {
           </div>
         </div>
       )}
+
+      <section className="mx-auto max-w-5xl px-6 pb-10">
+        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-8 text-center shadow-sm">
+          <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+            Návštěvnost webu
+          </div>
+
+          <div className="mt-3 text-4xl font-black text-gray-900 md:text-5xl">
+            {visitCount !== null ? visitCount.toLocaleString('cs-CZ') : '...'}
+          </div>
+
+          <p className="mt-3 text-gray-600">
+            Děkujeme za podporu ASK Lipůvka 💚
+          </p>
+        </div>
+      </section>
 
       <footer className="py-6 text-center text-gray-500">
         <div className="flex flex-wrap items-center justify-center gap-4">
