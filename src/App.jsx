@@ -470,7 +470,7 @@ export default function AskLipuvkaWeb() {
             </span>
           </div>
 
-          <h2 className="mb-4 text-3xl font-bold text-green-600">Novinky z areálu</h2>
+          <h2 className="mb-4 text-3xl font-bold text-green-600">Novinky</h2>
 
           {filteredNews.length > 0 ? (
             filteredNews.map((item) => (
