@@ -1551,7 +1551,7 @@ export default function AskLipuvkaWeb() {
       href="https://www.facebook.com/people/ASK-Lip%C5%AFvka/100093969443650/"
       target="_blank"
       rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-xl bg-green-600 px-5 py-3 text-base font-bold text-white transition hover:scale-105 hover:bg-green-700"
+      className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-base font-bold text-white transition hover:scale-105 hover:bg-blue-700"
       aria-label="Facebook ASK Lipůvka"
       title="Facebook ASK Lipůvka"
     >
