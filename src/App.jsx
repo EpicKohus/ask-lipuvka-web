@@ -41,69 +41,77 @@ export default function AskLipuvkaWeb() {
     },
   ];
 
-  const trainers = [
-    {
-      category: 'predpripravka',
-      section: 'Vedoucí mládeže',
-      people: [
-        {
-          name: 'Radek Mánek',
-          phone: '606148368',
-          phoneLabel: '606 148 368',
-          email: 'radek.manek@email.cz',
-        },
-      ],
-    },
-    {
-      category: 'mladsi-pripravka',
-      section: 'Vedoucí mládeže',
-      people: [
-        {
-          name: 'Radek Mánek',
-          phone: '606148368',
-          phoneLabel: '606 148 368',
-          email: 'radek.manek@email.cz',
-        },
-      ],
-    },
-    {
-      category: 'starsi-pripravka',
-      section: 'Vedoucí mládeže',
-      people: [
-        {
-          name: 'Radek Mánek',
-          phone: '606148368',
-          phoneLabel: '606 148 368',
-          email: 'radek.manek@email.cz',
-        },
-      ],
-    },
-    {
-      category: 'predpripravka',
-      section: 'Předpřípravka',
-      people: [
-        { name: 'Jan Gebauer', phone: '737146918', phoneLabel: '737 146 918' },
-        { name: 'Jiří Filipčík', phone: '737235850', phoneLabel: '737 235 850' },
-      ],
-    },
-    {
-      category: 'mladsi-pripravka',
-      section: 'Mladší přípravka',
-      people: [
-        { name: 'Zdenko Adámek', phone: '727836386', phoneLabel: '727 836 386' },
-        { name: 'Dalibor Hudec', phone: '737337966', phoneLabel: '737 337 966' },
-        { name: 'Jan Večeřa', phone: '733165250', phoneLabel: '733 165 250' },
-        { name: 'Radek Slavík', phone: '776423813', phoneLabel: '776 423 813' },
-      ],
-    },
-    {
-      category: 'starsi-pripravka',
-      section: 'Starší přípravka',
-      people: [
-        { name: 'Libor Vinkler', phone: '736205150', phoneLabel: '736 205 150' },
-      ],
-    },
-  ];
+  const team = {
+    management: [
+      {
+        name: 'Roman Skovajsa',
+        role: 'Předseda mládeže',
+        photo: '/treneri/skovajsa.jpg',
+        bio: 'Zodpovídá za chod mládežnické sekce a její celkový rozvoj.',
+      },
+      {
+        name: 'Radek Mánek',
+        role: 'Vedoucí mládeže',
+        licence: 'FAČR C+',
+        phone: '606148368',
+        phoneLabel: '606 148 368',
+        email: 'radek.manek@email.cz',
+        photo: '/treneri/manek.jpg',
+        bio: 'Dlouhodobě se věnuje práci s dětmi a klade důraz na rozvoj, radost ze hry a pozitivní prostředí.',
+      },
+    ],
+    trainers: [
+      {
+        name: 'Jan Gebauer',
+        phone: '737146918',
+        phoneLabel: '737 146 918',
+        licence: 'Grassroots',
+        photo: '/treneri/gebauer.jpg',
+      },
+      {
+        name: 'Jiří Filipčík',
+        phone: '737235850',
+        phoneLabel: '737 235 850',
+        licence: 'Grassroots',
+        photo: '/treneri/filipcik.jpg',
+      },
+      {
+        name: 'Zdenko Adámek',
+        phone: '727836386',
+        phoneLabel: '727 836 386',
+        licence: 'Grassroots',
+        photo: '/treneri/adamek.jpg',
+      },
+      {
+        name: 'Dalibor Hudec',
+        phone: '737337966',
+        phoneLabel: '737 337 966',
+        licence: 'Grassroots',
+        photo: '/treneri/hudec.jpg',
+      },
+      {
+        name: 'Jan Večeřa',
+        phone: '733165250',
+        phoneLabel: '733 165 250',
+        licence: 'Grassroots',
+        photo: '/treneri/vecera.jpg',
+      },
+      {
+        name: 'Radek Slavík',
+        phone: '776423813',
+        phoneLabel: '776 423 813',
+        licence: 'Grassroots',
+        photo: '/treneri/slavik.jpg',
+      },
+      {
+        name: 'Libor Vinkler',
+        phone: '736205150',
+        phoneLabel: '736 205 150',
+        licence: 'Grassroots',
+        photo: '/treneri/vinkler.jpg',
+      },
+    ],
+  };
 
   const matches = [
     {
@@ -177,11 +185,6 @@ export default function AskLipuvkaWeb() {
 
   const filteredNews = useMemo(
     () => newsItems.filter((item) => item.category === activeCategory),
-    [activeCategory]
-  );
-
-  const filteredTrainers = useMemo(
-    () => trainers.filter((item) => item.category === activeCategory),
     [activeCategory]
   );
 
@@ -1012,7 +1015,7 @@ export default function AskLipuvkaWeb() {
         >
           <div className="flex min-h-full items-start justify-center">
             <div
-              className="relative my-4 flex h-[85vh] w-full max-w-4xl flex-col rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              className="relative my-4 w-full max-w-5xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -1023,55 +1026,82 @@ export default function AskLipuvkaWeb() {
                 ×
               </button>
 
-              <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
-                <h2 className="text-3xl font-bold text-green-600">Trenéři</h2>
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
-                  {activeCategoryShortLabel}
-                </span>
-              </div>
+              <h2 className="mb-6 text-3xl font-bold text-green-600">
+                Realizační tým mládeže
+              </h2>
 
-              <div className="mb-6 text-sm font-semibold uppercase tracking-wide text-green-600">
-                {activeCategoryLabel}
-              </div>
+              <h3 className="mb-4 text-xl font-bold">Vedení mládeže</h3>
 
-              <div className="flex-1 space-y-8 overflow-y-scroll pr-2">
-                {filteredTrainers.length > 0 ? (
-                  filteredTrainers.map((group) => (
-                    <div key={`${group.category}-${group.section}`}>
-                      <h3 className="mb-3 text-xl font-bold">{group.section}</h3>
+              <div className="mb-8 grid gap-6 md:grid-cols-2">
+                {team.management.map((person) => (
+                  <div key={person.name} className="rounded-2xl bg-gray-100 p-5">
+                    <img
+                      src={person.photo}
+                      alt={person.name}
+                      className="mb-4 h-40 w-full rounded-xl object-cover"
+                    />
 
-                      <div className="grid gap-4 md:grid-cols-2">
-                        {group.people.map((person) => (
-                          <div key={person.name} className="rounded-xl bg-gray-100 p-4">
-                            <div className="font-bold">{person.name}</div>
+                    <div className="text-lg font-bold">{person.name}</div>
+                    <div className="font-semibold text-green-600">{person.role}</div>
 
-                            {person.phone && (
-                              <a
-                                href={`tel:${person.phone}`}
-                                className="block font-semibold text-green-600 hover:underline"
-                              >
-                                {person.phoneLabel}
-                              </a>
-                            )}
-
-                            {person.email && (
-                              <a
-                                href={`mailto:${person.email}`}
-                                className="font-semibold text-green-600 hover:underline"
-                              >
-                                {person.email}
-                              </a>
-                            )}
-                          </div>
-                        ))}
+                    {person.licence && (
+                      <div className="mt-2 inline-block rounded-full bg-green-600 px-3 py-1 text-xs font-bold text-white">
+                        {person.licence}
                       </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
-                    Pro tuto kategorii zatím nejsou doplnění žádní trenéři.
+                    )}
+
+                    <p className="mt-3 text-gray-700">{person.bio}</p>
+
+                    {person.phone && (
+                      <a
+                        href={`tel:${person.phone}`}
+                        className="mt-3 block font-semibold text-green-600 hover:underline"
+                      >
+                        {person.phoneLabel}
+                      </a>
+                    )}
+
+                    {person.email && (
+                      <a
+                        href={`mailto:${person.email}`}
+                        className="block font-semibold text-green-600 hover:underline"
+                      >
+                        {person.email}
+                      </a>
+                    )}
                   </div>
-                )}
+                ))}
+              </div>
+
+              <h3 className="mb-4 text-xl font-bold">Trenéři</h3>
+
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {team.trainers.map((person) => (
+                  <div key={person.name} className="rounded-2xl bg-gray-100 p-5">
+                    <img
+                      src={person.photo}
+                      alt={person.name}
+                      className="mb-4 h-40 w-full rounded-xl object-cover"
+                    />
+
+                    <div className="text-lg font-bold">{person.name}</div>
+
+                    <div className="mt-2 inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
+                      {person.licence}
+                    </div>
+
+                    <p className="mt-3 text-gray-700">
+                      Trenér mládeže ASK Lipůvka. Zaměřuje se na rozvoj dovedností a radost ze sportu.
+                    </p>
+
+                    <a
+                      href={`tel:${person.phone}`}
+                      className="mt-3 block font-semibold text-green-600 hover:underline"
+                    >
+                      {person.phoneLabel}
+                    </a>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
