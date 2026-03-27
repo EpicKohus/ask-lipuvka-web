@@ -12,9 +12,9 @@ export default function AskLipuvkaWeb() {
   const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
   const categories = [
-    { id: 'mladsi-pripravka', label: 'Mladší přípravka' },
-    { id: 'predpripravka', label: 'Předpřípravka' },
-    { id: 'starsi-pripravka', label: 'Starší přípravka' },
+    { id: 'mladsi-pripravka', label: 'Mladší přípravka', shortLabel: 'U9' },
+    { id: 'predpripravka', label: 'Předpřípravka', shortLabel: 'U7' },
+    { id: 'starsi-pripravka', label: 'Starší přípravka', shortLabel: 'U11' },
   ];
 
   const newsItems = [
@@ -150,17 +150,17 @@ export default function AskLipuvkaWeb() {
 
   const filteredNews = useMemo(
     () => newsItems.filter((item) => item.category === activeCategory),
-    [newsItems, activeCategory]
+    [activeCategory]
   );
 
   const filteredContacts = useMemo(
     () => contacts.filter((item) => item.category === activeCategory),
-    [contacts, activeCategory]
+    [activeCategory]
   );
 
   const filteredMatches = useMemo(
     () => matches.filter((match) => match.category === activeCategory),
-    [matches, activeCategory]
+    [activeCategory]
   );
 
   const upcomingMatches = filteredMatches
@@ -290,8 +290,9 @@ export default function AskLipuvkaWeb() {
     );
   };
 
-  const activeCategoryLabel =
-    categories.find((category) => category.id === activeCategory)?.label || '';
+  const activeCategoryData = categories.find((category) => category.id === activeCategory);
+  const activeCategoryLabel = activeCategoryData?.label || '';
+  const activeCategoryShortLabel = activeCategoryData?.shortLabel || '';
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -443,18 +444,26 @@ export default function AskLipuvkaWeb() {
           <div className="flex flex-wrap gap-3">
             {categories.map((category) => {
               const isActive = activeCategory === category.id;
+
               return (
                 <button
                   key={category.id}
                   type="button"
                   onClick={() => setActiveCategory(category.id)}
-                  className={`rounded-xl px-4 py-3 font-semibold transition ${
+                  className={`flex items-center gap-2 rounded-xl px-4 py-3 font-semibold transition ${
                     isActive
                       ? 'bg-green-600 text-white'
                       : 'border border-gray-300 bg-white text-gray-700 hover:border-green-500 hover:text-green-600'
                   }`}
                 >
-                  {category.label}
+                  <span>{category.label}</span>
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                      isActive ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'
+                    }`}
+                  >
+                    {category.shortLabel}
+                  </span>
                 </button>
               );
             })}
@@ -464,9 +473,15 @@ export default function AskLipuvkaWeb() {
 
       <section id="novinky" className="mx-auto max-w-5xl px-6 py-14">
         <div className="rounded-3xl border border-gray-200 bg-gray-50 p-8 shadow-sm">
-          <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">
-            {activeCategoryLabel}
+          <div className="mb-2 flex flex-wrap items-center gap-3">
+            <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+              {activeCategoryLabel}
+            </div>
+            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+              {activeCategoryShortLabel}
+            </span>
           </div>
+
           <h2 className="mb-4 text-3xl font-bold text-green-600">Novinky z areálu</h2>
 
           {filteredNews.length > 0 ? (
@@ -486,9 +501,15 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <section id="zapasy" className="mx-auto max-w-5xl px-6 py-14">
-        <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-green-600">
-          {activeCategoryLabel}
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+            {activeCategoryLabel}
+          </div>
+          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+            {activeCategoryShortLabel}
+          </span>
         </div>
+
         <div className="mb-6">
           <h2 className="mb-2 text-3xl font-bold text-green-600">Nadcházející zápasy</h2>
         </div>
@@ -505,9 +526,15 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <section className="mx-auto max-w-5xl px-6 py-14">
-        <div className="mb-3 text-sm font-semibold uppercase tracking-wide text-green-600">
-          {activeCategoryLabel}
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+            {activeCategoryLabel}
+          </div>
+          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+            {activeCategoryShortLabel}
+          </span>
         </div>
+
         <h2 className="mb-6 text-3xl font-bold text-green-600">Odehrané zápasy</h2>
         <div className="space-y-4">
           {playedMatches.length > 0 ? (
@@ -697,7 +724,13 @@ export default function AskLipuvkaWeb() {
                 ×
               </button>
 
-              <h2 className="mb-2 pr-10 text-3xl font-bold text-green-600">Kontakty</h2>
+              <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
+                <h2 className="text-3xl font-bold text-green-600">Kontakty</h2>
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+                  {activeCategoryShortLabel}
+                </span>
+              </div>
+
               <div className="mb-6 text-sm font-semibold uppercase tracking-wide text-green-600">
                 {activeCategoryLabel}
               </div>
@@ -761,9 +794,15 @@ export default function AskLipuvkaWeb() {
             </button>
 
             <div className="mb-6 border-b border-gray-200 pb-4 pr-10">
-              <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
-                Detail zápasu • {activeCategoryLabel}
+              <div className="mb-2 flex flex-wrap items-center gap-3">
+                <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+                  Detail zápasu • {activeCategoryLabel}
+                </div>
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+                  {activeCategoryShortLabel}
+                </span>
               </div>
+
               <h2 className="mt-2 text-3xl font-bold text-gray-900">ASK Lipůvka vs. {selectedMatch.opponent}</h2>
               <div className="mt-2 text-gray-600">
                 {selectedMatch.date} • {selectedMatch.time} • {selectedMatch.home ? 'Domácí zápas' : 'Venkovní zápas'}
