@@ -15,6 +15,7 @@ export default function AskLipuvkaWeb() {
 
   const [activeCategory, setActiveCategory] = useState('mladsi-pripravka');
   const [visitCount, setVisitCount] = useState(null);
+  const [isTermsOpen, setIsTermsOpen] = useState(false);
 
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
@@ -346,6 +347,7 @@ export default function AskLipuvkaWeb() {
         setSelectedPhotoIndex(null);
         setSelectedAlbum(null);
         setIsGalleryOpen(false);
+        setIsTermsOpen(false);
       }
     };
 
@@ -384,7 +386,8 @@ export default function AskLipuvkaWeb() {
       selectedMatch ||
       clubPopupContent ||
       isGalleryOpen ||
-      selectedPhoto;
+      selectedPhoto ||
+      isTermsOpen;
 
     document.body.style.overflow = shouldLock ? 'hidden' : '';
 
@@ -399,6 +402,7 @@ export default function AskLipuvkaWeb() {
     clubPopupContent,
     isGalleryOpen,
     selectedPhoto,
+    isTermsOpen,
   ]);
 
   const handleSubmit = async (e) => {
@@ -1256,6 +1260,146 @@ export default function AskLipuvkaWeb() {
         </div>
       )}
 
+      {isTermsOpen && (
+        <div
+          className="fixed inset-0 z-[70] overflow-y-auto bg-black/60 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          onClick={() => setIsTermsOpen(false)}
+        >
+          <div className="flex min-h-full items-start justify-center">
+            <div
+              className="relative my-4 w-full max-w-4xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setIsTermsOpen(false)}
+                className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-black"
+              >
+                ×
+              </button>
+
+              <div className="pr-10">
+                <h2 className="text-3xl font-bold text-green-600">Registrační list hráče</h2>
+                <p className="mt-2 text-gray-600">
+                  Přihláška a souhlasy člena fotbalové přípravky
+                </p>
+              </div>
+
+              <div className="mt-6 space-y-5 rounded-2xl bg-gray-50 p-6 text-gray-700">
+                <div>
+                  <div className="font-semibold text-gray-900">Hráč (jméno a datum narození):</div>
+                  <div className="mt-2 h-8 rounded-lg border border-dashed border-gray-300 bg-white" />
+                </div>
+
+                <div>
+                  <div className="font-semibold text-gray-900">
+                    Zákonný zástupce (jméno, telefon, e-mail):
+                  </div>
+                  <div className="mt-2 h-8 rounded-lg border border-dashed border-gray-300 bg-white" />
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-green-600">1. Zdravotní stav</h3>
+                  <p className="mt-1 leading-7">
+                    Prohlašuji, že dítě je zdravotně způsobilé k pravidelnému sportování.
+                    Zavazuji se dodat kopii lékařského posudku do 14 dnů. Informoval/a jsem
+                    trenéry o případných omezeních (alergie, astma apod.).
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-green-600">2. První pomoc</h3>
+                  <p className="mt-1 leading-7">
+                    Souhlasím, aby v případě úrazu či náhlého onemocnění trenér zajistil první pomoc
+                    a nezbytné lékařské ošetření včetně případného transportu do nemocnice.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-green-600">3. Doprava na zápasy</h3>
+                  <p className="mt-1 leading-7">
+                    Souhlasím s přepravou dítěte na turnaje a zápasy soukromými vozidly trenérů
+                    nebo jiných pověřených rodičů. Beru na vědomí, že klub neodpovídá za škody
+                    vzniklé při přepravě nad rámec zákonného pojištění vozidla.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-green-600">4. GDPR a média</h3>
+                  <p className="mt-1 leading-7">
+                    Souhlasím se zpracováním osobních údajů pro potřeby klubu a FAČR.
+                    Dále souhlasím s pořizováním a zveřejňováním fotografií a videozáznamů dítěte
+                    z tréninků a zápasů pro účely propagace klubu, zejména na webu a sociálních sítích.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-green-600">5. Povinnosti a pokyny</h3>
+                  <p className="mt-1 leading-7">
+                    Beru na vědomí, že dítě je povinno dodržovat pokyny trenérů a vnitřní řád klubu.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-green-600">6. Turnaje a akce</h3>
+                  <p className="mt-1 leading-7">
+                    Souhlasím s účastí dítěte na trénincích, turnajích a dalších klubových akcích.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-green-600">7. Odchody</h3>
+                  <p className="mt-1 leading-7">
+                    Beru na vědomí, že jsem plně zodpovědný/á za odchod dítěte z tréninku,
+                    zápasu či společné akce po jejich oficiálním skončení.
+                  </p>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-green-600">8. Odpovědnost trenérů</h3>
+                  <p className="mt-1 leading-7">
+                    Trenéři zodpovídají za děti pouze v předem oznámený čas konání fotbalových akcí.
+                  </p>
+                </div>
+
+                <div className="border-t border-gray-200 pt-4">
+                  <p className="font-semibold text-gray-900">
+                    Zákonný zástupce odpovídá za pravdivost uvedených údajů.
+                  </p>
+
+                  <div className="mt-5 grid gap-4 md:grid-cols-2">
+                    <div>
+                      <div className="mb-2 text-sm font-semibold text-gray-700">V</div>
+                      <div className="h-10 rounded-lg border border-dashed border-gray-300 bg-white" />
+                    </div>
+
+                    <div>
+                      <div className="mb-2 text-sm font-semibold text-gray-700">Dne</div>
+                      <div className="h-10 rounded-lg border border-dashed border-gray-300 bg-white" />
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <div className="mb-2 text-sm font-semibold text-gray-700">Podpis rodiče</div>
+                    <div className="h-10 rounded-lg border border-dashed border-gray-300 bg-white" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsTermsOpen(false)}
+                  className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700"
+                >
+                  Zavřít
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {isRegistrationOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 animate-[fadeIn_0.2s_ease-out]"
@@ -1299,12 +1443,12 @@ export default function AskLipuvkaWeb() {
                 className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
               />
               <input
-  type="text"
-  name="datum_narozeni"
-  placeholder="Datum narození (např. 12.3.2018)"
-  required
-  className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
-/>
+                type="text"
+                name="datum_narozeni"
+                placeholder="Datum narození (např. 12.3.2018)"
+                required
+                className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
+              />
               <input
                 type="text"
                 name="mesto_narozeni"
@@ -1333,6 +1477,30 @@ export default function AskLipuvkaWeb() {
                 required
                 className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
               />
+
+              <div className="rounded-2xl bg-gray-50 p-4">
+                <div className="flex items-start gap-3">
+                  <input
+                    id="souhlas-podminky"
+                    type="checkbox"
+                    name="souhlas"
+                    required
+                    className="mt-1 h-4 w-4 rounded border-gray-300"
+                  />
+
+                  <label htmlFor="souhlas-podminky" className="text-sm leading-6 text-gray-700">
+                    Potvrzuji, že jsem se seznámil/a s registračními podmínkami, souhlasy a GDPR.
+                  </label>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsTermsOpen(true)}
+                  className="mt-3 font-semibold text-green-600 underline underline-offset-2 hover:text-green-700"
+                >
+                  Zobrazit registrační podmínky
+                </button>
+              </div>
 
               <button type="submit" className="w-full rounded-xl bg-green-600 py-3 font-semibold text-white">
                 Odeslat registraci
@@ -1538,47 +1706,47 @@ export default function AskLipuvkaWeb() {
       )}
 
       <section className="mx-auto max-w-5xl px-6 pb-6">
-  <div className="text-center text-sm text-gray-500">
-    Návštěvnost webu:{' '}
-    <span className="font-semibold text-gray-700">
-      {visitCount !== null ? visitCount.toLocaleString('cs-CZ') : '...'}
-    </span>
-  </div>
-</section>
+        <div className="text-center text-sm text-gray-500">
+          Návštěvnost webu:{' '}
+          <span className="font-semibold text-gray-700">
+            {visitCount !== null ? visitCount.toLocaleString('cs-CZ') : '...'}
+          </span>
+        </div>
+      </section>
 
-<footer className="py-8 text-center text-gray-500">
-  <div className="mb-4 flex flex-wrap items-center justify-center gap-5">
-    <a
-      href="https://www.facebook.com/people/ASK-Lip%C5%AFvka/100093969443650/"
-      target="_blank"
-      rel="noreferrer"
-      className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-base font-bold text-white transition hover:scale-105 hover:bg-blue-700"
-      aria-label="Facebook ASK Lipůvka"
-      title="Facebook ASK Lipůvka"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        className="h-5 w-5"
-      >
-        <path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.88 3.77-3.88 1.09 0 2.23.19 2.23.19v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.89h-2.33v6.99A10 10 0 0 0 22 12Z" />
-      </svg>
-      Facebook
-    </a>
+      <footer className="py-8 text-center text-gray-500">
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-5">
+          <a
+            href="https://www.facebook.com/people/ASK-Lip%C5%AFvka/100093969443650/"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-base font-bold text-white transition hover:scale-105 hover:bg-blue-700"
+            aria-label="Facebook ASK Lipůvka"
+            title="Facebook ASK Lipůvka"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              className="h-5 w-5"
+            >
+              <path d="M22 12a10 10 0 1 0-11.56 9.88v-6.99H7.9V12h2.54V9.8c0-2.5 1.49-3.88 3.77-3.88 1.09 0 2.23.19 2.23.19v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.89h-2.33v6.99A10 10 0 0 0 22 12Z" />
+            </svg>
+            Facebook
+          </a>
 
-    <a
-      href="https://asklipuvka.cz"
-      target="_blank"
-      rel="noreferrer"
-      className="inline-flex items-center rounded-xl border border-green-600 px-5 py-3 text-base font-bold text-green-700 transition hover:scale-105 hover:bg-green-50"
-    >
-      A tým
-    </a>
-  </div>
+          <a
+            href="https://asklipuvka.cz"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center rounded-xl border border-green-600 px-5 py-3 text-base font-bold text-green-700 transition hover:scale-105 hover:bg-green-50"
+          >
+            A tým
+          </a>
+        </div>
 
-  <div>© 2026 ASK Lipůvka</div>
-</footer>
+        <div>© 2026 ASK Lipůvka</div>
+      </footer>
     </div>
   );
 }
