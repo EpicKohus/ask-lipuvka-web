@@ -1636,11 +1636,11 @@ export default function AskLipuvkaWeb() {
 
               <div className="relative h-56 w-full">
                 <img
-                  src={activeCategoryImage}
-                  alt={activeCategoryLabel}
-                  className="h-full w-full object-cover"
-                />
-                <div className="absolute inset-0 bg-black/45" />
+  src={activeCategoryImage}
+  alt={activeCategoryLabel}
+  className="h-full w-full object-cover object-[center_30%]"
+/>
+<div className="absolute inset-0 bg-black/30" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
                   <div className={`mb-2 rounded-full px-4 py-1 text-sm font-semibold backdrop-blur ${activeCategoryStyle.badge}`}>
                     {activeCategoryLabel}
