@@ -7,6 +7,7 @@ export default function AskLipuvkaWeb() {
   const [selectedMatch, setSelectedMatch] = useState(null);
 
   const [isClubDropdownOpen, setIsClubDropdownOpen] = useState(false);
+  const [isTeamsDropdownOpen, setIsTeamsDropdownOpen] = useState(false);
   const [clubPopupContent, setClubPopupContent] = useState(null);
 
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -167,6 +168,7 @@ export default function AskLipuvkaWeb() {
       opponent: 'Halový turnaj Blansko',
       time: '---',
       home: false,
+      venue: 'Blansko',
       result: '1. místo v turnaji',
       articleTitle: 'Halový turnaj Blansko',
       article:
@@ -179,6 +181,7 @@ export default function AskLipuvkaWeb() {
       opponent: 'RDR RJY/RJ',
       time: '17:00 / 18:00',
       home: true,
+      venue: 'Lipůvka',
       result: 'doplnit',
       articleTitle: '',
       article: '',
@@ -190,6 +193,7 @@ export default function AskLipuvkaWeb() {
       opponent: 'RDR DX/D',
       time: '17:00 / 18:00',
       home: true,
+      venue: 'Lipůvka',
       result: 'doplnit',
       articleTitle: '',
       article: '',
@@ -201,6 +205,7 @@ export default function AskLipuvkaWeb() {
       opponent: 'Olomučany/Babice',
       time: '17:00 / 18:00',
       home: false,
+      venue: 'hřiště Olomučany',
       result: 'doplnit',
       articleTitle: '',
       article: '',
@@ -212,6 +217,91 @@ export default function AskLipuvkaWeb() {
       opponent: 'Ostrov/Lipovec',
       time: '17:00 / 18:00',
       home: true,
+      venue: 'Lipůvka',
+      result: 'doplnit',
+      articleTitle: '',
+      article: '',
+      photos: ['/field.png'],
+    },
+    {
+      category: 'mladsi-pripravka',
+      date: '30. 4. 2026',
+      opponent: 'Blansko C + (pozveme 1 tým)',
+      time: '17:00 / 18:00',
+      home: true,
+      venue: 'Lipůvka',
+      result: 'doplnit',
+      articleTitle: '',
+      article: '',
+      photos: ['/field.png'],
+    },
+    {
+      category: 'mladsi-pripravka',
+      date: '12. 5. 2026',
+      opponent: 'Kras',
+      time: '17:00 / 18:00',
+      home: false,
+      venue: 'hřiště Jedovnice',
+      result: 'doplnit',
+      articleTitle: '',
+      article: '',
+      photos: ['/field.png'],
+    },
+    {
+      category: 'mladsi-pripravka',
+      date: '14. 5. 2026',
+      opponent: 'Blansko A a B',
+      time: '17:00 / 18:00',
+      home: true,
+      venue: 'Lipůvka',
+      result: 'doplnit',
+      articleTitle: '',
+      article: '',
+      photos: ['/field.png'],
+    },
+    {
+      category: 'mladsi-pripravka',
+      date: '24. 5. 2026',
+      opponent: 'Knínice',
+      time: '10:15',
+      home: false,
+      venue: 'hřiště Knínice',
+      result: 'doplnit',
+      articleTitle: '',
+      article: '',
+      photos: ['/field.png'],
+    },
+    {
+      category: 'mladsi-pripravka',
+      date: '28. 5. 2026',
+      opponent: 'Boskovice',
+      time: '17:00 / 18:00',
+      home: true,
+      venue: 'Lipůvka',
+      result: 'doplnit',
+      articleTitle: '',
+      article: '',
+      photos: ['/field.png'],
+    },
+    {
+      category: 'mladsi-pripravka',
+      date: '4. 6. 2026',
+      opponent: 'Letovice',
+      time: '16:30 / 17:30',
+      home: false,
+      venue: 'hřiště Letovice',
+      result: 'doplnit',
+      articleTitle: '',
+      article: '',
+      photos: ['/field.png'],
+    },
+    {
+      category: 'mladsi-pripravka',
+      date: '14. 6. 2026',
+      opponent: 'RDR/RY + závěrečná',
+      time: '14:00 / 15:00',
+      home: true,
+      venue: 'Lipůvka',
       result: 'doplnit',
       articleTitle: '',
       article: '',
@@ -256,6 +346,10 @@ export default function AskLipuvkaWeb() {
   const playedMatches = filteredMatches
     .filter((m) => parseMatchDate(m.date) < todayStart)
     .sort((a, b) => parseMatchDate(b.date) - parseMatchDate(a.date));
+
+  const fullScheduleMatches = [...filteredMatches].sort(
+    (a, b) => parseMatchDate(a.date) - parseMatchDate(b.date)
+  );
 
   const getCategoryShortLabel = (categoryId) => {
     const cat = categories.find((c) => c.id === categoryId);
@@ -306,6 +400,17 @@ export default function AskLipuvkaWeb() {
     }
   };
 
+  const selectTeam = (categoryId) => {
+    setActiveCategory(categoryId);
+    setIsTeamsDropdownOpen(false);
+    setIsMobileMenuOpen(false);
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth',
+    });
+  };
+
   useEffect(() => {
     const loadVisits = async () => {
       try {
@@ -342,6 +447,7 @@ export default function AskLipuvkaWeb() {
         setSelectedMatch(null);
         setClubPopupContent(null);
         setIsClubDropdownOpen(false);
+        setIsTeamsDropdownOpen(false);
         setSelectedPhotoIndex(null);
         setSelectedAlbum(null);
         setIsGalleryOpen(false);
@@ -351,6 +457,7 @@ export default function AskLipuvkaWeb() {
 
     const handleClickOutside = () => {
       setIsClubDropdownOpen(false);
+      setIsTeamsDropdownOpen(false);
     };
 
     const handleArrowKeys = (event) => {
@@ -504,6 +611,7 @@ export default function AskLipuvkaWeb() {
 
             <div className="mt-1 text-sm text-gray-500">
               {m.date} • {m.time} • {m.home ? 'Domácí zápas' : 'Venkovní zápas'}
+              {!m.home && m.venue ? ` • ${m.venue}` : ''}
             </div>
           </div>
 
@@ -551,6 +659,44 @@ export default function AskLipuvkaWeb() {
           <nav className="hidden gap-6 text-sm md:flex">
             <a href="#novinky" className="hover:text-green-600">Novinky</a>
             <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
+
+            <div className="relative" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => setIsTeamsDropdownOpen((prev) => !prev)}
+                className="hover:text-green-600"
+              >
+                Týmy ▼
+              </button>
+
+              {isTeamsDropdownOpen && (
+                <div className="absolute left-0 top-full mt-2 min-w-[220px] rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+                  <button
+                    type="button"
+                    onClick={() => selectTeam('predpripravka')}
+                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                  >
+                    U7 – Předpřípravka
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => selectTeam('mladsi-pripravka')}
+                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                  >
+                    U9 – Mladší přípravka
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => selectTeam('starsi-pripravka')}
+                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                  >
+                    U11 – Starší přípravka
+                  </button>
+                </div>
+              )}
+            </div>
 
             <button type="button" onClick={openGallery} className="hover:text-green-600">
               Galerie
@@ -672,6 +818,42 @@ export default function AskLipuvkaWeb() {
               >
                 Zápasy
               </a>
+
+              <button
+                type="button"
+                onClick={() => setIsTeamsDropdownOpen((prev) => !prev)}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
+              >
+                Týmy {isTeamsDropdownOpen ? '▲' : '▼'}
+              </button>
+
+              {isTeamsDropdownOpen && (
+                <div className="flex flex-col bg-gray-50">
+                  <button
+                    type="button"
+                    onClick={() => selectTeam('predpripravka')}
+                    className="px-8 py-3 text-left text-gray-700"
+                  >
+                    U7 – Předpřípravka
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => selectTeam('mladsi-pripravka')}
+                    className="px-8 py-3 text-left text-gray-700"
+                  >
+                    U9 – Mladší přípravka
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => selectTeam('starsi-pripravka')}
+                    className="px-8 py-3 text-left text-gray-700"
+                  >
+                    U11 – Starší přípravka
+                  </button>
+                </div>
+              )}
 
               <button
                 type="button"
@@ -887,6 +1069,69 @@ export default function AskLipuvkaWeb() {
               </>
             )}
           </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-5xl px-6 pb-14">
+        <div className="mb-3 flex flex-wrap items-center gap-3">
+          <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+            {activeCategoryLabel}
+          </div>
+          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+            {activeCategoryShortLabel}
+          </span>
+        </div>
+
+        <h2 className="mb-6 text-3xl font-bold text-green-600">Kompletní rozpis zápasů</h2>
+
+        <div className="space-y-4">
+          {fullScheduleMatches.length > 0 ? (
+            fullScheduleMatches.map((m) => (
+              <div
+                key={`schedule-${m.date}-${m.opponent}`}
+                className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm"
+              >
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <div className="text-lg font-bold text-gray-900">
+                      {m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
+                    </div>
+                    <div className="mt-1 text-sm text-gray-500">
+                      {m.date} • {m.time}
+                    </div>
+                    {!m.home && m.venue && (
+                      <div className="mt-2 text-sm font-medium text-gray-700">
+                        Hraje se: {m.venue}
+                      </div>
+                    )}
+                    {m.home && (
+                      <div className="mt-2 text-sm font-medium text-gray-700">
+                        Hraje se: Lipůvka
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span
+                      className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                        m.home ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                      }`}
+                    >
+                      {m.home ? 'Domácí' : 'Venkovní'}
+                    </span>
+
+                    <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
+                      {parseMatchDate(m.date) < todayStart ? `Výsledek: ${m.result}` : 'Zápas před námi'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+              Pro tuto kategorii zatím není rozpis doplněný.
+            </div>
+          )}
         </div>
       </section>
 
@@ -1462,7 +1707,12 @@ export default function AskLipuvkaWeb() {
 
               <button
                 type="submit"
-                className="w-full rounded-xl bg-green-600 py-3 font-semibold text-white"
+                disabled={!termsAccepted}
+                className={`w-full rounded-xl py-3 font-semibold text-white transition ${
+                  termsAccepted
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'cursor-not-allowed bg-gray-300'
+                }`}
               >
                 Odeslat registraci
               </button>
@@ -1614,11 +1864,19 @@ export default function AskLipuvkaWeb() {
                 </span>
               </div>
 
-              <h2 className="mt-2 text-3xl font-bold text-gray-900">ASK Lipůvka vs. {selectedMatch.opponent}</h2>
+              <h2 className="mt-2 text-3xl font-bold text-gray-900">
+                ASK Lipůvka vs. {selectedMatch.opponent}
+              </h2>
 
               <div className="mt-2 text-gray-600">
                 {selectedMatch.date} • {selectedMatch.time} • {selectedMatch.home ? 'Domácí zápas' : 'Venkovní zápas'}
               </div>
+
+              {!selectedMatch.home && selectedMatch.venue && (
+                <div className="mt-2 text-sm font-medium text-gray-700">
+                  Hraje se: {selectedMatch.venue}
+                </div>
+              )}
 
               {parseMatchDate(selectedMatch.date) < todayStart && (
                 <div className="mt-3 inline-flex rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
