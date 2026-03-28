@@ -1634,11 +1634,12 @@ export default function AskLipuvkaWeb() {
                 ×
               </button>
 
-              <div className="relative h-56 w-full">
-                <img
+              <img
   src={activeCategoryImage}
   alt={activeCategoryLabel}
-  className="h-full w-full object-cover object-[center_30%]"
+  className="h-full w-full object-cover"
+/>
+<div className="absolute inset-0 bg-black/45" />
 />
 <div className="absolute inset-0 bg-black/30" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
