@@ -2250,6 +2250,22 @@ export default function AskLipuvkaWeb() {
             Facebook
           </a>
 
+	<a
+      href="https://revelop.cz/"
+      target="_blank"
+      rel="noreferrer"
+      className="inline-flex items-center justify-center rounded-xl bg-black px-5 py-3 shadow-sm transition hover:scale-105 hover:shadow-md"
+      aria-label="Revelop"
+      title="Revelop"
+    >
+      <img
+        src="/partneri/revelop.png"
+        alt="Revelop"
+        className="h-8 w-auto object-contain"
+      />
+    </a>
+
+
           <a
             href="https://asklipuvka.cz"
             target="_blank"
