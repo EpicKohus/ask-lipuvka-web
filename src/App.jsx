@@ -667,7 +667,9 @@ export default function AskLipuvkaWeb() {
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <div className="flex flex-wrap items-center gap-2 text-lg font-bold text-gray-900">
-                <span>ASK Lipůvka vs. {m.opponent}</span>
+                <span>
+                  {m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
+                </span>
                 <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${categoryStyle.badge}`}>
                   {getCategoryShortLabel(m.category)}
                 </span>
@@ -2002,7 +2004,11 @@ export default function AskLipuvkaWeb() {
                 </span>
               </div>
 
-              <h2 className="mt-2 text-3xl font-bold text-gray-900">ASK Lipůvka vs. {selectedMatch.opponent}</h2>
+              <h2 className="mt-2 text-3xl font-bold text-gray-900">
+                {selectedMatch.home
+                  ? `ASK Lipůvka vs. ${selectedMatch.opponent}`
+                  : `${selectedMatch.opponent} vs. ASK Lipůvka`}
+              </h2>
 
               <div className="mt-2 text-gray-600">
                 {selectedMatch.date} • {selectedMatch.time} • {selectedMatch.home ? 'Domácí zápas' : 'Venkovní zápas'}
