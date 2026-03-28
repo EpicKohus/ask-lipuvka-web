@@ -8,6 +8,7 @@ export default function AskLipuvkaWeb() {
 
   const [isClubDropdownOpen, setIsClubDropdownOpen] = useState(false);
   const [isTeamsDropdownOpen, setIsTeamsDropdownOpen] = useState(false);
+  const [isMobileClubDropdownOpen, setIsMobileClubDropdownOpen] = useState(false);
   const [clubPopupContent, setClubPopupContent] = useState(null);
 
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
@@ -47,6 +48,15 @@ export default function AskLipuvkaWeb() {
       label: 'Starší přípravka',
       shortLabel: 'U11',
       image: '/tym-u11.jpg',
+    },
+  ];
+
+  const partners = [
+    {
+      name: 'Revelop',
+      logo: '/partneri/revelop.png',
+      url: 'https://revelop.cz/',
+      featured: true,
     },
   ];
 
@@ -174,10 +184,7 @@ export default function AskLipuvkaWeb() {
       id: '1zapas',
       title: '1. kolo',
       cover: '/galerie/1zapas/1.jpg',
-      photos: [
-        '/galerie/1zapas/1.jpg',
-        '/galerie/1zapas/2.jpg',
-      ],
+      photos: ['/galerie/1zapas/1.jpg', '/galerie/1zapas/2.jpg'],
     },
   ];
 
@@ -391,7 +398,6 @@ export default function AskLipuvkaWeb() {
           text: 'text-blue-600',
           button: 'bg-blue-600 text-white hover:bg-blue-700',
           buttonOutline: 'border-blue-500 text-blue-600 hover:bg-blue-50',
-          ring: 'ring-blue-200',
         };
       case 'mladsi-pripravka':
         return {
@@ -401,7 +407,6 @@ export default function AskLipuvkaWeb() {
           text: 'text-green-600',
           button: 'bg-green-600 text-white hover:bg-green-700',
           buttonOutline: 'border-green-500 text-green-600 hover:bg-green-50',
-          ring: 'ring-green-200',
         };
       case 'starsi-pripravka':
         return {
@@ -411,7 +416,6 @@ export default function AskLipuvkaWeb() {
           text: 'text-orange-600',
           button: 'bg-orange-500 text-white hover:bg-orange-600',
           buttonOutline: 'border-orange-500 text-orange-600 hover:bg-orange-50',
-          ring: 'ring-orange-200',
         };
       default:
         return {
@@ -421,7 +425,6 @@ export default function AskLipuvkaWeb() {
           text: 'text-gray-600',
           button: 'bg-gray-500 text-white hover:bg-gray-600',
           buttonOutline: 'border-gray-500 text-gray-600 hover:bg-gray-50',
-          ring: 'ring-gray-200',
         };
     }
   };
@@ -430,9 +433,7 @@ export default function AskLipuvkaWeb() {
 
   const goToPrevPhoto = () => {
     if (!selectedAlbum || selectedPhotoIndex === null) return;
-    setSelectedPhotoIndex((prev) =>
-      prev === 0 ? selectedAlbum.photos.length - 1 : prev - 1
-    );
+    setSelectedPhotoIndex((prev) => (prev === 0 ? selectedAlbum.photos.length - 1 : prev - 1));
   };
 
   const goToNextPhoto = () => {
@@ -507,6 +508,7 @@ export default function AskLipuvkaWeb() {
         setClubPopupContent(null);
         setIsClubDropdownOpen(false);
         setIsTeamsDropdownOpen(false);
+        setIsMobileClubDropdownOpen(false);
         setSelectedPhotoIndex(null);
         setSelectedAlbum(null);
         setIsGalleryOpen(false);
@@ -646,6 +648,12 @@ export default function AskLipuvkaWeb() {
     setClubPopupContent(content);
     setIsClubDropdownOpen(false);
     setIsMobileMenuOpen(false);
+    setIsMobileClubDropdownOpen(false);
+  };
+
+  const openRecruitmentFromPopup = () => {
+    setClubPopupContent(null);
+    setIsRegistrationOpen(true);
   };
 
   const renderMatchCard = (m, showResult = true) => {
@@ -719,6 +727,12 @@ export default function AskLipuvkaWeb() {
         @keyframes scaleIn {
           from { opacity: 0; transform: scale(0.96); }
           to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes sponsorGlow {
+          0% { box-shadow: 0 0 0 rgba(34, 197, 94, 0.00); transform: translateY(0); }
+          50% { box-shadow: 0 0 28px rgba(34, 197, 94, 0.18); transform: translateY(-2px); }
+          100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0.00); transform: translateY(0); }
         }
       `}</style>
 
@@ -804,6 +818,14 @@ export default function AskLipuvkaWeb() {
 
                   <button
                     type="button"
+                    onClick={() => openClubPopup('nabor')}
+                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                  >
+                    Nábor hráčů
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => openClubPopup('podnety')}
                     className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
                   >
@@ -820,6 +842,10 @@ export default function AskLipuvkaWeb() {
                 </div>
               )}
             </div>
+
+            <button type="button" onClick={() => openClubPopup('partneri')} className="hover:text-green-600">
+              Partneři
+            </button>
 
             <button type="button" onClick={openTrainers} className="hover:text-green-600">
               Trenéři
@@ -936,19 +962,47 @@ export default function AskLipuvkaWeb() {
 
               <button
                 type="button"
-                onClick={() => openClubPopup('filozofie')}
+                onClick={() => setIsMobileClubDropdownOpen((prev) => !prev)}
                 className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
-                Filozofie
+                Klub {isMobileClubDropdownOpen ? '▲' : '▼'}
               </button>
 
-              <button
-                type="button"
-                onClick={() => openClubPopup('rodice')}
-                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
-              >
-                Pro rodiče
-              </button>
+              {isMobileClubDropdownOpen && (
+                <div className="flex flex-col bg-gray-50">
+                  <button
+                    type="button"
+                    onClick={() => openClubPopup('filozofie')}
+                    className="px-8 py-3 text-left text-gray-700"
+                  >
+                    Filozofie
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openClubPopup('rodice')}
+                    className="px-8 py-3 text-left text-gray-700"
+                  >
+                    Pro rodiče
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openClubPopup('nabor')}
+                    className="px-8 py-3 text-left text-gray-700"
+                  >
+                    Nábor hráčů
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={openRegistration}
+                    className="px-8 py-3 text-left text-gray-700"
+                  >
+                    Registrace hráče
+                  </button>
+                </div>
+              )}
 
               <button
                 type="button"
@@ -968,18 +1022,18 @@ export default function AskLipuvkaWeb() {
 
               <button
                 type="button"
-                onClick={openTrainers}
+                onClick={() => openClubPopup('partneri')}
                 className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
-                Trenéři
+                Partneři
               </button>
 
               <button
                 type="button"
-                onClick={openRegistration}
+                onClick={openTrainers}
                 className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
-                Registrace hráče
+                Trenéři
               </button>
             </div>
           </div>
@@ -1183,16 +1237,10 @@ export default function AskLipuvkaWeb() {
                     }}
                     className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                   >
-                    <img
-                      src={album.cover}
-                      alt={album.title}
-                      className="h-56 w-full object-cover"
-                    />
+                    <img src={album.cover} alt={album.title} className="h-56 w-full object-cover" />
                     <div className="p-5">
                       <div className="text-xl font-bold text-gray-900">{album.title}</div>
-                      <div className="mt-1 text-sm text-gray-500">
-                        {album.photos.length} fotek
-                      </div>
+                      <div className="mt-1 text-sm text-gray-500">{album.photos.length} fotek</div>
                     </div>
                   </button>
                 ))}
@@ -1421,6 +1469,45 @@ export default function AskLipuvkaWeb() {
                 </>
               )}
 
+              {clubPopupContent === 'nabor' && (
+                <>
+                  <div className="overflow-hidden rounded-3xl border border-green-100 bg-white shadow-sm">
+                    <img
+                      src="/nabor/nabor.png"
+                      alt="Nábor hráčů ASK Lipůvka"
+                      className="h-auto w-full object-cover"
+                    />
+                  </div>
+
+                  <div className="mt-6 text-center">
+                    <h2 className="text-3xl font-bold text-green-600">Nábor hráčů</h2>
+                    <p className="mt-4 text-lg text-gray-700">
+                      ASK Lipůvka hledá nové hráče do mládežnických kategorií.
+                    </p>
+
+                    <div className="mt-5 flex flex-wrap justify-center gap-3">
+                      <span className="rounded-full bg-green-100 px-4 py-2 font-semibold text-green-700">U7</span>
+                      <span className="rounded-full bg-green-100 px-4 py-2 font-semibold text-green-700">U9</span>
+                      <span className="rounded-full bg-green-100 px-4 py-2 font-semibold text-green-700">U11</span>
+                    </div>
+
+                    <p className="mt-5 text-gray-700">
+                      Přijímáme děti od 5 let. Přijď si zatrénovat a staň se součástí ASK Lipůvka.
+                    </p>
+
+                    <div className="mt-6">
+                      <button
+                        type="button"
+                        onClick={openRecruitmentFromPopup}
+                        className="rounded-xl bg-green-600 px-8 py-3 font-semibold text-white transition hover:scale-[1.02] hover:bg-green-700"
+                      >
+                        Přihlásit dítě
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
               {clubPopupContent === 'podnety' && (
                 <>
                   <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
@@ -1516,6 +1603,67 @@ export default function AskLipuvkaWeb() {
                   </div>
                 </>
               )}
+
+              {clubPopupContent === 'partneri' && (
+                <>
+                  <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
+                    <h2 className="text-3xl font-bold text-green-600">Partneři & sponzoři</h2>
+                  </div>
+
+                  <p className="mb-8 text-gray-600">
+                    Děkujeme všem partnerům, kteří podporují mládež ASK Lipůvka.
+                  </p>
+
+                  {partners.some((partner) => partner.featured) && (
+                    <div className="mb-10">
+                      <div className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-green-600">
+                        Hlavní partner
+                      </div>
+
+                      {partners
+                        .filter((partner) => partner.featured)
+                        .map((partner) => (
+                          <a
+                            key={partner.name}
+                            href={partner.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block rounded-3xl bg-black p-6 text-center shadow-lg transition hover:scale-[1.02]"
+                            style={{ animation: 'sponsorGlow 3s ease-in-out infinite' }}
+                          >
+                            <img
+                              src={partner.logo}
+                              alt={partner.name}
+                              className="mx-auto max-h-24 object-contain"
+                            />
+                          </a>
+                        ))}
+                    </div>
+                  )}
+
+                  {partners.filter((partner) => !partner.featured).length > 0 && (
+                    <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4">
+                      {partners
+                        .filter((partner) => !partner.featured)
+                        .map((partner) => (
+                          <a
+                            key={partner.name}
+                            href={partner.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center justify-center rounded-2xl bg-gray-50 p-5 shadow-sm transition hover:scale-105 hover:shadow-md"
+                          >
+                            <img
+                              src={partner.logo}
+                              alt={partner.name}
+                              className="max-h-16 object-contain"
+                            />
+                          </a>
+                        ))}
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -1539,9 +1687,7 @@ export default function AskLipuvkaWeb() {
                 ×
               </button>
 
-              <h2 className="mb-6 text-3xl font-bold text-green-600">
-                Registrační podmínky
-              </h2>
+              <h2 className="mb-6 text-3xl font-bold text-green-600">Registrační podmínky</h2>
 
               <div className="space-y-5 rounded-2xl bg-gray-50 p-6 text-gray-700">
                 <div>
@@ -1657,9 +1803,7 @@ export default function AskLipuvkaWeb() {
                   <span className={`rounded-full px-3 py-1 text-sm font-bold ${activeCategoryStyle.softBadge}`}>
                     {activeCategoryShortLabel}
                   </span>
-                  <span className="text-sm text-gray-500">
-                    Kompletní přehled zápasů vybrané kategorie
-                  </span>
+                  <span className="text-sm text-gray-500">Kompletní přehled zápasů vybrané kategorie</span>
                 </div>
 
                 <div className="space-y-4">
@@ -1699,9 +1843,7 @@ export default function AskLipuvkaWeb() {
                                 )}
                               </div>
 
-                              <div className="mt-1 text-sm text-gray-500">
-                                {m.date} • {m.time}
-                              </div>
+                              <div className="mt-1 text-sm text-gray-500">{m.date} • {m.time}</div>
 
                               <div className="mt-2 text-sm font-medium text-gray-700">
                                 Hraje se: {m.home ? 'Lipůvka' : m.venue || 'bude doplněno'}
@@ -1875,9 +2017,7 @@ export default function AskLipuvkaWeb() {
                 ×
               </button>
 
-              <h2 className="mb-6 text-3xl font-bold text-green-600">
-                Realizační tým mládeže
-              </h2>
+              <h2 className="mb-6 text-3xl font-bold text-green-600">Realizační tým mládeže</h2>
 
               <h3 className="mb-4 text-xl font-bold">Vedení mládeže</h3>
 
@@ -2074,14 +2214,13 @@ export default function AskLipuvkaWeb() {
           </span>
         </div>
       </section>
-<section className="mx-auto max-w-5xl px-6 pb-10">
+
+      <section className="mx-auto max-w-5xl px-6 pb-10">
         <div className="rounded-2xl bg-gray-50 p-6 text-center shadow-sm">
-          <h3 className="mb-3 text-xl font-bold text-gray-800">
-            Mládežnické týmy ASK Lipůvka
-          </h3>
+          <h3 className="mb-3 text-xl font-bold text-gray-800">Mládežnické týmy ASK Lipůvka</h3>
 
           <p className="text-gray-700">
-            Mládežnické týmy ASK Lipůvka zahrnují předpřípravku (U7), mladší přípravku (U9) a starší přípravku (U11). Mladší přípravka se účastní soutěží a od příští sezony budem mít dva týmy. Přihlásíme starší přípravku.
+            Mládežnické týmy ASK Lipůvka zahrnují předpřípravku (U7), mladší přípravku (U9) a starší přípravku (U11). Mladší přípravka se účastní soutěží a od příští sezony budeme mít dva týmy. Přihlásíme starší přípravku.
           </p>
 
           <div className="mt-3 text-sm text-gray-600">
