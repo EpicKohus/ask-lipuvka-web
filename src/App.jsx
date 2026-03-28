@@ -2074,6 +2074,21 @@ export default function AskLipuvkaWeb() {
           </span>
         </div>
       </section>
+<section className="mx-auto max-w-5xl px-6 pb-10">
+        <div className="rounded-2xl bg-gray-50 p-6 text-center shadow-sm">
+          <h3 className="mb-3 text-xl font-bold text-gray-800">
+            Mládežnické týmy ASK Lipůvka
+          </h3>
+
+          <p className="text-gray-700">
+            Mládežnické týmy ASK Lipůvka zahrnují předpřípravku (U7), mladší přípravku (U9) a starší přípravku (U11). Mladší přípravka se účastní soutěží a od příští sezony bude mít dva týmy.
+          </p>
+
+          <div className="mt-3 text-sm text-gray-600">
+            Předpřípravka U7 • Mladší přípravka U9 • Starší přípravka U11
+          </div>
+        </div>
+      </section>
 
       <footer className="py-8 text-center text-gray-500">
         <div className="mb-4 flex flex-wrap items-center justify-center gap-5">
