@@ -30,9 +30,24 @@ export default function AskLipuvkaWeb() {
   }, []);
 
   const categories = [
-    { id: 'predpripravka', label: 'Předpřípravka', shortLabel: 'U7' },
-    { id: 'mladsi-pripravka', label: 'Mladší přípravka', shortLabel: 'U9' },
-    { id: 'starsi-pripravka', label: 'Starší přípravka', shortLabel: 'U11' },
+    {
+      id: 'predpripravka',
+      label: 'Předpřípravka',
+      shortLabel: 'U7',
+      image: '/tym-u7.jpg',
+    },
+    {
+      id: 'mladsi-pripravka',
+      label: 'Mladší přípravka',
+      shortLabel: 'U9',
+      image: '/tym-u9.jpg',
+    },
+    {
+      id: 'starsi-pripravka',
+      label: 'Starší přípravka',
+      shortLabel: 'U11',
+      image: '/tym-u11.jpg',
+    },
   ];
 
   const newsItems = [
@@ -354,6 +369,7 @@ export default function AskLipuvkaWeb() {
   const activeCategoryData = categories.find((category) => category.id === activeCategory);
   const activeCategoryLabel = activeCategoryData?.label || '';
   const activeCategoryShortLabel = activeCategoryData?.shortLabel || '';
+  const activeCategoryImage = activeCategoryData?.image || '/field.png';
 
   const selectedPhoto =
     selectedAlbum && selectedPhotoIndex !== null
@@ -365,18 +381,52 @@ export default function AskLipuvkaWeb() {
     return cat?.shortLabel || '';
   };
 
-  const getCategoryColor = (categoryId) => {
+  const getCategoryStyle = (categoryId) => {
     switch (categoryId) {
       case 'predpripravka':
-        return 'bg-blue-600';
+        return {
+          badge: 'bg-blue-600 text-white',
+          softBadge: 'bg-blue-100 text-blue-700',
+          light: 'bg-blue-50 border-blue-200',
+          text: 'text-blue-600',
+          button: 'bg-blue-600 text-white hover:bg-blue-700',
+          buttonOutline: 'border-blue-500 text-blue-600 hover:bg-blue-50',
+          ring: 'ring-blue-200',
+        };
       case 'mladsi-pripravka':
-        return 'bg-green-600';
+        return {
+          badge: 'bg-green-600 text-white',
+          softBadge: 'bg-green-100 text-green-700',
+          light: 'bg-green-50 border-green-200',
+          text: 'text-green-600',
+          button: 'bg-green-600 text-white hover:bg-green-700',
+          buttonOutline: 'border-green-500 text-green-600 hover:bg-green-50',
+          ring: 'ring-green-200',
+        };
       case 'starsi-pripravka':
-        return 'bg-orange-500';
+        return {
+          badge: 'bg-orange-500 text-white',
+          softBadge: 'bg-orange-100 text-orange-700',
+          light: 'bg-orange-50 border-orange-200',
+          text: 'text-orange-600',
+          button: 'bg-orange-500 text-white hover:bg-orange-600',
+          buttonOutline: 'border-orange-500 text-orange-600 hover:bg-orange-50',
+          ring: 'ring-orange-200',
+        };
       default:
-        return 'bg-gray-500';
+        return {
+          badge: 'bg-gray-500 text-white',
+          softBadge: 'bg-gray-100 text-gray-700',
+          light: 'bg-gray-50 border-gray-200',
+          text: 'text-gray-600',
+          button: 'bg-gray-500 text-white hover:bg-gray-600',
+          buttonOutline: 'border-gray-500 text-gray-600 hover:bg-gray-50',
+          ring: 'ring-gray-200',
+        };
     }
   };
+
+  const activeCategoryStyle = getCategoryStyle(activeCategory);
 
   const goToPrevPhoto = () => {
     if (!selectedAlbum || selectedPhotoIndex === null) return;
@@ -600,6 +650,7 @@ export default function AskLipuvkaWeb() {
 
   const renderMatchCard = (m, showResult = true) => {
     const isToday = isSameDay(parseMatchDate(m.date), todayStart);
+    const categoryStyle = getCategoryStyle(m.category);
 
     return (
       <button
@@ -607,18 +658,24 @@ export default function AskLipuvkaWeb() {
         key={`${m.date}-${m.opponent}`}
         onClick={() => setSelectedMatch(m)}
         className={`w-full rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
-          isToday ? 'border-green-500 bg-green-50 ring-2 ring-green-200' : 'border-gray-200 bg-white'
+          isToday
+            ? 'border-green-500 bg-green-50 ring-2 ring-green-300 shadow-lg'
+            : categoryStyle.light
         }`}
       >
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <div className="text-lg font-bold text-gray-900">
-                ASK Lipůvka vs. {m.opponent}
+              <div className="flex flex-wrap items-center gap-2 text-lg font-bold text-gray-900">
+                <span>ASK Lipůvka vs. {m.opponent}</span>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${categoryStyle.badge}`}>
+                  {getCategoryShortLabel(m.category)}
+                </span>
               </div>
+
               {isToday && (
-                <span className="rounded-full bg-green-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
-                  Dnes
+                <span className="animate-pulse rounded-full bg-green-600 px-4 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-md">
+                  DNES
                 </span>
               )}
             </div>
@@ -938,6 +995,7 @@ export default function AskLipuvkaWeb() {
           <div className="mx-auto flex max-w-2xl flex-wrap justify-center gap-3">
             {categories.map((category) => {
               const isActive = activeCategory === category.id;
+              const categoryStyle = getCategoryStyle(category.id);
 
               return (
                 <button
@@ -946,14 +1004,14 @@ export default function AskLipuvkaWeb() {
                   onClick={() => setActiveCategory(category.id)}
                   className={`flex items-center gap-2 rounded-xl px-4 py-3 font-semibold transition ${
                     isActive
-                      ? 'bg-green-600 text-white'
-                      : 'border border-gray-300 bg-white/90 text-gray-700 hover:border-green-500 hover:text-green-600'
+                      ? `${categoryStyle.button} shadow-md`
+                      : `border bg-white/90 text-gray-700 ${categoryStyle.buttonOutline}`
                   }`}
                 >
                   <span>{category.label}</span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                      isActive ? 'bg-white/20 text-white' : 'bg-green-100 text-green-700'
+                      isActive ? 'bg-white/20 text-white' : categoryStyle.softBadge
                     }`}
                   >
                     {category.shortLabel}
@@ -966,23 +1024,23 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <section id="novinky" className="mx-auto max-w-5xl px-6 py-14">
-        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-8 shadow-sm">
+        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
           <div className="mb-2 flex flex-wrap items-center gap-3">
-            <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+            <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
               {activeCategoryLabel}
             </div>
-            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
               {activeCategoryShortLabel}
             </span>
           </div>
 
-          <h2 className="mb-4 text-3xl font-bold text-green-600">Novinky</h2>
+          <h2 className={`mb-4 text-3xl font-bold ${activeCategoryStyle.text}`}>Novinky</h2>
 
           {filteredNews.length > 0 ? (
             <div className="space-y-4">
               {filteredNews.map((item) => (
                 <div key={`${item.category}-${item.title}`} className="rounded-2xl bg-white p-5 shadow-sm">
-                  <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">
+                  <div className={`mb-2 text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
                     {item.date}
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-gray-900">{item.title}</h3>
@@ -1000,21 +1058,21 @@ export default function AskLipuvkaWeb() {
 
       <section id="zapasy" className="mx-auto max-w-5xl px-6 py-14">
         <div className="mb-3 flex flex-wrap items-center gap-3">
-          <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+          <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
             {activeCategoryLabel}
           </div>
-          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+          <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
             {activeCategoryShortLabel}
           </span>
         </div>
 
         <div className="mb-6">
-          <h2 className="mb-2 text-3xl font-bold text-green-600">Nadcházející zápasy</h2>
+          <h2 className={`mb-2 text-3xl font-bold ${activeCategoryStyle.text}`}>Nadcházející zápasy</h2>
 
           <button
             type="button"
             onClick={() => setIsScheduleOpen(true)}
-            className="mt-4 rounded-xl bg-green-600 px-6 py-3 font-semibold text-white transition hover:scale-[1.02] hover:bg-green-700"
+            className={`mt-4 rounded-xl px-6 py-3 font-semibold transition hover:scale-[1.02] ${activeCategoryStyle.button}`}
           >
             Rozpis zápasů – Jaro 2026
           </button>
@@ -1033,15 +1091,15 @@ export default function AskLipuvkaWeb() {
 
       <section className="mx-auto max-w-5xl px-6 py-14">
         <div className="mb-3 flex flex-wrap items-center gap-3">
-          <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+          <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
             {activeCategoryLabel}
           </div>
-          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+          <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
             {activeCategoryShortLabel}
           </span>
         </div>
 
-        <h2 className="mb-6 text-3xl font-bold text-green-600">Odehrané zápasy</h2>
+        <h2 className={`mb-6 text-3xl font-bold ${activeCategoryStyle.text}`}>Odehrané zápasy</h2>
 
         <div className="space-y-4">
           {playedMatches.length > 0 ? (
@@ -1055,17 +1113,17 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <section className="mx-auto max-w-5xl px-6 pb-14">
-        <div className="rounded-3xl border border-gray-200 bg-gray-50 p-8 shadow-sm">
+        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
           <div className="mb-2 flex flex-wrap items-center gap-3">
-            <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+            <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
               {activeCategoryLabel}
             </div>
-            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
               {activeCategoryShortLabel}
             </span>
           </div>
 
-          <h2 className="mb-4 text-3xl font-bold text-green-600">Kdy trénujeme</h2>
+          <h2 className={`mb-4 text-3xl font-bold ${activeCategoryStyle.text}`}>Kdy trénujeme</h2>
 
           <div className="rounded-2xl bg-white p-6 text-lg shadow-sm">
             {activeCategory === 'predpripravka' && (
@@ -1270,12 +1328,12 @@ export default function AskLipuvkaWeb() {
                 <>
                   <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
                     <h2 className="text-3xl font-bold text-green-600">Filozofie</h2>
-                    <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
                       {activeCategoryShortLabel}
                     </span>
                   </div>
 
-                  <div className="mb-6 text-sm font-semibold uppercase tracking-wide text-green-600">
+                  <div className={`mb-6 text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
                     {activeCategoryLabel}
                   </div>
 
@@ -1302,12 +1360,12 @@ export default function AskLipuvkaWeb() {
                 <>
                   <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
                     <h2 className="text-3xl font-bold text-green-600">Pro rodiče</h2>
-                    <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+                    <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
                       {activeCategoryShortLabel}
                     </span>
                   </div>
 
-                  <div className="mb-6 text-sm font-semibold uppercase tracking-wide text-green-600">
+                  <div className={`mb-6 text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
                     {activeCategoryLabel}
                   </div>
 
@@ -1578,13 +1636,13 @@ export default function AskLipuvkaWeb() {
 
               <div className="relative h-56 w-full">
                 <img
-                  src="/field.png"
-                  alt="Rozpis zápasů"
+                  src={activeCategoryImage}
+                  alt={activeCategoryLabel}
                   className="h-full w-full object-cover"
                 />
                 <div className="absolute inset-0 bg-black/45" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
-                  <div className="mb-2 rounded-full bg-white/15 px-4 py-1 text-sm font-semibold backdrop-blur">
+                  <div className={`mb-2 rounded-full px-4 py-1 text-sm font-semibold backdrop-blur ${activeCategoryStyle.badge}`}>
                     {activeCategoryLabel}
                   </div>
                   <h2 className="text-3xl font-black md:text-4xl">Rozpis zápasů</h2>
@@ -1594,7 +1652,7 @@ export default function AskLipuvkaWeb() {
 
               <div className="p-6">
                 <div className="mb-5 flex flex-wrap items-center gap-3">
-                  <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-bold text-green-700">
+                  <span className={`rounded-full px-3 py-1 text-sm font-bold ${activeCategoryStyle.softBadge}`}>
                     {activeCategoryShortLabel}
                   </span>
                   <span className="text-sm text-gray-500">
@@ -1607,25 +1665,34 @@ export default function AskLipuvkaWeb() {
                     fullScheduleMatches.map((m) => {
                       const isToday = isSameDay(parseMatchDate(m.date), todayStart);
                       const isPlayed = parseMatchDate(m.date) < todayStart;
+                      const categoryStyle = getCategoryStyle(m.category);
 
                       return (
                         <div
                           key={`schedule-${m.date}-${m.opponent}`}
                           className={`rounded-2xl border p-5 shadow-sm ${
-                            isToday ? 'border-green-500 bg-green-50 ring-2 ring-green-200' : 'border-gray-200 bg-white'
+                            isToday
+                              ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
+                              : categoryStyle.light
                           }`}
                         >
                           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
-                                <div className="text-lg font-bold text-gray-900">
-                                  {m.home
-                                    ? `ASK Lipůvka vs. ${m.opponent}`
-                                    : `${m.opponent} vs. ASK Lipůvka`}
+                                <div className="flex flex-wrap items-center gap-2 text-lg font-bold text-gray-900">
+                                  <span>
+                                    {m.home
+                                      ? `ASK Lipůvka vs. ${m.opponent}`
+                                      : `${m.opponent} vs. ASK Lipůvka`}
+                                  </span>
+                                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${categoryStyle.badge}`}>
+                                    {getCategoryShortLabel(m.category)}
+                                  </span>
                                 </div>
+
                                 {isToday && (
-                                  <span className="rounded-full bg-green-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white">
-                                    Dnes
+                                  <span className="animate-pulse rounded-full bg-green-600 px-4 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-md">
+                                    DNES
                                   </span>
                                 )}
                               </div>
@@ -1857,47 +1924,51 @@ export default function AskLipuvkaWeb() {
               <h3 className="mb-4 text-xl font-bold">Trenéři</h3>
 
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {team.trainers.map((person) => (
-                  <div
-                    key={person.name}
-                    className="rounded-2xl bg-gray-100 p-5 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
-                  >
-                    <img
-                      src={person.photo}
-                      alt={person.name}
-                      className="mx-auto mb-4 h-24 w-24 rounded-full object-cover"
-                    />
+                {team.trainers.map((person) => {
+                  const categoryStyle = getCategoryStyle(person.category);
 
-                    <div className="text-lg font-bold">{person.name}</div>
+                  return (
+                    <div
+                      key={person.name}
+                      className="rounded-2xl bg-gray-100 p-5 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                    >
+                      <img
+                        src={person.photo}
+                        alt={person.name}
+                        className="mx-auto mb-4 h-24 w-24 rounded-full object-cover"
+                      />
 
-                    <div className="mt-1 flex items-center justify-center gap-2">
-                      <div className="text-sm text-gray-600">{person.role}</div>
+                      <div className="text-lg font-bold">{person.name}</div>
 
-                      {person.category && (
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-xs font-bold text-white ${getCategoryColor(person.category)}`}
+                      <div className="mt-1 flex items-center justify-center gap-2">
+                        <div className="text-sm text-gray-600">{person.role}</div>
+
+                        {person.category && (
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-xs font-bold ${categoryStyle.badge}`}
+                          >
+                            {getCategoryShortLabel(person.category)}
+                          </span>
+                        )}
+                      </div>
+
+                      {person.licence && (
+                        <div className="mt-2 inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
+                          {person.licence}
+                        </div>
+                      )}
+
+                      {person.phone && (
+                        <a
+                          href={`tel:${person.phone}`}
+                          className="mt-2 block font-semibold text-green-600 hover:underline"
                         >
-                          {getCategoryShortLabel(person.category)}
-                        </span>
+                          {person.phoneLabel}
+                        </a>
                       )}
                     </div>
-
-                    {person.licence && (
-                      <div className="mt-2 inline-block rounded-full bg-blue-600 px-3 py-1 text-xs font-bold text-white">
-                        {person.licence}
-                      </div>
-                    )}
-
-                    {person.phone && (
-                      <a
-                        href={`tel:${person.phone}`}
-                        className="mt-2 block font-semibold text-green-600 hover:underline"
-                      >
-                        {person.phoneLabel}
-                      </a>
-                    )}
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1923,10 +1994,10 @@ export default function AskLipuvkaWeb() {
 
             <div className="mb-6 border-b border-gray-200 pb-4 pr-10">
               <div className="mb-2 flex flex-wrap items-center gap-3">
-                <div className="text-sm font-semibold uppercase tracking-wide text-green-600">
+                <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
                   Detail zápasu • {activeCategoryLabel}
                 </div>
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
                   {activeCategoryShortLabel}
                 </span>
               </div>
@@ -1952,7 +2023,7 @@ export default function AskLipuvkaWeb() {
 
             <div className="grid gap-8 xl:grid-cols-2">
               <div>
-                <h3 className="mb-3 text-xl font-bold text-green-600">Fotky</h3>
+                <h3 className={`mb-3 text-xl font-bold ${activeCategoryStyle.text}`}>Fotky</h3>
 
                 {selectedMatch.photos.length > 0 ? (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -1971,7 +2042,7 @@ export default function AskLipuvkaWeb() {
               </div>
 
               <div>
-                <h3 className="mb-3 text-xl font-bold text-green-600">Článek k zápasu</h3>
+                <h3 className={`mb-3 text-xl font-bold ${activeCategoryStyle.text}`}>Článek k zápasu</h3>
 
                 <div className="rounded-2xl bg-gray-50 p-5">
                   {parseMatchDate(selectedMatch.date) < todayStart ? (
