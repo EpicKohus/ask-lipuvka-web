@@ -1217,6 +1217,15 @@ export default function AskLipuvkaWeb() {
 
       <section id="top" className="relative flex h-[80vh] items-center justify-center text-center">
         <img src="/field.png" alt="hřiště" className="absolute inset-0 h-full w-full object-cover" />
+	<div className="absolute top-6 left-6 z-10 text-left">
+  <div className="text-2xl font-black text-white drop-shadow-lg md:text-3xl">
+    ASK Lipůvka
+  </div>
+  <div className="text-sm font-semibold text-green-300 drop-shadow md:text-base">
+    Mládež
+  </div>
+</div>
+
 
         <div className="relative z-10 rounded-2xl bg-white/70 p-8 backdrop-blur-md">
           <img src="/logo.png" alt="logo" className="mx-auto mb-4 w-28" />
