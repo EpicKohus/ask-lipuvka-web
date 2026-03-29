@@ -905,6 +905,17 @@ export default function AskLipuvkaWeb() {
           50% { box-shadow: 0 0 28px rgba(34, 197, 94, 0.18); transform: translateY(-2px); }
           100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0.00); transform: translateY(0); }
         }
+
+        @keyframes heroFloat {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(6px); }
+          100% { transform: translateY(0px); }
+        }
+
+        @keyframes hintBounce {
+          0%, 100% { transform: translateY(0); opacity: 0.85; }
+          50% { transform: translateY(6px); opacity: 1; }
+        }
       `}</style>
 
       <header className="sticky top-0 z-20 border-b bg-white/90 backdrop-blur">
@@ -1219,15 +1230,30 @@ export default function AskLipuvkaWeb() {
         </div>
       )}
 
-      <section id="top" className="relative flex h-[80vh] items-center justify-center text-center">
+      <section
+        id="top"
+        className="relative flex min-h-[72vh] items-center justify-center px-4 text-center md:h-[80vh]"
+      >
         <img src="/field.png" alt="hřiště" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/45" />
 
-        <div className="relative z-10 rounded-2xl bg-white/70 p-8 backdrop-blur-md">
-          <img src="/logo.png" alt="logo" className="mx-auto mb-4 w-28" />
-          <h1 className="mb-3 text-4xl font-black text-green-700 md:text-6xl">ASK Lipůvka</h1>
-          <p className="mb-6 text-gray-700">Oficiální klubový web mládeže ASK Lipůvka</p>
+        <div className="relative z-10 w-full max-w-xl rounded-2xl bg-white/72 p-5 shadow-lg backdrop-blur-md md:p-8">
+          <img
+            src="/logo.png"
+            alt="logo"
+            className="mx-auto mb-3 w-20 md:mb-4 md:w-28"
+            style={{ animation: 'heroFloat 4s ease-in-out infinite' }}
+          />
 
-          <div className="mx-auto flex max-w-2xl flex-wrap justify-center gap-3">
+          <h1 className="mb-2 text-2xl font-black text-green-700 md:mb-3 md:text-6xl">
+            ASK Lipůvka
+          </h1>
+
+          <p className="mb-5 text-sm text-gray-700 md:mb-6 md:text-base">
+            Oficiální klubový web mládeže ASK Lipůvka
+          </p>
+
+          <div className="mx-auto flex max-w-md flex-wrap justify-center gap-3 md:max-w-2xl md:gap-3">
             {categories.map((category) => {
               const isActive = activeCategory === category.id;
               const categoryStyle = getCategoryStyle(category.id);
@@ -1237,7 +1263,7 @@ export default function AskLipuvkaWeb() {
                   key={category.id}
                   type="button"
                   onClick={() => selectTeam(category.id)}
-                  className={`flex items-center gap-2 rounded-xl px-4 py-3 font-semibold transition ${
+                  className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold transition duration-200 active:scale-[0.98] md:w-auto hover:-translate-y-0.5 hover:shadow-md ${
                     isActive
                       ? `${categoryStyle.button} shadow-md`
                       : `border bg-white/90 text-gray-700 ${categoryStyle.buttonOutline}`
@@ -1256,6 +1282,27 @@ export default function AskLipuvkaWeb() {
             })}
           </div>
         </div>
+
+        <a
+          href="#novinky"
+          className="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 text-white/90 transition hover:text-white"
+          aria-label="Posunout dolů"
+          style={{ animation: 'hintBounce 1.8s ease-in-out infinite' }}
+        >
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-xs font-semibold uppercase tracking-[0.18em]">Scroll</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-6 w-6"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+        </a>
       </section>
 
       <section id="novinky" className="mx-auto max-w-5xl px-6 py-14">
@@ -2456,7 +2503,7 @@ export default function AskLipuvkaWeb() {
           <h3 className="mb-3 text-xl font-bold text-gray-800">Mládežnické týmy ASK Lipůvka</h3>
 
           <p className="text-gray-700">
-           Mládežnický fotbal ASK Lipůvka zahrnuje předpřípravku (U7), mladší přípravku (U9) a starší přípravku (U11). Mladší přípravka se účastní soutěží a od příští sezony budeme mít dva týmy v soutěžích U9 a U11.
+            Mládežnický fotbal ASK Lipůvka zahrnuje předpřípravku (U7), mladší přípravku (U9) a starší přípravku (U11). Mladší přípravka se účastní soutěží a od příští sezony budeme mít dva týmy v soutěžích U9 a U11.
           </p>
 
           <div className="mt-3 text-sm text-gray-600">
