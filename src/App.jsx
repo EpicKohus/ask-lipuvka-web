@@ -911,10 +911,9 @@ export default function AskLipuvkaWeb() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <a href="#top" className="flex items-center gap-3">
             <img src="/logo.png" alt="logo" className="h-10 w-10 rounded-full" />
-           <div className="text-lg md:text-xl font-bold text-green-600">
-  ASK Lipůvka – mládež
-</div>
-</div>
+            <div className="text-lg font-bold text-green-600 md:text-xl">
+              ASK Lipůvka – mládež
+            </div>
           </a>
 
           <nav className="hidden gap-6 text-sm md:flex">
@@ -1066,7 +1065,9 @@ export default function AskLipuvkaWeb() {
             <div className="flex items-center justify-between border-b px-5 py-4">
               <div className="flex items-center gap-3">
                 <img src="/logo.png" alt="logo" className="h-10 w-10 rounded-full" />
-                <div className="text-lg font-bold text-green-600">ASK Lipůvka</div>
+                <div className="text-base font-bold text-green-600">
+                  ASK Lipůvka – mládež
+                </div>
               </div>
 
               <button
