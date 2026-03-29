@@ -2456,7 +2456,7 @@ export default function AskLipuvkaWeb() {
           <h3 className="mb-3 text-xl font-bold text-gray-800">Mládežnické týmy ASK Lipůvka</h3>
 
           <p className="text-gray-700">
-            Mládežnické týmy - Fotbal ASK Lipůvka zahrnují předpřípravku (U7), mladší přípravku (U9) a starší přípravku (U11). Mladší přípravka se účastní soutěží a od příští sezony budeme mít dva týmy v soutěžích U9 a U11.
+           Mládežnický fotbal ASK Lipůvka zahrnuje předpřípravku (U7), mladší přípravku (U9) a starší přípravku (U11). Mladší přípravka se účastní soutěží a od příští sezony budeme mít dva týmy v soutěžích U9 a U11.
           </p>
 
           <div className="mt-3 text-sm text-gray-600">
