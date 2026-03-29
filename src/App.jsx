@@ -866,18 +866,18 @@ export default function AskLipuvkaWeb() {
 
                   <button
                     type="button"
-                    onClick={() => openClubPopup('podnety')}
+                    onClick={openRegistration}
                     className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
                   >
-                    Kniha podnětů
+                    Registrace hráče
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => openClubPopup('kde-nas-najdete')}
+                    onClick={() => openClubPopup('podnety')}
                     className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
                   >
-                    Kde nás najdete
+                    Kniha podnětů
                   </button>
                 </div>
               )}
@@ -891,8 +891,8 @@ export default function AskLipuvkaWeb() {
               Trenéři
             </button>
 
-            <button type="button" onClick={openRegistration} className="hover:text-green-600">
-              Registrace hráče
+            <button type="button" onClick={() => openClubPopup('kde-nas-najdete')} className="hover:text-green-600">
+              Kde nás najdete
             </button>
           </nav>
 
@@ -2074,10 +2074,11 @@ export default function AskLipuvkaWeb() {
                     />
 
                     <div className="text-lg font-bold">{person.name}</div>
-                   <div className="text-sm text-gray-600">{person.role}</div>
-                  {person.subrole && (
-                  <div className="text-sm text-gray-500">{person.subrole}</div>
-                  )}
+                    <div className="text-sm text-gray-600">{person.role}</div>
+                    {person.subrole && (
+                      <div className="text-sm text-gray-500">{person.subrole}</div>
+                    )}
+
                     {person.licence && (
                       <div className="mt-2 inline-block rounded-full bg-green-600 px-3 py-1 text-xs font-bold text-white">
                         {person.licence}
