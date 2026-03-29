@@ -1229,16 +1229,16 @@ export default function AskLipuvkaWeb() {
         className="relative flex min-h-[72vh] items-center justify-center px-4 text-center md:h-[80vh]"
       >
         <img src="/field.png" alt="hřiště" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-black/35" />
+        <div className="absolute inset-0 bg-black/20" />
 
-        <div className="relative z-10 rounded-3xl border border-white/20 bg-black/50 p-6 text-white shadow-xl backdrop-blur-md md:p-8">
+        <div className="relative z-10 rounded-3xl border border-white/30 bg-white/60 p-6 shadow-xl backdrop-blur-lg md:p-8">
           <img src="/logo.png" alt="logo" className="mx-auto mb-3 w-20 md:w-24" />
 
-          <h1 className="mb-2 text-3xl font-black md:text-5xl">
+          <h1 className="mb-2 text-3xl font-black text-green-700 md:text-5xl">
             ASK Lipůvka
           </h1>
 
-          <p className="mb-5 text-sm text-white/80 md:text-base">
+          <p className="mb-5 text-sm text-gray-700 md:text-base">
             Oficiální klubový web mládeže ASK Lipůvka
           </p>
 
@@ -1255,11 +1255,11 @@ export default function AskLipuvkaWeb() {
                   className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-200 ${
                     isActive
                       ? `${categoryStyle.button} scale-105 shadow-md`
-                      : 'border border-white/30 bg-white/10 text-white hover:bg-white/20'
+                      : `border bg-white/80 text-gray-700 ${categoryStyle.buttonOutline} hover:scale-105`
                   }`}
                 >
                   {category.label}
-                  <span className="rounded-full bg-white/20 px-2 py-0.5 text-xs">
+                  <span className={`rounded-full px-2 py-0.5 text-xs ${categoryStyle.softBadge}`}>
                     {category.shortLabel}
                   </span>
                 </button>
