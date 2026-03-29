@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { db } from './firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 export default function AskLipuvkaWeb() {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
@@ -17,6 +19,9 @@ export default function AskLipuvkaWeb() {
 
   const [activeCategory, setActiveCategory] = useState('mladsi-pripravka');
   const [visitCount, setVisitCount] = useState(null);
+
+  const [firebaseNews, setFirebaseNews] = useState([]);
+  const [firebaseMatches, setFirebaseMatches] = useState([]);
 
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -347,14 +352,22 @@ export default function AskLipuvkaWeb() {
     dateA.getMonth() === dateB.getMonth() &&
     dateA.getDate() === dateB.getDate();
 
+  const availableNews = useMemo(() => {
+    return firebaseNews.length > 0 ? firebaseNews : newsItems;
+  }, [firebaseNews]);
+
+  const availableMatches = useMemo(() => {
+    return firebaseMatches.length > 0 ? firebaseMatches : matches;
+  }, [firebaseMatches]);
+
   const filteredNews = useMemo(
-    () => newsItems.filter((item) => item.category === activeCategory),
-    [activeCategory]
+    () => availableNews.filter((item) => item.category === activeCategory),
+    [availableNews, activeCategory]
   );
 
   const filteredMatches = useMemo(
-    () => matches.filter((match) => match.category === activeCategory),
-    [activeCategory]
+    () => availableMatches.filter((match) => match.category === activeCategory),
+    [availableMatches, activeCategory]
   );
 
   const upcomingMatches = filteredMatches
@@ -496,6 +509,31 @@ export default function AskLipuvkaWeb() {
     };
 
     loadVisits();
+  }, []);
+
+  useEffect(() => {
+    const loadFirebaseData = async () => {
+      try {
+        const newsSnapshot = await getDocs(collection(db, 'news'));
+        const loadedNews = newsSnapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+
+        const matchesSnapshot = await getDocs(collection(db, 'matches'));
+        const loadedMatches = matchesSnapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+
+        setFirebaseNews(loadedNews);
+        setFirebaseMatches(loadedMatches);
+      } catch (error) {
+        console.error('Firebase chyba:', error);
+      }
+    };
+
+    loadFirebaseData();
   }, []);
 
   useEffect(() => {
@@ -2250,21 +2288,20 @@ export default function AskLipuvkaWeb() {
             Facebook
           </a>
 
-	<a
-      href="https://revelop.cz/"
-      target="_blank"
-      rel="noreferrer"
-      className="inline-flex items-center justify-center rounded-xl bg-black px-5 py-3 shadow-sm transition hover:scale-105 hover:shadow-md"
-      aria-label="Revelop"
-      title="Revelop"
-    >
-      <img
-        src="/partneri/revelop.png"
-        alt="Revelop"
-        className="h-8 w-auto object-contain"
-      />
-    </a>
-
+          <a
+            href="https://revelop.cz/"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center justify-center rounded-xl bg-black px-5 py-3 shadow-sm transition hover:scale-105 hover:shadow-md"
+            aria-label="Revelop"
+            title="Revelop"
+          >
+            <img
+              src="/partneri/revelop.png"
+              alt="Revelop"
+              className="h-8 w-auto object-contain"
+            />
+          </a>
 
           <a
             href="https://asklipuvka.cz"
