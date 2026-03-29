@@ -911,7 +911,9 @@ export default function AskLipuvkaWeb() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <a href="#top" className="flex items-center gap-3">
             <img src="/logo.png" alt="logo" className="h-10 w-10 rounded-full" />
-            <div className="text-xl font-bold text-green-600">ASK Lipůvka</div>
+            <div className="text-xl font-bold text-green-600">
+  ASK Lipůvka <span className="font-normal text-gray-700">– mládež</span>
+</div>
           </a>
 
           <nav className="hidden gap-6 text-sm md:flex">
