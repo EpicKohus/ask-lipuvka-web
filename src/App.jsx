@@ -830,55 +830,70 @@ export default function AskLipuvkaWeb() {
             </button>
 
             <div className="relative" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                onClick={() => setIsClubDropdownOpen((prev) => !prev)}
-                className="hover:text-green-600"
-              >
-                Klub ▼
-              </button>
+  <button
+    type="button"
+    onClick={() => setIsClubDropdownOpen((prev) => !prev)}
+    className="hover:text-green-600"
+  >
+    Klub ▼
+  </button>
 
-              {isClubDropdownOpen && (
-                <div className="absolute left-0 top-full mt-2 min-w-[230px] rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
-                  <button
-                    type="button"
-                    onClick={() => openClubPopup('filozofie')}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
-                  >
-                    Filozofie
-                  </button>
+  {isClubDropdownOpen && (
+    <div className="absolute left-0 top-full mt-2 min-w-[230px] rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+      <button
+        type="button"
+        onClick={() => openClubPopup('filozofie')}
+        className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+      >
+        Filozofie
+      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => openClubPopup('rodice')}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
-                  >
-                    Pro rodiče
-                  </button>
+      <button
+        type="button"
+        onClick={() => openClubPopup('rodice')}
+        className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+      >
+        Pro rodiče
+      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => openClubPopup('nabor')}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
-                  >
-                    Nábor hráčů
-                  </button>
+      <button
+        type="button"
+        onClick={() => openClubPopup('nabor')}
+        className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+      >
+        Nábor hráčů
+      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => openClubPopup('podnety')}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
-                  >
-                    Kniha podnětů
-                  </button>
+      <button
+        type="button"
+        onClick={openRegistration}
+        className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+      >
+        Registrace hráče
+      </button>
 
-                  <button
-                    type="button"
-                    onClick={() => openClubPopup('kde-nas-najdete')}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
-                  >
-                    Kde nás najdete
-                  </button>
+      <button
+        type="button"
+        onClick={() => openClubPopup('podnety')}
+        className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+      >
+        Kniha podnětů
+      </button>
+    </div>
+  )}
+</div>
+
+<button type="button" onClick={() => openClubPopup('partneri')} className="hover:text-green-600">
+  Partneři
+</button>
+
+<button type="button" onClick={openTrainers} className="hover:text-green-600">
+  Trenéři
+</button>
+
+<button type="button" onClick={() => openClubPopup('kde-nas-najdete')} className="hover:text-green-600">
+  Kde nás najdete
+</button>
                 </div>
               )}
             </div>
