@@ -91,11 +91,13 @@ export default function AskLipuvkaWeb() {
       {
         name: 'Roman Skovajsa',
         role: 'Předseda mládeže',
+        subrole: 'Člen výboru ASK Lipůvka',
         photo: '/treneri/skovajsa.jpg',
       },
       {
         name: 'Radek Mánek',
         role: 'Vedoucí mládeže',
+        subrole: 'Organizace a komunikace',
         licence: 'FAČR C+',
         phone: '606148368',
         phoneLabel: '606 148 368',
