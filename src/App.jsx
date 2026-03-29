@@ -2539,7 +2539,7 @@ export default function AskLipuvkaWeb() {
             rel="noreferrer"
             className="inline-flex items-center rounded-xl border border-green-600 px-5 py-3 text-base font-bold text-green-700 transition hover:scale-105 hover:bg-green-50"
           >
-            A tým
+            "A" tým muži
           </a>
         </div>
 
