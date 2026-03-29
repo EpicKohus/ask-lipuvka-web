@@ -10,12 +10,15 @@ export default function AskLipuvkaWeb() {
 
   const [isClubDropdownOpen, setIsClubDropdownOpen] = useState(false);
   const [isTeamsDropdownOpen, setIsTeamsDropdownOpen] = useState(false);
+  const [isMobileTeamsDropdownOpen, setIsMobileTeamsDropdownOpen] = useState(false);
   const [isMobileClubDropdownOpen, setIsMobileClubDropdownOpen] = useState(false);
   const [clubPopupContent, setClubPopupContent] = useState(null);
 
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [selectedAlbum, setSelectedAlbum] = useState(null);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null);
+  const [gallerySource, setGallerySource] = useState('global');
+  const [showAllTeamAlbums, setShowAllTeamAlbums] = useState(false);
 
   const [activeCategory, setActiveCategory] = useState('mladsi-pripravka');
   const [visitCount, setVisitCount] = useState(null);
@@ -355,6 +358,12 @@ export default function AskLipuvkaWeb() {
     );
   }, [firebaseGallery, activeCategory]);
 
+  const visibleTeamGalleryAlbums = useMemo(() => {
+    return showAllTeamAlbums ? teamGalleryAlbums : teamGalleryAlbums.slice(0, 3);
+  }, [teamGalleryAlbums, showAllTeamAlbums]);
+
+  const hasMoreTeamAlbums = teamGalleryAlbums.length > 3;
+
   const filteredNews = useMemo(
     () => availableNews.filter((item) => item.category === activeCategory),
     [availableNews, activeCategory]
@@ -470,13 +479,41 @@ export default function AskLipuvkaWeb() {
 
   const selectTeam = (categoryId) => {
     setActiveCategory(categoryId);
+    setShowAllTeamAlbums(false);
     setIsTeamsDropdownOpen(false);
+    setIsMobileTeamsDropdownOpen(false);
     setIsMobileMenuOpen(false);
 
     const topSection = document.getElementById('top');
     if (topSection) {
       topSection.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const closeGallery = () => {
+    setSelectedPhotoIndex(null);
+    setSelectedAlbum(null);
+    setIsGalleryOpen(false);
+    setGallerySource('global');
+  };
+
+  const backFromAlbum = () => {
+    setSelectedPhotoIndex(null);
+
+    if (gallerySource === 'team') {
+      setSelectedAlbum(null);
+      setIsGalleryOpen(false);
+      return;
+    }
+
+    setSelectedAlbum(null);
+  };
+
+  const openTeamAlbum = (album) => {
+    setGallerySource('team');
+    setSelectedAlbum(album);
+    setSelectedPhotoIndex(null);
+    setIsGalleryOpen(true);
   };
 
   useEffect(() => {
@@ -540,21 +577,39 @@ export default function AskLipuvkaWeb() {
 
   useEffect(() => {
     const handleEsc = (event) => {
-      if (event.key === 'Escape') {
-        setIsRegistrationOpen(false);
-        setIsTrainersOpen(false);
-        setIsMobileMenuOpen(false);
-        setSelectedMatch(null);
-        setClubPopupContent(null);
-        setIsClubDropdownOpen(false);
-        setIsTeamsDropdownOpen(false);
-        setIsMobileClubDropdownOpen(false);
+      if (event.key !== 'Escape') return;
+
+      if (selectedPhotoIndex !== null) {
         setSelectedPhotoIndex(null);
-        setSelectedAlbum(null);
-        setIsGalleryOpen(false);
-        setIsTermsOpen(false);
-        setIsScheduleOpen(false);
+        return;
       }
+
+      if (selectedAlbum) {
+        if (gallerySource === 'team') {
+          setSelectedAlbum(null);
+          setIsGalleryOpen(false);
+        } else {
+          setSelectedAlbum(null);
+        }
+        return;
+      }
+
+      if (isGalleryOpen) {
+        closeGallery();
+        return;
+      }
+
+      setIsRegistrationOpen(false);
+      setIsTrainersOpen(false);
+      setIsMobileMenuOpen(false);
+      setSelectedMatch(null);
+      setClubPopupContent(null);
+      setIsClubDropdownOpen(false);
+      setIsTeamsDropdownOpen(false);
+      setIsMobileTeamsDropdownOpen(false);
+      setIsMobileClubDropdownOpen(false);
+      setIsTermsOpen(false);
+      setIsScheduleOpen(false);
     };
 
     const handleClickOutside = () => {
@@ -583,7 +638,7 @@ export default function AskLipuvkaWeb() {
       window.removeEventListener('keydown', handleArrowKeys);
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [selectedPhotoIndex, selectedAlbum]);
+  }, [selectedPhotoIndex, selectedAlbum, isGalleryOpen, gallerySource]);
 
   useEffect(() => {
     const shouldLock =
@@ -669,16 +724,23 @@ export default function AskLipuvkaWeb() {
 
   const openRegistration = () => {
     setIsMobileMenuOpen(false);
+    setIsMobileClubDropdownOpen(false);
+    setIsMobileTeamsDropdownOpen(false);
     setIsRegistrationOpen(true);
   };
 
   const openTrainers = () => {
     setIsMobileMenuOpen(false);
+    setIsMobileClubDropdownOpen(false);
+    setIsMobileTeamsDropdownOpen(false);
     setIsTrainersOpen(true);
   };
 
   const openGallery = () => {
     setIsMobileMenuOpen(false);
+    setIsMobileClubDropdownOpen(false);
+    setIsMobileTeamsDropdownOpen(false);
+    setGallerySource('global');
     setIsGalleryOpen(true);
     setSelectedAlbum(null);
     setSelectedPhotoIndex(null);
@@ -689,6 +751,7 @@ export default function AskLipuvkaWeb() {
     setIsClubDropdownOpen(false);
     setIsMobileMenuOpen(false);
     setIsMobileClubDropdownOpen(false);
+    setIsMobileTeamsDropdownOpen(false);
   };
 
   const openRecruitmentFromPopup = () => {
@@ -1032,13 +1095,13 @@ export default function AskLipuvkaWeb() {
 
               <button
                 type="button"
-                onClick={() => setIsTeamsDropdownOpen((prev) => !prev)}
+                onClick={() => setIsMobileTeamsDropdownOpen((prev) => !prev)}
                 className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
-                Týmy {isTeamsDropdownOpen ? '▲' : '▼'}
+                Týmy {isMobileTeamsDropdownOpen ? '▲' : '▼'}
               </button>
 
-              {isTeamsDropdownOpen && (
+              {isMobileTeamsDropdownOpen && (
                 <div className="flex flex-col bg-gray-50">
                   <button
                     type="button"
@@ -1169,7 +1232,7 @@ export default function AskLipuvkaWeb() {
                 <button
                   key={category.id}
                   type="button"
-                  onClick={() => setActiveCategory(category.id)}
+                  onClick={() => selectTeam(category.id)}
                   className={`flex items-center gap-2 rounded-xl px-4 py-3 font-semibold transition ${
                     isActive
                       ? `${categoryStyle.button} shadow-md`
@@ -1332,26 +1395,38 @@ export default function AskLipuvkaWeb() {
           <h2 className={`mb-6 text-3xl font-bold ${activeCategoryStyle.text}`}>Fotky</h2>
 
           {teamGalleryAlbums.length > 0 ? (
-            <div className="grid gap-6 md:grid-cols-2">
-              {teamGalleryAlbums.map((album) => (
-                <button
-                  type="button"
-                  key={album.id}
-                  onClick={() => {
-                    setSelectedAlbum(album);
-                    setSelectedPhotoIndex(null);
-                    setIsGalleryOpen(true);
-                  }}
-                  className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                >
-                  {renderAlbumCover(album)}
-                  <div className="p-5">
-                    <div className="text-xl font-bold text-gray-900">{album.title}</div>
-                    <div className="mt-1 text-sm text-gray-500">{album.photos?.length || 0} položek</div>
-                  </div>
-                </button>
-              ))}
-            </div>
+            <>
+              <div className="grid gap-6 md:grid-cols-2">
+                {visibleTeamGalleryAlbums.map((album) => (
+                  <button
+                    type="button"
+                    key={album.id}
+                    onClick={() => openTeamAlbum(album)}
+                    className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                  >
+                    {renderAlbumCover(album)}
+                    <div className="p-5">
+                      <div className="text-xl font-bold text-gray-900">{album.title}</div>
+                      <div className="mt-1 text-sm text-gray-500">
+                        {album.photos?.length || 0} položek
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+
+              {hasMoreTeamAlbums && (
+                <div className="mt-6 text-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllTeamAlbums((prev) => !prev)}
+                    className={`rounded-xl px-6 py-3 font-semibold transition ${activeCategoryStyle.button}`}
+                  >
+                    {showAllTeamAlbums ? 'Zobrazit méně alb' : 'Zobrazit všechna alba'}
+                  </button>
+                </div>
+              )}
+            </>
           ) : (
             <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
               Pro tuto kategorii zatím nejsou doplněná žádná alba.
@@ -1363,7 +1438,7 @@ export default function AskLipuvkaWeb() {
       {isGalleryOpen && !selectedAlbum && (
         <div
           className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
-          onClick={() => setIsGalleryOpen(false)}
+          onClick={closeGallery}
         >
           <div className="flex min-h-full items-start justify-center">
             <div
@@ -1372,7 +1447,7 @@ export default function AskLipuvkaWeb() {
             >
               <button
                 type="button"
-                onClick={() => setIsGalleryOpen(false)}
+                onClick={closeGallery}
                 className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-black"
               >
                 ×
@@ -1387,6 +1462,7 @@ export default function AskLipuvkaWeb() {
                       type="button"
                       key={album.id}
                       onClick={() => {
+                        setGallerySource('global');
                         setSelectedAlbum(album);
                         setSelectedPhotoIndex(null);
                       }}
@@ -1413,9 +1489,7 @@ export default function AskLipuvkaWeb() {
       {isGalleryOpen && selectedAlbum && selectedPhotoIndex === null && (
         <div
           className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
-          onClick={() => {
-            setSelectedAlbum(null);
-          }}
+          onClick={backFromAlbum}
         >
           <div className="flex min-h-full items-start justify-center">
             <div
@@ -1425,7 +1499,7 @@ export default function AskLipuvkaWeb() {
               <div className="mb-4 flex items-center justify-between gap-4 pr-10">
                 <button
                   type="button"
-                  onClick={() => setSelectedAlbum(null)}
+                  onClick={backFromAlbum}
                   className="rounded-xl border border-gray-300 px-4 py-2 font-semibold text-gray-700 hover:bg-gray-100"
                 >
                   ← Zpět na alba
@@ -1433,10 +1507,7 @@ export default function AskLipuvkaWeb() {
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedAlbum(null);
-                    setIsGalleryOpen(false);
-                  }}
+                  onClick={backFromAlbum}
                   className="text-2xl text-gray-500 hover:text-black"
                 >
                   ×
