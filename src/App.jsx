@@ -2074,8 +2074,10 @@ export default function AskLipuvkaWeb() {
                     />
 
                     <div className="text-lg font-bold">{person.name}</div>
-                    <div className="text-sm text-gray-600">{person.role}</div>
-
+                   <div className="text-sm text-gray-600">{person.role}</div>
+                  {person.subrole && (
+                  <div className="text-sm text-gray-500">{person.subrole}</div>
+                  )}
                     {person.licence && (
                       <div className="mt-2 inline-block rounded-full bg-green-600 px-3 py-1 text-xs font-bold text-white">
                         {person.licence}
