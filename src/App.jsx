@@ -332,6 +332,11 @@ export default function AskLipuvkaWeb() {
     dateA.getMonth() === dateB.getMonth() &&
     dateA.getDate() === dateB.getDate();
 
+  const isVideoFile = (filePath) => {
+    if (!filePath || typeof filePath !== 'string') return false;
+    return /\.(mp4|webm|ogg)$/i.test(filePath);
+  };
+
   const availableNews = useMemo(() => {
     return firebaseNews.length > 0 ? firebaseNews : newsItems;
   }, [firebaseNews]);
@@ -383,7 +388,7 @@ export default function AskLipuvkaWeb() {
 
   const selectedPhoto =
     selectedAlbum && selectedPhotoIndex !== null
-      ? selectedAlbum.photos[selectedPhotoIndex]
+      ? selectedAlbum.photos?.[selectedPhotoIndex]
       : null;
 
   const getCategoryShortLabel = (categoryId) => {
@@ -435,12 +440,12 @@ export default function AskLipuvkaWeb() {
   const activeCategoryStyle = getCategoryStyle(activeCategory);
 
   const goToPrevPhoto = () => {
-    if (!selectedAlbum || selectedPhotoIndex === null) return;
+    if (!selectedAlbum || selectedPhotoIndex === null || !selectedAlbum.photos?.length) return;
     setSelectedPhotoIndex((prev) => (prev === 0 ? selectedAlbum.photos.length - 1 : prev - 1));
   };
 
   const goToNextPhoto = () => {
-    if (!selectedAlbum || selectedPhotoIndex === null) return;
+    if (!selectedAlbum || selectedPhotoIndex === null || !selectedAlbum.photos?.length) return;
     setSelectedPhotoIndex((prev) =>
       prev === selectedAlbum.photos.length - 1 ? 0 : prev + 1
     );
@@ -747,6 +752,74 @@ export default function AskLipuvkaWeb() {
             )}
           </div>
         </div>
+      </button>
+    );
+  };
+
+  const renderAlbumCover = (album) => {
+    const coverSrc = album.cover || album.photos?.[0] || '/field.png';
+
+    if (isVideoFile(coverSrc)) {
+      return (
+        <div className="relative h-56 w-full overflow-hidden bg-black">
+          <video
+            src={coverSrc}
+            className="h-full w-full object-cover"
+            muted
+            playsInline
+            preload="metadata"
+          />
+          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+            <div className="rounded-full bg-white/90 px-4 py-2 text-sm font-bold text-gray-900">
+              ▶ Video
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return <img src={coverSrc} alt={album.title} className="h-56 w-full object-cover" />;
+  };
+
+  const renderGalleryThumb = (media, index, title) => {
+    if (isVideoFile(media)) {
+      return (
+        <button
+          type="button"
+          key={`${media}-${index}`}
+          onClick={() => setSelectedPhotoIndex(index)}
+          className="overflow-hidden rounded-2xl bg-black"
+        >
+          <div className="relative">
+            <video
+              src={media}
+              className="h-40 w-full rounded-2xl object-cover transition hover:scale-105"
+              muted
+              playsInline
+              preload="metadata"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+              <div className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-gray-900">
+                ▶ Přehrát
+              </div>
+            </div>
+          </div>
+        </button>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        key={`${media}-${index}`}
+        onClick={() => setSelectedPhotoIndex(index)}
+        className="overflow-hidden rounded-2xl"
+      >
+        <img
+          src={media}
+          alt={`${title} ${index + 1}`}
+          className="h-40 w-full rounded-2xl object-cover transition hover:scale-105"
+        />
       </button>
     );
   };
@@ -1271,10 +1344,10 @@ export default function AskLipuvkaWeb() {
                   }}
                   className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                 >
-                  <img src={album.cover} alt={album.title} className="h-56 w-full object-cover" />
+                  {renderAlbumCover(album)}
                   <div className="p-5">
                     <div className="text-xl font-bold text-gray-900">{album.title}</div>
-                    <div className="mt-1 text-sm text-gray-500">{album.photos?.length || 0} fotek</div>
+                    <div className="mt-1 text-sm text-gray-500">{album.photos?.length || 0} položek</div>
                   </div>
                 </button>
               ))}
@@ -1319,10 +1392,10 @@ export default function AskLipuvkaWeb() {
                       }}
                       className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                     >
-                      <img src={album.cover} alt={album.title} className="h-56 w-full object-cover" />
+                      {renderAlbumCover(album)}
                       <div className="p-5">
                         <div className="text-xl font-bold text-gray-900">{album.title}</div>
-                        <div className="mt-1 text-sm text-gray-500">{album.photos?.length || 0} fotek</div>
+                        <div className="mt-1 text-sm text-gray-500">{album.photos?.length || 0} položek</div>
                       </div>
                     </button>
                   ))}
@@ -1373,20 +1446,9 @@ export default function AskLipuvkaWeb() {
               <h2 className="mb-6 text-3xl font-bold text-green-600">{selectedAlbum.title}</h2>
 
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                {selectedAlbum.photos?.map((photo, index) => (
-                  <button
-                    type="button"
-                    key={`${photo}-${index}`}
-                    onClick={() => setSelectedPhotoIndex(index)}
-                    className="overflow-hidden rounded-2xl"
-                  >
-                    <img
-                      src={photo}
-                      alt={`${selectedAlbum.title} ${index + 1}`}
-                      className="h-40 w-full rounded-2xl object-cover transition hover:scale-105"
-                    />
-                  </button>
-                ))}
+                {selectedAlbum.photos?.map((photo, index) =>
+                  renderGalleryThumb(photo, index, selectedAlbum.title)
+                )}
               </div>
             </div>
           </div>
@@ -1408,7 +1470,7 @@ export default function AskLipuvkaWeb() {
               <button
                 type="button"
                 onClick={() => setSelectedPhotoIndex(null)}
-                className="absolute right-0 top-[-48px] text-3xl text-white"
+                className="absolute right-0 top-[-48px] z-20 text-3xl text-white"
               >
                 ×
               </button>
@@ -1421,11 +1483,20 @@ export default function AskLipuvkaWeb() {
                 ‹
               </button>
 
-              <img
-                src={selectedPhoto}
-                alt="Zvětšená fotka"
-                className="max-h-[85vh] max-w-[92vw] rounded-2xl object-contain"
-              />
+              {isVideoFile(selectedPhoto) ? (
+                <video
+                  src={selectedPhoto}
+                  controls
+                  autoPlay
+                  className="max-h-[85vh] max-w-[92vw] rounded-2xl object-contain"
+                />
+              ) : (
+                <img
+                  src={selectedPhoto}
+                  alt="Zvětšená fotka"
+                  className="max-h-[85vh] max-w-[92vw] rounded-2xl object-contain"
+                />
+              )}
 
               <button
                 type="button"
