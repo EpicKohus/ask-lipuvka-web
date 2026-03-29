@@ -906,12 +906,6 @@ export default function AskLipuvkaWeb() {
           100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0.00); transform: translateY(0); }
         }
 
-        @keyframes heroFloat {
-          0% { transform: translateY(0px); }
-          50% { transform: translateY(6px); }
-          100% { transform: translateY(0px); }
-        }
-
         @keyframes hintBounce {
           0%, 100% { transform: translateY(0); opacity: 0.85; }
           50% { transform: translateY(6px); opacity: 1; }
@@ -1235,25 +1229,20 @@ export default function AskLipuvkaWeb() {
         className="relative flex min-h-[72vh] items-center justify-center px-4 text-center md:h-[80vh]"
       >
         <img src="/field.png" alt="hřiště" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-black/45" />
+        <div className="absolute inset-0 bg-black/35" />
 
-        <div className="relative z-10 w-full max-w-xl rounded-2xl bg-white/72 p-5 shadow-lg backdrop-blur-md md:p-8">
-          <img
-            src="/logo.png"
-            alt="logo"
-            className="mx-auto mb-3 w-20 md:mb-4 md:w-28"
-            style={{ animation: 'heroFloat 4s ease-in-out infinite' }}
-          />
+        <div className="relative z-10 max-w-xl text-center">
+          <img src="/logo.png" alt="logo" className="mx-auto mb-4 w-16 md:w-20" />
 
-          <h1 className="mb-2 text-2xl font-black text-green-700 md:mb-3 md:text-6xl">
+          <h1 className="mb-2 text-3xl font-black text-white drop-shadow md:text-5xl">
             ASK Lipůvka
           </h1>
 
-          <p className="mb-5 text-sm text-gray-700 md:mb-6 md:text-base">
+          <p className="mb-6 text-sm text-white/80 md:text-base">
             Oficiální klubový web mládeže ASK Lipůvka
           </p>
 
-          <div className="mx-auto flex max-w-md flex-wrap justify-center gap-3 md:max-w-2xl md:gap-3">
+          <div className="flex flex-wrap justify-center gap-3">
             {categories.map((category) => {
               const isActive = activeCategory === category.id;
               const categoryStyle = getCategoryStyle(category.id);
@@ -1263,18 +1252,14 @@ export default function AskLipuvkaWeb() {
                   key={category.id}
                   type="button"
                   onClick={() => selectTeam(category.id)}
-                  className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 font-semibold transition duration-200 active:scale-[0.98] md:w-auto hover:-translate-y-0.5 hover:shadow-md ${
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
                     isActive
-                      ? `${categoryStyle.button} shadow-md`
-                      : `border bg-white/90 text-gray-700 ${categoryStyle.buttonOutline}`
+                      ? `${categoryStyle.button} shadow-lg`
+                      : 'bg-white text-gray-800 hover:scale-105'
                   }`}
                 >
-                  <span>{category.label}</span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                      isActive ? 'bg-white/20 text-white' : categoryStyle.softBadge
-                    }`}
-                  >
+                  {category.label}
+                  <span className="rounded-full bg-black/10 px-2 py-0.5 text-xs">
                     {category.shortLabel}
                   </span>
                 </button>
