@@ -1,405 +1,965 @@
-import { useEffect, useMemo, useState } from "react";
-import { db } from "./firebase";
+import { useEffect, useMemo, useState } from 'react';
+import { db } from './firebase';
 import {
+  addDoc,
   collection,
+  deleteDoc,
+  doc,
   getDocs,
   updateDoc,
-  doc,
-  setDoc,
-} from "firebase/firestore";
+} from 'firebase/firestore';
 
 export default function Admin() {
-  const [mode, setMode] = useState("matches");
-  const [category, setCategory] = useState("mladsi-pripravka");
-
-  const [matches, setMatches] = useState([]);
-  const [news, setNews] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [savingNews, setSavingNews] = useState(false);
-  const [savingMatchId, setSavingMatchId] = useState(null);
-
   const categories = [
-    { id: "predpripravka", label: "Předpřípravka" },
-    { id: "mladsi-pripravka", label: "Mladší přípravka" },
-    { id: "starsi-pripravka", label: "Starší přípravka" },
+    { id: 'predpripravka', label: 'Předpřípravka (U7)' },
+    { id: 'mladsi-pripravka', label: 'Mladší přípravka (U9)' },
+    { id: 'starsi-pripravka', label: 'Starší přípravka (U11)' },
   ];
 
-  const loadData = async () => {
+  const [activeSection, setActiveSection] = useState('news');
+
+  const [newsItems, setNewsItems] = useState([]);
+  const [matches, setMatches] = useState([]);
+  const [galleryAlbums, setGalleryAlbums] = useState([]);
+
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [newsForm, setNewsForm] = useState({
+    category: 'mladsi-pripravka',
+    title: '',
+    text: '',
+    date: '',
+  });
+
+  const [editingMatchId, setEditingMatchId] = useState(null);
+  const [matchForm, setMatchForm] = useState({
+    category: 'mladsi-pripravka',
+    date: '',
+    opponent: '',
+    time: '',
+    home: true,
+    venue: 'Lipůvka',
+    result: 'doplnit',
+    articleTitle: '',
+    article: '',
+    photosText: '',
+  });
+
+  const [editingGalleryId, setEditingGalleryId] = useState(null);
+  const [galleryForm, setGalleryForm] = useState({
+    type: 'global',
+    category: 'mladsi-pripravka',
+    title: '',
+    cover: '',
+    photosText: '',
+  });
+
+  const sectionButtonClass = (isActive) =>
+    `rounded-xl px-5 py-3 font-semibold transition ${
+      isActive
+        ? 'bg-green-600 text-white shadow-md'
+        : 'border border-green-200 bg-white text-green-700 hover:bg-green-50'
+    }`;
+
+  const inputClass =
+    'w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-200';
+
+  const labelClass = 'mb-2 block text-sm font-semibold text-gray-700';
+
+  const cardClass = 'rounded-2xl border border-green-100 bg-white p-5 shadow-sm';
+  const cardSoftClass = 'rounded-3xl border border-green-100 bg-green-50/60 p-6 shadow-sm';
+
+  const greenButtonClass =
+    'rounded-xl bg-green-600 px-5 py-3 font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300';
+
+  const outlineButtonClass =
+    'rounded-xl border border-gray-300 bg-white px-4 py-3 font-semibold text-gray-700 transition hover:bg-gray-50';
+
+  const dangerButtonClass =
+    'rounded-xl bg-red-600 px-4 py-3 font-semibold text-white transition hover:bg-red-700';
+
+  const parsePhotosText = (text) =>
+    text
+      .split('\n')
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  const formatPhotosText = (photos = []) => photos.join('\n');
+
+  const resetMatchForm = () => {
+    setEditingMatchId(null);
+    setMatchForm({
+      category: 'mladsi-pripravka',
+      date: '',
+      opponent: '',
+      time: '',
+      home: true,
+      venue: 'Lipůvka',
+      result: 'doplnit',
+      articleTitle: '',
+      article: '',
+      photosText: '',
+    });
+  };
+
+  const resetGalleryForm = () => {
+    setEditingGalleryId(null);
+    setGalleryForm({
+      type: 'global',
+      category: 'mladsi-pripravka',
+      title: '',
+      cover: '',
+      photosText: '',
+    });
+  };
+
+  const loadAllData = async () => {
     try {
       setLoading(true);
 
-      const matchSnap = await getDocs(collection(db, "matches"));
-      const matchData = matchSnap.docs.map((item) => ({
+      const newsSnapshot = await getDocs(collection(db, 'news'));
+      const loadedNews = newsSnapshot.docs.map((item) => ({
         id: item.id,
         ...item.data(),
       }));
 
-      const newsSnap = await getDocs(collection(db, "news"));
-      const newsData = {};
-      newsSnap.docs.forEach((item) => {
-        newsData[item.id] = item.data();
-      });
+      const matchesSnapshot = await getDocs(collection(db, 'matches'));
+      const loadedMatches = matchesSnapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
 
-      setMatches(matchData);
-      setNews(newsData);
+      const gallerySnapshot = await getDocs(collection(db, 'gallery'));
+      const loadedGallery = gallerySnapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
+
+      setNewsItems(loadedNews);
+      setMatches(loadedMatches);
+      setGalleryAlbums(loadedGallery);
     } catch (error) {
-      console.error(error);
-      alert("Chyba při načítání dat.");
+      console.error('Chyba při načítání admin dat:', error);
+      alert('Nepodařilo se načíst data z Firebase.');
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
+    loadAllData();
   }, []);
 
-  const parseMatchDate = (dateString) => {
-    if (!dateString) return new Date(0);
+  const newsByCategory = useMemo(() => {
+    return categories.map((category) => ({
+      ...category,
+      item: newsItems.find((news) => news.category === category.id) || null,
+    }));
+  }, [newsItems]);
 
-    const parts = dateString
-      .split(".")
-      .map((part) => part.trim())
-      .filter(Boolean);
+  const sortedMatches = useMemo(() => {
+    const parseDate = (dateString) => {
+      if (!dateString) return new Date(0);
+      const parts = dateString
+        .split('.')
+        .map((part) => part.trim())
+        .filter(Boolean);
+      const [day, month, year] = parts;
+      return new Date(Number(year), Number(month) - 1, Number(day));
+    };
 
-    if (parts.length < 3) return new Date(0);
+    return [...matches].sort((a, b) => parseDate(a.date) - parseDate(b.date));
+  }, [matches]);
 
-    const [day, month, year] = parts;
-    return new Date(Number(year), Number(month) - 1, Number(day));
-  };
+  const sortedGallery = useMemo(() => {
+    return [...galleryAlbums].sort((a, b) => a.title.localeCompare(b.title, 'cs'));
+  }, [galleryAlbums]);
 
-  const filteredMatches = useMemo(() => {
-    return matches
-      .filter((m) => m.category === category)
-      .sort((a, b) => parseMatchDate(a.date) - parseMatchDate(b.date));
-  }, [matches, category]);
-
-  const updateMatchLocal = (id, field, value) => {
-    setMatches((prev) =>
-      prev.map((m) => (m.id === id ? { ...m, [field]: value } : m))
-    );
-  };
-
-  const saveMatch = async (match) => {
-    try {
-      setSavingMatchId(match.id);
-
-      await updateDoc(doc(db, "matches", match.id), {
-        ...match,
-        photos: Array.isArray(match.photos)
-          ? match.photos
-          : String(match.photos || "")
-              .split(",")
-              .map((item) => item.trim())
-              .filter(Boolean),
-        updatedAt: new Date().toISOString(),
-      });
-
-      alert("Zápas uložen.");
-      await loadData();
-    } catch (error) {
-      console.error(error);
-      alert("Chyba při ukládání zápasu.");
-    } finally {
-      setSavingMatchId(null);
-    }
-  };
-
-  const updateNewsLocal = (field, value) => {
-    setNews((prev) => ({
+  const handleNewsChange = (field, value) => {
+    setNewsForm((prev) => ({
       ...prev,
-      [category]: {
-        ...prev[category],
-        [field]: value,
-      },
+      [field]: value,
     }));
   };
 
-  const saveNews = async () => {
+  const handleMatchChange = (field, value) => {
+    setMatchForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleGalleryChange = (field, value) => {
+    setGalleryForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSaveNews = async (e) => {
+    e.preventDefault();
+
+    if (!newsForm.title.trim() || !newsForm.text.trim() || !newsForm.date.trim()) {
+      alert('Vyplň název, text i datum novinky.');
+      return;
+    }
+
     try {
-      setSavingNews(true);
+      setSaving(true);
 
-      const data = news[category] || {};
+      const existingNews = newsItems.find((item) => item.category === newsForm.category);
 
-      await setDoc(doc(db, "news", category), {
-        category,
-        title: data.title || "",
-        text: data.text || "",
-        date: data.date || "",
-        updatedAt: new Date().toISOString(),
-      });
+      const payload = {
+        category: newsForm.category,
+        title: newsForm.title.trim(),
+        text: newsForm.text.trim(),
+        date: newsForm.date.trim(),
+      };
 
-      alert("Novinka uložena.");
-      await loadData();
+      if (existingNews) {
+        await updateDoc(doc(db, 'news', existingNews.id), payload);
+      } else {
+        await addDoc(collection(db, 'news'), payload);
+      }
+
+      await loadAllData();
+      alert('Novinka byla uložena.');
     } catch (error) {
       console.error(error);
-      alert("Chyba při ukládání novinky.");
+      alert('Nepodařilo se uložit novinku.');
     } finally {
-      setSavingNews(false);
+      setSaving(false);
     }
   };
 
-  const activeNews = news[category] || {};
+  const handleEditNews = (item) => {
+    setNewsForm({
+      category: item.category || 'mladsi-pripravka',
+      title: item.title || '',
+      text: item.text || '',
+      date: item.date || '',
+    });
+    setActiveSection('news');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
-  const tabButton = (active) =>
-    `rounded-xl px-5 py-3 font-semibold transition ${
-      active
-        ? "bg-green-600 text-white shadow-sm"
-        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-    }`;
+  const handleDeleteNews = async (id) => {
+    const confirmed = window.confirm('Opravdu chceš smazat tuto novinku?');
+    if (!confirmed) return;
 
-  const categoryButton = (active) =>
-    `rounded-xl px-4 py-2 font-semibold transition ${
-      active
-        ? "bg-green-100 text-green-700 border border-green-300"
-        : "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-    }`;
+    try {
+      await deleteDoc(doc(db, 'news', id));
+      await loadAllData();
+      alert('Novinka byla smazána.');
+    } catch (error) {
+      console.error(error);
+      alert('Nepodařilo se smazat novinku.');
+    }
+  };
 
-  const inputClass =
-    "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100";
+  const handleSaveMatch = async (e) => {
+    e.preventDefault();
 
-  const textareaClass =
-    "w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 placeholder:text-gray-400 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100";
+    if (!matchForm.date.trim() || !matchForm.opponent.trim() || !matchForm.time.trim()) {
+      alert('Vyplň datum, soupeře a čas.');
+      return;
+    }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-100 px-4 py-10">
-        <div className="mx-auto max-w-6xl rounded-3xl bg-white p-8 shadow-sm">
-          <h1 className="text-3xl font-black text-green-600">Admin panel</h1>
-          <p className="mt-3 text-gray-600">Načítám data…</p>
-        </div>
-      </div>
-    );
-  }
+    try {
+      setSaving(true);
+
+      const payload = {
+        category: matchForm.category,
+        date: matchForm.date.trim(),
+        opponent: matchForm.opponent.trim(),
+        time: matchForm.time.trim(),
+        home: matchForm.home,
+        venue: matchForm.venue.trim(),
+        result: matchForm.result.trim() || 'doplnit',
+        articleTitle: matchForm.articleTitle.trim(),
+        article: matchForm.article.trim(),
+        photos: parsePhotosText(matchForm.photosText),
+      };
+
+      if (editingMatchId) {
+        await updateDoc(doc(db, 'matches', editingMatchId), payload);
+      } else {
+        await addDoc(collection(db, 'matches'), payload);
+      }
+
+      await loadAllData();
+      resetMatchForm();
+      alert(editingMatchId ? 'Zápas byl upraven.' : 'Zápas byl přidán.');
+    } catch (error) {
+      console.error(error);
+      alert('Nepodařilo se uložit zápas.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditMatch = (match) => {
+    setEditingMatchId(match.id);
+    setMatchForm({
+      category: match.category || 'mladsi-pripravka',
+      date: match.date || '',
+      opponent: match.opponent || '',
+      time: match.time || '',
+      home: Boolean(match.home),
+      venue: match.venue || '',
+      result: match.result || 'doplnit',
+      articleTitle: match.articleTitle || '',
+      article: match.article || '',
+      photosText: formatPhotosText(match.photos || []),
+    });
+    setActiveSection('matches');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteMatch = async (id) => {
+    const confirmed = window.confirm('Opravdu chceš smazat tento zápas?');
+    if (!confirmed) return;
+
+    try {
+      await deleteDoc(doc(db, 'matches', id));
+      await loadAllData();
+
+      if (editingMatchId === id) {
+        resetMatchForm();
+      }
+
+      alert('Zápas byl smazán.');
+    } catch (error) {
+      console.error(error);
+      alert('Nepodařilo se smazat zápas.');
+    }
+  };
+
+  const handleSaveGallery = async (e) => {
+    e.preventDefault();
+
+    if (!galleryForm.title.trim() || !galleryForm.cover.trim()) {
+      alert('Vyplň název alba a cover fotku.');
+      return;
+    }
+
+    if (galleryForm.type === 'team' && !galleryForm.category) {
+      alert('Vyber kategorii týmu.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const payload = {
+        type: galleryForm.type,
+        category: galleryForm.type === 'team' ? galleryForm.category : '',
+        title: galleryForm.title.trim(),
+        cover: galleryForm.cover.trim(),
+        photos: parsePhotosText(galleryForm.photosText),
+      };
+
+      if (editingGalleryId) {
+        await updateDoc(doc(db, 'gallery', editingGalleryId), payload);
+      } else {
+        await addDoc(collection(db, 'gallery'), payload);
+      }
+
+      await loadAllData();
+      resetGalleryForm();
+      alert(editingGalleryId ? 'Album bylo upraveno.' : 'Album bylo přidáno.');
+    } catch (error) {
+      console.error(error);
+      alert('Nepodařilo se uložit album.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditGallery = (album) => {
+    setEditingGalleryId(album.id);
+    setGalleryForm({
+      type: album.type || 'global',
+      category: album.category || 'mladsi-pripravka',
+      title: album.title || '',
+      cover: album.cover || '',
+      photosText: formatPhotosText(album.photos || []),
+    });
+    setActiveSection('gallery');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteGallery = async (id) => {
+    const confirmed = window.confirm('Opravdu chceš smazat toto album?');
+    if (!confirmed) return;
+
+    try {
+      await deleteDoc(doc(db, 'gallery', id));
+      await loadAllData();
+
+      if (editingGalleryId === id) {
+        resetGalleryForm();
+      }
+
+      alert('Album bylo smazáno.');
+    } catch (error) {
+      console.error(error);
+      alert('Nepodařilo se smazat album.');
+    }
+  };
+
+  const getCategoryLabel = (categoryId) =>
+    categories.find((category) => category.id === categoryId)?.label || categoryId;
 
   return (
-    <div className="min-h-screen bg-gray-100 px-4 py-10">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <div className="rounded-3xl bg-white p-8 shadow-sm">
-          <h1 className="text-4xl font-black text-green-600">Admin panel</h1>
-          <p className="mt-3 text-gray-600">
-            Správa novinek a zápasů pro mládež ASK Lipůvka
-          </p>
+    <div className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 md:px-6">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-8 rounded-3xl border border-green-100 bg-white p-6 shadow-sm md:p-8">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="mb-2 inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                Admin panel
+              </div>
+              <h1 className="text-3xl font-black text-green-700 md:text-4xl">
+                Správa webu ASK Lipůvka
+              </h1>
+              <p className="mt-2 text-gray-600">
+                Novinky, zápasy a galerie na jednom místě.
+              </p>
+            </div>
+
+            <a
+              href="/"
+              className="inline-flex items-center justify-center rounded-xl border border-green-200 bg-green-50 px-5 py-3 font-semibold text-green-700 transition hover:bg-green-100"
+            >
+              ← Zpět na web
+            </a>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-3">
+        <div className="mb-8 flex flex-wrap gap-3">
           <button
             type="button"
-            onClick={() => setMode("matches")}
-            className={tabButton(mode === "matches")}
+            onClick={() => setActiveSection('news')}
+            className={sectionButtonClass(activeSection === 'news')}
+          >
+            Novinky
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('matches')}
+            className={sectionButtonClass(activeSection === 'matches')}
           >
             Zápasy
           </button>
 
           <button
             type="button"
-            onClick={() => setMode("news")}
-            className={tabButton(mode === "news")}
+            onClick={() => setActiveSection('gallery')}
+            className={sectionButtonClass(activeSection === 'gallery')}
           >
-            Novinky
+            Galerie
           </button>
         </div>
 
-        <div className="flex flex-wrap gap-3">
-          {categories.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setCategory(item.id)}
-              className={categoryButton(category === item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
-
-        {mode === "news" && (
-          <div className="rounded-3xl bg-white p-8 shadow-sm">
-            <h2 className="mb-6 text-2xl font-bold text-green-600">
-              Novinka pro tým
-            </h2>
-
-            <div className="grid gap-5">
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Nadpis
-                </label>
-                <input
-                  value={activeNews.title || ""}
-                  onChange={(e) => updateNewsLocal("title", e.target.value)}
-                  placeholder="Nadpis novinky"
-                  className={inputClass}
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Text
-                </label>
-                <textarea
-                  value={activeNews.text || ""}
-                  onChange={(e) => updateNewsLocal("text", e.target.value)}
-                  placeholder="Text novinky"
-                  rows={6}
-                  className={textareaClass}
-                />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-gray-700">
-                  Datum
-                </label>
-                <input
-                  value={activeNews.date || ""}
-                  onChange={(e) => updateNewsLocal("date", e.target.value)}
-                  placeholder="např. 2. 4. 2026"
-                  className={inputClass}
-                />
-              </div>
-
-              <div>
-                <button
-                  type="button"
-                  onClick={saveNews}
-                  disabled={savingNews}
-                  className={`rounded-xl px-6 py-3 font-semibold text-white transition ${
-                    savingNews
-                      ? "cursor-not-allowed bg-gray-400"
-                      : "bg-green-600 hover:bg-green-700"
-                  }`}
-                >
-                  {savingNews ? "Ukládám..." : "Uložit novinku"}
-                </button>
-              </div>
-
-              <p className="text-sm text-gray-500">
-                Pro každý tým se ukládá vždy jen jedna aktuální novinka. Nové
-                uložení starou novinku přepíše.
-              </p>
-            </div>
+        {loading ? (
+          <div className="rounded-3xl border border-green-100 bg-white p-10 text-center shadow-sm">
+            <div className="text-lg font-semibold text-gray-700">Načítám data…</div>
           </div>
-        )}
-
-        {mode === "matches" && (
-          <div className="space-y-5">
-            {filteredMatches.length === 0 ? (
-              <div className="rounded-3xl bg-white p-8 text-gray-600 shadow-sm">
-                Pro tuto kategorii zatím nejsou v databázi žádné zápasy.
-              </div>
-            ) : (
-              filteredMatches.map((match) => (
-                <div
-                  key={match.id}
-                  className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm"
-                >
-                  <div className="mb-5 flex flex-col gap-3 border-b border-gray-200 pb-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">
-                        {match.home
-                          ? `ASK Lipůvka vs. ${match.opponent || "Soupeř"}`
-                          : `${match.opponent || "Soupeř"} vs. ASK Lipůvka`}
-                      </h2>
-
-                      <div className="mt-2 text-sm text-gray-600">
-                        {match.date || "Bez data"} • {match.time || "Bez času"} •{" "}
-                        {match.home ? "Domácí" : "Venkovní"}
-                      </div>
-
-                      <div className="mt-1 text-sm text-gray-600">
-                        Místo: {match.venue || "není doplněno"}
-                      </div>
+        ) : (
+          <>
+            {activeSection === 'news' && (
+              <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
+                <div className={cardSoftClass}>
+                  <div className="mb-6">
+                    <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                      Jedna novinka pro každý tým
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() => saveMatch(match)}
-                      disabled={savingMatchId === match.id}
-                      className={`rounded-xl px-5 py-3 font-semibold text-white transition ${
-                        savingMatchId === match.id
-                          ? "cursor-not-allowed bg-gray-400"
-                          : "bg-green-600 hover:bg-green-700"
-                      }`}
-                    >
-                      {savingMatchId === match.id ? "Ukládám..." : "Uložit"}
-                    </button>
+                    <h2 className="text-2xl font-bold text-green-700">
+                      {newsItems.find((item) => item.category === newsForm.category)
+                        ? 'Upravit novinku'
+                        : 'Přidat novinku'}
+                    </h2>
                   </div>
 
-                  <div className="grid gap-5">
+                  <form onSubmit={handleSaveNews} className="space-y-5">
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-gray-700">
-                        Výsledek
-                      </label>
+                      <label className={labelClass}>Kategorie</label>
+                      <select
+                        value={newsForm.category}
+                        onChange={(e) => handleNewsChange('category', e.target.value)}
+                        className={inputClass}
+                      >
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Datum</label>
                       <input
-                        value={match.result || ""}
-                        onChange={(e) =>
-                          updateMatchLocal(match.id, "result", e.target.value)
-                        }
-                        placeholder="např. 1. místo v turnaji"
+                        type="text"
+                        value={newsForm.date}
+                        onChange={(e) => handleNewsChange('date', e.target.value)}
+                        placeholder="Např. 2. 4. 2026"
                         className={inputClass}
                       />
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-gray-700">
-                        Titulek článku
-                      </label>
+                      <label className={labelClass}>Název novinky</label>
                       <input
-                        value={match.articleTitle || ""}
-                        onChange={(e) =>
-                          updateMatchLocal(match.id, "articleTitle", e.target.value)
-                        }
-                        placeholder="např. Halový turnaj Blansko"
+                        type="text"
+                        value={newsForm.title}
+                        onChange={(e) => handleNewsChange('title', e.target.value)}
+                        placeholder="Název novinky"
                         className={inputClass}
                       />
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-gray-700">
-                        Článek k zápasu
-                      </label>
+                      <label className={labelClass}>Text novinky</label>
                       <textarea
-                        value={match.article || ""}
-                        onChange={(e) =>
-                          updateMatchLocal(match.id, "article", e.target.value)
-                        }
-                        placeholder="Sem napiš článek k zápasu"
-                        rows={6}
-                        className={textareaClass}
+                        rows="7"
+                        value={newsForm.text}
+                        onChange={(e) => handleNewsChange('text', e.target.value)}
+                        placeholder="Text novinky"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <button type="submit" disabled={saving} className={greenButtonClass}>
+                      {saving ? 'Ukládám…' : 'Uložit novinku'}
+                    </button>
+                  </form>
+                </div>
+
+                <div className="space-y-5">
+                  {newsByCategory.map((category) => (
+                    <div key={category.id} className={cardClass}>
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <div>
+                          <div className="text-lg font-bold text-gray-900">{category.label}</div>
+                          <div className="text-sm text-gray-500">Aktuální novinka</div>
+                        </div>
+                      </div>
+
+                      {category.item ? (
+                        <>
+                          <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                            {category.item.date}
+                          </div>
+                          <div className="mb-2 text-lg font-bold text-gray-900">
+                            {category.item.title}
+                          </div>
+                          <p className="mb-4 text-sm leading-7 text-gray-700">
+                            {category.item.text}
+                          </p>
+
+                          <div className="flex flex-wrap gap-3">
+                            <button
+                              type="button"
+                              onClick={() => handleEditNews(category.item)}
+                              className={outlineButtonClass}
+                            >
+                              Upravit
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteNews(category.item.id)}
+                              className={dangerButtonClass}
+                            >
+                              Smazat
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="text-sm text-gray-500">
+                          Pro tuto kategorii zatím není uložená žádná novinka.
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'matches' && (
+              <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
+                <div className={cardSoftClass}>
+                  <div className="mb-6 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                        Správa zápasů
+                      </div>
+                      <h2 className="text-2xl font-bold text-green-700">
+                        {editingMatchId ? 'Upravit zápas' : 'Přidat zápas'}
+                      </h2>
+                    </div>
+
+                    {editingMatchId && (
+                      <button
+                        type="button"
+                        onClick={resetMatchForm}
+                        className={outlineButtonClass}
+                      >
+                        Zrušit editaci
+                      </button>
+                    )}
+                  </div>
+
+                  <form onSubmit={handleSaveMatch} className="space-y-5">
+                    <div>
+                      <label className={labelClass}>Kategorie</label>
+                      <select
+                        value={matchForm.category}
+                        onChange={(e) => handleMatchChange('category', e.target.value)}
+                        className={inputClass}
+                      >
+                        {categories.map((category) => (
+                          <option key={category.id} value={category.id}>
+                            {category.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Datum</label>
+                        <input
+                          type="text"
+                          value={matchForm.date}
+                          onChange={(e) => handleMatchChange('date', e.target.value)}
+                          placeholder="Např. 14. 5. 2026"
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Čas</label>
+                        <input
+                          type="text"
+                          value={matchForm.time}
+                          onChange={(e) => handleMatchChange('time', e.target.value)}
+                          placeholder="Např. 17:00 / 18:00"
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Soupeř</label>
+                      <input
+                        type="text"
+                        value={matchForm.opponent}
+                        onChange={(e) => handleMatchChange('opponent', e.target.value)}
+                        placeholder="Např. Blansko A a B"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Typ zápasu</label>
+                        <select
+                          value={matchForm.home ? 'home' : 'away'}
+                          onChange={(e) => handleMatchChange('home', e.target.value === 'home')}
+                          className={inputClass}
+                        >
+                          <option value="home">Domácí</option>
+                          <option value="away">Venkovní</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Místo / hřiště</label>
+                        <input
+                          type="text"
+                          value={matchForm.venue}
+                          onChange={(e) => handleMatchChange('venue', e.target.value)}
+                          placeholder="Např. Lipůvka / hřiště Knínice"
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Výsledek</label>
+                      <input
+                        type="text"
+                        value={matchForm.result}
+                        onChange={(e) => handleMatchChange('result', e.target.value)}
+                        placeholder="Např. 5:3 nebo 1. místo v turnaji"
+                        className={inputClass}
                       />
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-gray-700">
-                        Fotky
-                      </label>
+                      <label className={labelClass}>Nadpis článku</label>
                       <input
-                        value={
-                          Array.isArray(match.photos)
-                            ? match.photos.join(",")
-                            : match.photos || ""
-                        }
-                        onChange={(e) =>
-                          updateMatchLocal(
-                            match.id,
-                            "photos",
-                            e.target.value
-                              .split(",")
-                              .map((item) => item.trim())
-                              .filter(Boolean)
-                          )
-                        }
-                        placeholder="/zapasy/blansko1.jpg,/zapasy/blansko2.jpg"
+                        type="text"
+                        value={matchForm.articleTitle}
+                        onChange={(e) => handleMatchChange('articleTitle', e.target.value)}
+                        placeholder="Např. Halový turnaj Blansko"
                         className={inputClass}
                       />
-                      <p className="mt-2 text-sm text-gray-500">
-                        Cesty k fotkám odděluj čárkou.
-                      </p>
                     </div>
-                  </div>
+
+                    <div>
+                      <label className={labelClass}>Článek k zápasu</label>
+                      <textarea
+                        rows="6"
+                        value={matchForm.article}
+                        onChange={(e) => handleMatchChange('article', e.target.value)}
+                        placeholder="Text článku"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Fotky k zápasu</label>
+                      <textarea
+                        rows="6"
+                        value={matchForm.photosText}
+                        onChange={(e) => handleMatchChange('photosText', e.target.value)}
+                        placeholder={`/zapasy/blansko1.jpg
+/zapasy/blansko2.jpg`}
+                        className={inputClass}
+                      />
+                      <div className="mt-2 text-sm text-gray-500">
+                        Jedna cesta na řádek.
+                      </div>
+                    </div>
+
+                    <button type="submit" disabled={saving} className={greenButtonClass}>
+                      {saving
+                        ? 'Ukládám…'
+                        : editingMatchId
+                        ? 'Uložit úpravy zápasu'
+                        : 'Přidat zápas'}
+                    </button>
+                  </form>
                 </div>
-              ))
+
+                <div className="space-y-5">
+                  {sortedMatches.length > 0 ? (
+                    sortedMatches.map((match) => {
+                      const categoryLabel = getCategoryLabel(match.category);
+
+                      return (
+                        <div key={match.id} className={cardClass}>
+                          <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                            {categoryLabel}
+                          </div>
+
+                          <div className="mb-1 text-lg font-bold text-gray-900">
+                            {match.home
+                              ? `ASK Lipůvka vs. ${match.opponent}`
+                              : `${match.opponent} vs. ASK Lipůvka`}
+                          </div>
+
+                          <div className="mb-3 text-sm text-gray-500">
+                            {match.date} • {match.time} •{' '}
+                            {match.home ? 'Domácí zápas' : 'Venkovní zápas'}
+                          </div>
+
+                          <div className="mb-4 text-sm text-gray-700">
+                            <span className="font-semibold">Výsledek:</span> {match.result}
+                          </div>
+
+                          <div className="flex flex-wrap gap-3">
+                            <button
+                              type="button"
+                              onClick={() => handleEditMatch(match)}
+                              className={outlineButtonClass}
+                            >
+                              Upravit
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteMatch(match.id)}
+                              className={dangerButtonClass}
+                            >
+                              Smazat
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className={cardClass}>
+                      <div className="text-gray-500">Zatím tu nejsou žádné zápasy.</div>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
-          </div>
+
+            {activeSection === 'gallery' && (
+              <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
+                <div className={cardSoftClass}>
+                  <div className="mb-6 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                        Správa galerie
+                      </div>
+                      <h2 className="text-2xl font-bold text-green-700">
+                        {editingGalleryId ? 'Upravit album' : 'Přidat album'}
+                      </h2>
+                    </div>
+
+                    {editingGalleryId && (
+                      <button
+                        type="button"
+                        onClick={resetGalleryForm}
+                        className={outlineButtonClass}
+                      >
+                        Zrušit editaci
+                      </button>
+                    )}
+                  </div>
+
+                  <form onSubmit={handleSaveGallery} className="space-y-5">
+                    <div>
+                      <label className={labelClass}>Typ alba</label>
+                      <select
+                        value={galleryForm.type}
+                        onChange={(e) => handleGalleryChange('type', e.target.value)}
+                        className={inputClass}
+                      >
+                        <option value="global">Společná galerie</option>
+                        <option value="team">Fotky týmu</option>
+                      </select>
+                    </div>
+
+                    {galleryForm.type === 'team' && (
+                      <div>
+                        <label className={labelClass}>Kategorie týmu</label>
+                        <select
+                          value={galleryForm.category}
+                          onChange={(e) => handleGalleryChange('category', e.target.value)}
+                          className={inputClass}
+                        >
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                              {category.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    <div>
+                      <label className={labelClass}>Název alba</label>
+                      <input
+                        type="text"
+                        value={galleryForm.title}
+                        onChange={(e) => handleGalleryChange('title', e.target.value)}
+                        placeholder="Např. 1. kolo"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Cover fotka</label>
+                      <input
+                        type="text"
+                        value={galleryForm.cover}
+                        onChange={(e) => handleGalleryChange('cover', e.target.value)}
+                        placeholder="/galerie/1zapas/1.jpg"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Fotky v albu</label>
+                      <textarea
+                        rows="8"
+                        value={galleryForm.photosText}
+                        onChange={(e) => handleGalleryChange('photosText', e.target.value)}
+                        placeholder={`/galerie/1zapas/1.jpg
+/galerie/1zapas/2.jpg
+/galerie/1zapas/3.jpg`}
+                        className={inputClass}
+                      />
+                      <div className="mt-2 text-sm text-gray-500">
+                        Jedna cesta k fotce na řádek.
+                      </div>
+                    </div>
+
+                    <button type="submit" disabled={saving} className={greenButtonClass}>
+                      {saving
+                        ? 'Ukládám…'
+                        : editingGalleryId
+                        ? 'Uložit úpravy alba'
+                        : 'Přidat album'}
+                    </button>
+                  </form>
+                </div>
+
+                <div className="space-y-5">
+                  {sortedGallery.length > 0 ? (
+                    sortedGallery.map((album) => (
+                      <div key={album.id} className={cardClass}>
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                            {album.type === 'team' ? 'Fotky týmu' : 'Společná galerie'}
+                          </span>
+
+                          {album.type === 'team' && album.category && (
+                            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
+                              {getCategoryLabel(album.category)}
+                            </span>
+                          )}
+                        </div>
+
+                        <div className="mb-2 text-lg font-bold text-gray-900">{album.title}</div>
+
+                        <div className="mb-2 text-sm text-gray-500">
+                          Cover: {album.cover || 'není'}
+                        </div>
+
+                        <div className="mb-4 text-sm text-gray-700">
+                          Počet fotek:{' '}
+                          <span className="font-semibold">{album.photos?.length || 0}</span>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            type="button"
+                            onClick={() => handleEditGallery(album)}
+                            className={outlineButtonClass}
+                          >
+                            Upravit
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteGallery(album.id)}
+                            className={dangerButtonClass}
+                          >
+                            Smazat
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className={cardClass}>
+                      <div className="text-gray-500">Zatím tu nejsou žádná alba.</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

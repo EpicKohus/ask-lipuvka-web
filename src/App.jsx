@@ -22,6 +22,7 @@ export default function AskLipuvkaWeb() {
 
   const [firebaseNews, setFirebaseNews] = useState([]);
   const [firebaseMatches, setFirebaseMatches] = useState([]);
+  const [firebaseGallery, setFirebaseGallery] = useState([]);
 
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -171,29 +172,6 @@ export default function AskLipuvkaWeb() {
       },
     ],
   };
-
-  const galleryAlbums = [
-    {
-      id: 'zima_26',
-      title: 'Zima 2026',
-      cover: '/galerie/zima_26/1.jpg',
-      photos: [
-        '/galerie/zima_26/1.jpg',
-        '/galerie/zima_26/2.jpg',
-        '/galerie/zima_26/3.jpg',
-        '/galerie/zima_26/4.jpg',
-        '/galerie/zima_26/5.jpg',
-        '/galerie/zima_26/6.jpg',
-        '/galerie/zima_26/7.jpg',
-      ],
-    },
-    {
-      id: '1zapas',
-      title: '1. kolo',
-      cover: '/galerie/1zapas/1.jpg',
-      photos: ['/galerie/1zapas/1.jpg', '/galerie/1zapas/2.jpg'],
-    },
-  ];
 
   const matches = [
     {
@@ -362,6 +340,16 @@ export default function AskLipuvkaWeb() {
     return firebaseMatches.length > 0 ? firebaseMatches : matches;
   }, [firebaseMatches]);
 
+  const globalGalleryAlbums = useMemo(() => {
+    return firebaseGallery.filter((album) => album.type === 'global');
+  }, [firebaseGallery]);
+
+  const teamGalleryAlbums = useMemo(() => {
+    return firebaseGallery.filter(
+      (album) => album.type === 'team' && album.category === activeCategory
+    );
+  }, [firebaseGallery, activeCategory]);
+
   const filteredNews = useMemo(
     () => availableNews.filter((item) => item.category === activeCategory),
     [availableNews, activeCategory]
@@ -528,8 +516,15 @@ export default function AskLipuvkaWeb() {
           ...item.data(),
         }));
 
+        const gallerySnapshot = await getDocs(collection(db, 'gallery'));
+        const loadedGallery = gallerySnapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+
         setFirebaseNews(loadedNews);
         setFirebaseMatches(loadedMatches);
+        setFirebaseGallery(loadedGallery);
       } catch (error) {
         console.error('Firebase chyba:', error);
       }
@@ -891,7 +886,11 @@ export default function AskLipuvkaWeb() {
               Trenéři
             </button>
 
-            <button type="button" onClick={() => openClubPopup('kde-nas-najdete')} className="hover:text-green-600">
+            <button
+              type="button"
+              onClick={() => openClubPopup('kde-nas-najdete')}
+              className="hover:text-green-600"
+            >
               Kde nás najdete
             </button>
           </nav>
@@ -1246,6 +1245,48 @@ export default function AskLipuvkaWeb() {
         </div>
       </section>
 
+      <section className="mx-auto max-w-5xl px-6 pb-14">
+        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
+          <div className="mb-2 flex flex-wrap items-center gap-3">
+            <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
+              {activeCategoryLabel}
+            </div>
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
+              {activeCategoryShortLabel}
+            </span>
+          </div>
+
+          <h2 className={`mb-6 text-3xl font-bold ${activeCategoryStyle.text}`}>Fotky</h2>
+
+          {teamGalleryAlbums.length > 0 ? (
+            <div className="grid gap-6 md:grid-cols-2">
+              {teamGalleryAlbums.map((album) => (
+                <button
+                  type="button"
+                  key={album.id}
+                  onClick={() => {
+                    setSelectedAlbum(album);
+                    setSelectedPhotoIndex(null);
+                    setIsGalleryOpen(true);
+                  }}
+                  className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                >
+                  <img src={album.cover} alt={album.title} className="h-56 w-full object-cover" />
+                  <div className="p-5">
+                    <div className="text-xl font-bold text-gray-900">{album.title}</div>
+                    <div className="mt-1 text-sm text-gray-500">{album.photos?.length || 0} fotek</div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
+              Pro tuto kategorii zatím nejsou doplněná žádná alba.
+            </div>
+          )}
+        </div>
+      </section>
+
       {isGalleryOpen && !selectedAlbum && (
         <div
           className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
@@ -1266,25 +1307,31 @@ export default function AskLipuvkaWeb() {
 
               <h2 className="mb-6 text-3xl font-bold text-green-600">Galerie ASK Lipůvka</h2>
 
-              <div className="grid gap-6 md:grid-cols-2">
-                {galleryAlbums.map((album) => (
-                  <button
-                    type="button"
-                    key={album.id}
-                    onClick={() => {
-                      setSelectedAlbum(album);
-                      setSelectedPhotoIndex(null);
-                    }}
-                    className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                  >
-                    <img src={album.cover} alt={album.title} className="h-56 w-full object-cover" />
-                    <div className="p-5">
-                      <div className="text-xl font-bold text-gray-900">{album.title}</div>
-                      <div className="mt-1 text-sm text-gray-500">{album.photos.length} fotek</div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+              {globalGalleryAlbums.length > 0 ? (
+                <div className="grid gap-6 md:grid-cols-2">
+                  {globalGalleryAlbums.map((album) => (
+                    <button
+                      type="button"
+                      key={album.id}
+                      onClick={() => {
+                        setSelectedAlbum(album);
+                        setSelectedPhotoIndex(null);
+                      }}
+                      className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                    >
+                      <img src={album.cover} alt={album.title} className="h-56 w-full object-cover" />
+                      <div className="p-5">
+                        <div className="text-xl font-bold text-gray-900">{album.title}</div>
+                        <div className="mt-1 text-sm text-gray-500">{album.photos?.length || 0} fotek</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+                  Ve společné galerii zatím nejsou žádná alba.
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1326,7 +1373,7 @@ export default function AskLipuvkaWeb() {
               <h2 className="mb-6 text-3xl font-bold text-green-600">{selectedAlbum.title}</h2>
 
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                {selectedAlbum.photos.map((photo, index) => (
+                {selectedAlbum.photos?.map((photo, index) => (
                   <button
                     type="button"
                     key={`${photo}-${index}`}
@@ -1389,7 +1436,7 @@ export default function AskLipuvkaWeb() {
               </button>
 
               <div className="absolute bottom-[-42px] left-1/2 -translate-x-1/2 text-sm text-white/80">
-                {selectedPhotoIndex + 1} / {selectedAlbum?.photos.length}
+                {selectedPhotoIndex + 1} / {selectedAlbum?.photos?.length}
               </div>
             </div>
           </div>
