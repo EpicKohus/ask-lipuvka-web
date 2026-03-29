@@ -905,16 +905,6 @@ export default function AskLipuvkaWeb() {
           50% { box-shadow: 0 0 28px rgba(34, 197, 94, 0.18); transform: translateY(-2px); }
           100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0.00); transform: translateY(0); }
         }
-@keyframes fadeSlide {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
       `}</style>
 
       <header className="sticky top-0 z-20 border-b bg-white/90 backdrop-blur">
@@ -1230,15 +1220,7 @@ export default function AskLipuvkaWeb() {
 
         <div className="relative z-10 rounded-2xl bg-white/70 p-8 backdrop-blur-md">
           <img src="/logo.png" alt="logo" className="mx-auto mb-4 w-28" />
-         <h1 className="text-4xl font-black md:text-6xl leading-tight">
-  <span className="bg-gradient-to-r from-green-600 via-green-500 to-green-400 bg-clip-text text-transparent animate-[fadeSlide_0.8s_ease-out]">
-    ASK Lipůvka
-  </span>
-</h1>
-
-<div className="mt-2 text-lg font-semibold text-green-600 animate-[fadeSlide_1.1s_ease-out]">
-  Mládež
-</div>
+          <h1 className="mb-3 text-4xl font-black text-green-700 md:text-6xl">ASK Lipůvka</h1>
           <p className="mb-6 text-gray-700">Oficiální klubový web mládeže ASK Lipůvka</p>
 
           <div className="mx-auto flex max-w-2xl flex-wrap justify-center gap-3">
