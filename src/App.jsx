@@ -31,6 +31,8 @@ export default function AskLipuvkaWeb() {
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
+
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
 
@@ -72,6 +74,39 @@ export default function AskLipuvkaWeb() {
       logo: '/partneri/dh.jpg',
       url: 'https://www.blistr.cz',
       featured: true,
+    },
+  ];
+
+  const faqItems = [
+    {
+      question: 'Kolik stojí fotbal?',
+      answer:
+        'Členský příspěvek je 1 000 Kč za půl roku. Snažíme se, aby byl fotbal dostupný pro všechny děti, a zároveň aby to u nás mělo smysl a děti to bavilo.',
+    },
+    {
+      question: 'Co když dítě nikdy nehrálo fotbal?',
+      answer:
+        'To vůbec nevadí. Děti se u nás učí úplně od začátku.',
+    },
+    {
+      question: 'Může si to dítě jen vyzkoušet?',
+      answer:
+        'Ano, klidně přijďte na trénink a uvidíte, jestli ho to bude bavit.',
+    },
+    {
+      question: 'Co potřebuje dítě na trénink?',
+      answer:
+        'Stačí sportovní oblečení, boty a pití. Oblečení je dobré přizpůsobit počasí, protože většina tréninků probíhá venku.',
+    },
+    {
+      question: 'Jaké soutěže hrajeme a pro jak staré děti?',
+      answer:
+        'V sezóně 2025/2026 hrajeme soutěže v kategorii U9 v rámci okresu Blansko. Od sezóny 2026/2027 chceme přidat i kategorii U11, aby děti mohly přirozeně pokračovat dál. U9 je přibližně pro děti 7–9 let, U11 pak pro starší děti.',
+    },
+    {
+      question: 'Od kolika let berete děti?',
+      answer:
+        'Přibližně od 5 let.',
     },
   ];
 
@@ -754,6 +789,7 @@ export default function AskLipuvkaWeb() {
 
   const openClubPopup = (content) => {
     setClubPopupContent(content);
+    setOpenFaqIndex(null);
     setIsClubDropdownOpen(false);
     setIsMobileMenuOpen(false);
     setIsMobileClubDropdownOpen(false);
@@ -996,6 +1032,14 @@ export default function AskLipuvkaWeb() {
 
                   <button
                     type="button"
+                    onClick={() => openClubPopup('faq')}
+                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                  >
+                    FAQ
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => openClubPopup('nabor')}
                     className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
                   >
@@ -1172,6 +1216,14 @@ export default function AskLipuvkaWeb() {
 
                   <button
                     type="button"
+                    onClick={() => openClubPopup('faq')}
+                    className="px-8 py-3 text-left text-gray-700"
+                  >
+                    FAQ
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => openClubPopup('nabor')}
                     className="px-8 py-3 text-left text-gray-700"
                   >
@@ -1185,16 +1237,16 @@ export default function AskLipuvkaWeb() {
                   >
                     Registrace hráče
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openClubPopup('podnety')}
+                    className="px-8 py-3 text-left text-gray-700"
+                  >
+                    Kniha podnětů
+                  </button>
                 </div>
               )}
-
-              <button
-                type="button"
-                onClick={() => openClubPopup('podnety')}
-                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
-              >
-                Kniha podnětů
-              </button>
 
               <button
                 type="button"
@@ -1629,7 +1681,9 @@ export default function AskLipuvkaWeb() {
           <div className="flex min-h-full items-start justify-center">
             <div
               className={`relative my-4 w-full max-w-4xl rounded-2xl p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out] ${
-                clubPopupContent === 'partneri' || clubPopupContent === 'partner-nabidka'
+                clubPopupContent === 'partneri' ||
+                clubPopupContent === 'partner-nabidka' ||
+                clubPopupContent === 'faq'
                   ? 'bg-[#f7f3eb]'
                   : 'bg-white'
               }`}
@@ -1734,6 +1788,91 @@ export default function AskLipuvkaWeb() {
                         ale především vychovat děti, které mají vztah ke sportu, pohybu a týmové spolupráci.
                       </p>
                     </div>
+                  </div>
+                </>
+              )}
+
+              {clubPopupContent === 'faq' && (
+                <>
+                  <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
+                    <h2 className="text-3xl font-bold text-green-700">Máte otázky?</h2>
+                  </div>
+
+                  <p className="mb-8 text-gray-700">
+                    Tady najdete odpovědi na to, co rodiče nejčastěji zajímá.
+                  </p>
+
+                  <div className="mb-8 overflow-hidden rounded-3xl bg-white/60 p-1 shadow-sm">
+                    <div className="flex h-[130px] items-center justify-center rounded-[22px] bg-gradient-to-br from-[#f2eadc] to-[#e8dcc6]">
+                      <div className="flex flex-wrap items-center justify-center gap-4 text-4xl md:text-5xl">
+                        <span>❓</span>
+                        <span>❔</span>
+                        <span>❓</span>
+                        <span>❔</span>
+                        <span>❓</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {faqItems.map((item, index) => {
+                      const isOpen = openFaqIndex === index;
+
+                      return (
+                        <div
+                          key={item.question}
+                          className="overflow-hidden rounded-2xl border border-[#e6dccd] bg-white shadow-sm"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-[#faf7f2]"
+                          >
+                            <div className="flex items-start gap-3">
+                              <span className="mt-0.5 text-lg">❓</span>
+                              <span className="font-semibold text-gray-900">{item.question}</span>
+                            </div>
+                            <span className="text-xl text-green-700">{isOpen ? '−' : '+'}</span>
+                          </button>
+
+                          {isOpen && (
+                            <div className="border-t border-[#efe6d8] px-5 py-4 text-gray-700">
+                              {item.answer}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-10 rounded-2xl bg-white/70 p-6 text-center shadow-sm">
+                    <p className="text-gray-700">
+                      Nenašli jste odpověď?
+                    </p>
+
+                    <p className="mt-2 text-sm text-gray-600">
+                      Klidně nám napište nebo zavolejte.
+                    </p>
+
+                    <div className="mt-4 space-y-1 text-green-700">
+                      <div className="font-semibold">Radek Mánek</div>
+                      <div>
+                        <a href="tel:606148368" className="hover:underline">606 148 368</a>
+                      </div>
+                      <div>
+                        <a href="mailto:radek.manek@email.cz" className="hover:underline">
+                          radek.manek@email.cz
+                        </a>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => openClubPopup('podnety')}
+                      className="mt-5 rounded-xl bg-green-600 px-6 py-3 font-semibold text-white transition hover:scale-105 hover:bg-green-700"
+                    >
+                      Napsat podnět / dotaz
+                    </button>
                   </div>
                 </>
               )}
@@ -1944,7 +2083,7 @@ export default function AskLipuvkaWeb() {
                     <img
                       src="/partneri/deti.jpg"
                       alt="Děti ASK Lipůvka na tréninku"
-                      className="h-auto w-full object-cover"
+                      className="h-[220px] w-full object-cover"
                     />
                   </div>
 
