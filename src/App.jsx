@@ -67,6 +67,12 @@ export default function AskLipuvkaWeb() {
       url: 'https://revelop.cz/',
       featured: true,
     },
+    {
+      name: 'DH',
+      logo: '/partneri/dh.jpg',
+      url: '',
+      featured: true,
+    },
   ];
 
   const newsItems = [
@@ -1885,24 +1891,40 @@ export default function AskLipuvkaWeb() {
                         Hlavní partner
                       </div>
 
-                      {partners
-                        .filter((partner) => partner.featured)
-                        .map((partner) => (
-                          <a
-                            key={partner.name}
-                            href={partner.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="block rounded-3xl bg-black p-6 text-center shadow-lg transition hover:scale-[1.02]"
-                            style={{ animation: 'sponsorGlow 3s ease-in-out infinite' }}
-                          >
-                            <img
-                              src={partner.logo}
-                              alt={partner.name}
-                              className="mx-auto max-h-24 object-contain"
-                            />
-                          </a>
-                        ))}
+                      <div className="space-y-6">
+                        {partners
+                          .filter((partner) => partner.featured)
+                          .map((partner) =>
+                            partner.url ? (
+                              <a
+                                key={partner.name}
+                                href={partner.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="block rounded-3xl bg-black p-6 text-center shadow-lg transition hover:scale-[1.02]"
+                                style={{ animation: 'sponsorGlow 3s ease-in-out infinite' }}
+                              >
+                                <img
+                                  src={partner.logo}
+                                  alt={partner.name}
+                                  className="mx-auto max-h-24 object-contain"
+                                />
+                              </a>
+                            ) : (
+                              <div
+                                key={partner.name}
+                                className="block rounded-3xl bg-black p-6 text-center shadow-lg"
+                                style={{ animation: 'sponsorGlow 3s ease-in-out infinite' }}
+                              >
+                                <img
+                                  src={partner.logo}
+                                  alt={partner.name}
+                                  className="mx-auto max-h-24 object-contain"
+                                />
+                              </div>
+                            )
+                          )}
+                      </div>
                     </div>
                   )}
 
@@ -1910,21 +1932,34 @@ export default function AskLipuvkaWeb() {
                     <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4">
                       {partners
                         .filter((partner) => !partner.featured)
-                        .map((partner) => (
-                          <a
-                            key={partner.name}
-                            href={partner.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center justify-center rounded-2xl bg-gray-50 p-5 shadow-sm transition hover:scale-105 hover:shadow-md"
-                          >
-                            <img
-                              src={partner.logo}
-                              alt={partner.name}
-                              className="max-h-16 object-contain"
-                            />
-                          </a>
-                        ))}
+                        .map((partner) =>
+                          partner.url ? (
+                            <a
+                              key={partner.name}
+                              href={partner.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="flex items-center justify-center rounded-2xl bg-gray-50 p-5 shadow-sm transition hover:scale-105 hover:shadow-md"
+                            >
+                              <img
+                                src={partner.logo}
+                                alt={partner.name}
+                                className="max-h-16 object-contain"
+                              />
+                            </a>
+                          ) : (
+                            <div
+                              key={partner.name}
+                              className="flex items-center justify-center rounded-2xl bg-gray-50 p-5 shadow-sm"
+                            >
+                              <img
+                                src={partner.logo}
+                                alt={partner.name}
+                                className="max-h-16 object-contain"
+                              />
+                            </div>
+                          )
+                        )}
                     </div>
                   )}
                 </>
@@ -2532,6 +2567,18 @@ export default function AskLipuvkaWeb() {
               className="h-8 w-auto object-contain"
             />
           </a>
+
+          <div
+            className="inline-flex items-center justify-center rounded-xl bg-black px-5 py-3 shadow-sm"
+            aria-label="DH"
+            title="DH"
+          >
+            <img
+              src="/partneri/dh.jpg"
+              alt="DH"
+              className="h-8 w-auto object-contain"
+            />
+          </div>
 
           <a
             href="https://asklipuvka.cz"
