@@ -68,9 +68,9 @@ export default function AskLipuvkaWeb() {
       featured: true,
     },
     {
-      name: 'DH',
+      name: 'BLISTR',
       logo: '/partneri/dh.jpg',
-      url: '',
+      url: 'https://www.blistr.cz',
       featured: true,
     },
   ];
@@ -906,12 +906,6 @@ export default function AskLipuvkaWeb() {
           to { opacity: 1; transform: scale(1); }
         }
 
-        @keyframes sponsorGlow {
-          0% { box-shadow: 0 0 0 rgba(34, 197, 94, 0.00); transform: translateY(0); }
-          50% { box-shadow: 0 0 28px rgba(34, 197, 94, 0.12); transform: translateY(-2px); }
-          100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0.00); transform: translateY(0); }
-        }
-
         @keyframes hintBounce {
           0%, 100% { transform: translateY(0); opacity: 0.85; }
           50% { transform: translateY(6px); opacity: 1; }
@@ -1636,7 +1630,7 @@ export default function AskLipuvkaWeb() {
             <div
               className={`relative my-4 w-full max-w-4xl rounded-2xl p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out] ${
                 clubPopupContent === 'partneri'
-                  ? 'border border-green-100 bg-gradient-to-br from-white to-green-50'
+                  ? 'border border-[#e7dcc7] bg-gradient-to-br from-[#f7f1e7] to-[#efe4d2]'
                   : 'bg-white'
               }`}
               onClick={(e) => e.stopPropagation()}
@@ -1882,94 +1876,38 @@ export default function AskLipuvkaWeb() {
               {clubPopupContent === 'partneri' && (
                 <>
                   <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
-                    <h2 className="text-3xl font-bold text-green-600">Partneři & sponzoři</h2>
+                    <h2 className="text-3xl font-bold text-green-700">Partneři & sponzoři</h2>
                   </div>
 
-                  <p className="mb-8 text-gray-600">
+                  <p className="mb-8 text-gray-700">
                     Děkujeme všem partnerům, kteří podporují mládež ASK Lipůvka.
                   </p>
 
-                  {partners.some((partner) => partner.featured) && (
-                    <div className="mb-10">
-                      <div className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-green-600">
-                        Hlavní partner
-                      </div>
+                  <div className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-green-700">
+                    Hlavní partner
+                  </div>
 
-                      <div className="space-y-6">
-                        {partners
-                          .filter((partner) => partner.featured)
-                          .map((partner) =>
-                            partner.url ? (
-                              <a
-                                key={partner.name}
-                                href={partner.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="block rounded-3xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                                style={{ animation: 'sponsorGlow 3s ease-in-out infinite' }}
-                              >
-                                <div className="flex min-h-[120px] items-center justify-center rounded-2xl bg-black px-6 py-6">
-                                  <img
-                                    src={partner.logo}
-                                    alt={partner.name}
-                                    className="mx-auto max-h-24 object-contain"
-                                  />
-                                </div>
-                              </a>
-                            ) : (
-                              <div
-                                key={partner.name}
-                                className="block rounded-3xl border border-gray-200 bg-white p-4 shadow-sm"
-                                style={{ animation: 'sponsorGlow 3s ease-in-out infinite' }}
-                              >
-                                <div className="flex min-h-[120px] items-center justify-center rounded-2xl bg-black px-6 py-6">
-                                  <img
-                                    src={partner.logo}
-                                    alt={partner.name}
-                                    className="mx-auto max-h-24 object-contain"
-                                  />
-                                </div>
-                              </div>
-                            )
-                          )}
-                      </div>
-                    </div>
-                  )}
-
-                  {partners.filter((partner) => !partner.featured).length > 0 && (
-                    <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4">
-                      {partners
-                        .filter((partner) => !partner.featured)
-                        .map((partner) =>
-                          partner.url ? (
-                            <a
-                              key={partner.name}
-                              href={partner.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="flex items-center justify-center rounded-2xl bg-gray-50 p-5 shadow-sm transition hover:scale-105 hover:shadow-md"
-                            >
-                              <img
-                                src={partner.logo}
-                                alt={partner.name}
-                                className="max-h-16 object-contain"
-                              />
-                            </a>
-                          ) : (
-                            <div
-                              key={partner.name}
-                              className="flex items-center justify-center rounded-2xl bg-gray-50 p-5 shadow-sm"
-                            >
-                              <img
-                                src={partner.logo}
-                                alt={partner.name}
-                                className="max-h-16 object-contain"
-                              />
-                            </div>
-                          )
-                        )}
-                    </div>
-                  )}
+                  <div className="space-y-6">
+                    {partners
+                      .filter((partner) => partner.featured)
+                      .map((partner) => (
+                        <a
+                          key={partner.name}
+                          href={partner.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="block rounded-3xl border border-[#dfd1b8] bg-[#fdf9f2] p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                        >
+                          <div className="flex min-h-[120px] items-center justify-center rounded-2xl bg-[#efe4d2] px-6 py-6">
+                            <img
+                              src={partner.logo}
+                              alt={partner.name}
+                              className="max-h-24 w-auto object-contain"
+                            />
+                          </div>
+                        </a>
+                      ))}
+                  </div>
                 </>
               )}
             </div>
@@ -2546,7 +2484,7 @@ export default function AskLipuvkaWeb() {
             href="https://www.facebook.com/people/ASK-Lip%C5%AFvka/100093969443650/"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-base font-bold text-white transition hover:scale-105 hover:bg-blue-700"
+            className="inline-flex h-14 items-center gap-2 rounded-xl bg-blue-600 px-5 text-base font-bold text-white transition hover:scale-105 hover:bg-blue-700"
             aria-label="Facebook ASK Lipůvka"
             title="Facebook ASK Lipůvka"
           >
@@ -2561,40 +2499,41 @@ export default function AskLipuvkaWeb() {
             Facebook
           </a>
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <a
-              href="https://revelop.cz/"
-              target="_blank"
-              rel="noreferrer"
-              className="flex h-20 w-[220px] items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-              aria-label="Revelop"
-              title="Revelop"
-            >
-              <img
-                src="/partneri/revelop.png"
-                alt="Revelop"
-                className="max-h-10 w-auto object-contain"
-              />
-            </a>
+          <a
+            href="https://revelop.cz/"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-14 items-center justify-center rounded-xl border border-gray-200 bg-white px-5 shadow-sm transition hover:scale-105 hover:shadow-md"
+            aria-label="Revelop"
+            title="Revelop"
+          >
+            <img
+              src="/partneri/revelop.png"
+              alt="Revelop"
+              className="h-8 w-auto object-contain"
+            />
+          </a>
 
-            <div
-              className="flex h-20 w-[220px] items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-              aria-label="DH"
-              title="DH"
-            >
-              <img
-                src="/partneri/dh.jpg"
-                alt="DH"
-                className="max-h-10 w-auto object-contain"
-              />
-            </div>
-          </div>
+          <a
+            href="https://www.blistr.cz"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-14 items-center justify-center rounded-xl border border-gray-200 bg-white px-5 shadow-sm transition hover:scale-105 hover:shadow-md"
+            aria-label="BLISTR"
+            title="BLISTR"
+          >
+            <img
+              src="/partneri/dh.jpg"
+              alt="BLISTR"
+              className="h-8 w-auto object-contain"
+            />
+          </a>
 
           <a
             href="https://asklipuvka.cz"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center rounded-xl border border-green-600 px-5 py-3 text-base font-bold text-green-700 transition hover:scale-105 hover:bg-green-50"
+            className="inline-flex h-14 items-center rounded-xl border border-green-600 px-5 text-base font-bold text-green-700 transition hover:scale-105 hover:bg-green-50"
           >
             "A" tým muži
           </a>
