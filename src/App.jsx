@@ -66,12 +66,14 @@ export default function AskLipuvkaWeb() {
       logo: '/partneri/revelop.png',
       url: 'https://revelop.cz/',
       featured: true,
+      invert: false,
     },
     {
-      name: 'DH',
+      name: 'Dalibor Hudec',
       logo: '/partneri/dh.jpg',
       url: '',
       featured: true,
+      invert: true,
     },
   ];
 
@@ -893,6 +895,50 @@ export default function AskLipuvkaWeb() {
     );
   };
 
+  const renderPartnerCard = (partner, index, compact = false) => {
+    const content = (
+      <div
+        className={`flex items-center justify-center rounded-3xl border border-gray-800 bg-gradient-to-br from-black to-gray-900 shadow-lg transition hover:-translate-y-1 hover:shadow-xl ${
+          compact ? 'h-20 min-w-[220px] px-6' : 'h-32 min-w-[320px] px-10'
+        }`}
+      >
+        <img
+          src={partner.logo}
+          alt={partner.name}
+          className={`${compact ? 'max-h-10' : 'max-h-16'} w-auto object-contain`}
+          style={partner.invert ? { filter: 'brightness(0) invert(1)' } : undefined}
+        />
+      </div>
+    );
+
+    if (partner.url) {
+      return (
+        <a
+          key={`${partner.name}-${index}`}
+          href={partner.url}
+          target="_blank"
+          rel="noreferrer"
+          className="block shrink-0"
+          aria-label={partner.name}
+          title={partner.name}
+        >
+          {content}
+        </a>
+      );
+    }
+
+    return (
+      <div
+        key={`${partner.name}-${index}`}
+        className="block shrink-0"
+        aria-label={partner.name}
+        title={partner.name}
+      >
+        {content}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-white text-gray-900">
       <style>{`
@@ -906,15 +952,24 @@ export default function AskLipuvkaWeb() {
           to { opacity: 1; transform: scale(1); }
         }
 
-        @keyframes sponsorGlow {
-          0% { box-shadow: 0 0 0 rgba(34, 197, 94, 0.00); transform: translateY(0); }
-          50% { box-shadow: 0 0 28px rgba(34, 197, 94, 0.12); transform: translateY(-2px); }
-          100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0.00); transform: translateY(0); }
-        }
-
         @keyframes hintBounce {
           0%, 100% { transform: translateY(0); opacity: 0.85; }
           50% { transform: translateY(6px); opacity: 1; }
+        }
+
+        @keyframes partnerMarquee {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+
+        .partner-marquee-track {
+          display: flex;
+          width: max-content;
+          animation: partnerMarquee 18s linear infinite;
+        }
+
+        .partner-marquee-track:hover {
+          animation-play-state: paused;
         }
       `}</style>
 
@@ -1889,87 +1944,21 @@ export default function AskLipuvkaWeb() {
                     Děkujeme všem partnerům, kteří podporují mládež ASK Lipůvka.
                   </p>
 
-                  {partners.some((partner) => partner.featured) && (
-                    <div className="mb-10">
-                      <div className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-green-600">
-                        Hlavní partner
-                      </div>
+                  <div className="mb-4 text-sm font-bold uppercase tracking-[0.2em] text-green-600">
+                    Hlavní partner
+                  </div>
 
-                      <div className="space-y-6">
-                        {partners
-                          .filter((partner) => partner.featured)
-                          .map((partner) =>
-                            partner.url ? (
-                              <a
-                                key={partner.name}
-                                href={partner.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="block rounded-3xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                                style={{ animation: 'sponsorGlow 3s ease-in-out infinite' }}
-                              >
-                                <div className="flex min-h-[120px] items-center justify-center rounded-2xl bg-black px-6 py-6">
-                                  <img
-                                    src={partner.logo}
-                                    alt={partner.name}
-                                    className="mx-auto max-h-24 object-contain"
-                                  />
-                                </div>
-                              </a>
-                            ) : (
-                              <div
-                                key={partner.name}
-                                className="block rounded-3xl border border-gray-200 bg-white p-4 shadow-sm"
-                                style={{ animation: 'sponsorGlow 3s ease-in-out infinite' }}
-                              >
-                                <div className="flex min-h-[120px] items-center justify-center rounded-2xl bg-black px-6 py-6">
-                                  <img
-                                    src={partner.logo}
-                                    alt={partner.name}
-                                    className="mx-auto max-h-24 object-contain"
-                                  />
-                                </div>
-                              </div>
-                            )
-                          )}
-                      </div>
+                  <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white/70 p-4 shadow-sm">
+                    <div className="partner-marquee-track gap-6">
+                      {[...partners, ...partners].map((partner, index) =>
+                        renderPartnerCard(partner, index, false)
+                      )}
                     </div>
-                  )}
+                  </div>
 
-                  {partners.filter((partner) => !partner.featured).length > 0 && (
-                    <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4">
-                      {partners
-                        .filter((partner) => !partner.featured)
-                        .map((partner) =>
-                          partner.url ? (
-                            <a
-                              key={partner.name}
-                              href={partner.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="flex items-center justify-center rounded-2xl bg-gray-50 p-5 shadow-sm transition hover:scale-105 hover:shadow-md"
-                            >
-                              <img
-                                src={partner.logo}
-                                alt={partner.name}
-                                className="max-h-16 object-contain"
-                              />
-                            </a>
-                          ) : (
-                            <div
-                              key={partner.name}
-                              className="flex items-center justify-center rounded-2xl bg-gray-50 p-5 shadow-sm"
-                            >
-                              <img
-                                src={partner.logo}
-                                alt={partner.name}
-                                className="max-h-16 object-contain"
-                              />
-                            </div>
-                          )
-                        )}
-                    </div>
-                  )}
+                  <div className="mt-4 text-center text-sm text-gray-500">
+                    Přejeď myší na loga pro zastavení animace.
+                  </div>
                 </>
               )}
             </div>
@@ -2541,7 +2530,7 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <footer className="py-8 text-center text-gray-500">
-        <div className="mb-6 flex flex-wrap items-center justify-center gap-5">
+        <div className="mb-4 flex flex-wrap items-center justify-center gap-5">
           <a
             href="https://www.facebook.com/people/ASK-Lip%C5%AFvka/100093969443650/"
             target="_blank"
@@ -2561,35 +2550,6 @@ export default function AskLipuvkaWeb() {
             Facebook
           </a>
 
-          <div className="flex flex-wrap items-center justify-center gap-4">
-            <a
-              href="https://revelop.cz/"
-              target="_blank"
-              rel="noreferrer"
-              className="flex h-20 w-[220px] items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-              aria-label="Revelop"
-              title="Revelop"
-            >
-              <img
-                src="/partneri/revelop.png"
-                alt="Revelop"
-                className="max-h-10 w-auto object-contain"
-              />
-            </a>
-
-            <div
-              className="flex h-20 w-[220px] items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-              aria-label="DH"
-              title="DH"
-            >
-              <img
-                src="/partneri/dh.jpg"
-                alt="DH"
-                className="max-h-10 w-auto object-contain"
-              />
-            </div>
-          </div>
-
           <a
             href="https://asklipuvka.cz"
             target="_blank"
@@ -2598,6 +2558,14 @@ export default function AskLipuvkaWeb() {
           >
             "A" tým muži
           </a>
+        </div>
+
+        <div className="mx-auto mb-6 max-w-5xl overflow-hidden rounded-3xl border border-gray-200 bg-gray-50 p-4 shadow-sm">
+          <div className="partner-marquee-track gap-4">
+            {[...partners, ...partners].map((partner, index) =>
+              renderPartnerCard(partner, index, true)
+            )}
+          </div>
         </div>
 
         <div>© 2026 ASK Lipůvka</div>
