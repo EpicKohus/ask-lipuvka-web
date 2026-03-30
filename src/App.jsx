@@ -1629,8 +1629,8 @@ export default function AskLipuvkaWeb() {
           <div className="flex min-h-full items-start justify-center">
             <div
               className={`relative my-4 w-full max-w-4xl rounded-2xl p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out] ${
-                clubPopupContent === 'partneri'
-                  ? 'border border-[#e7dcc7] bg-gradient-to-br from-[#f7f1e7] to-[#efe4d2]'
+                clubPopupContent === 'partneri' || clubPopupContent === 'partner-nabidka'
+                  ? 'bg-[#f7f3eb]'
                   : 'bg-white'
               }`}
               onClick={(e) => e.stopPropagation()}
@@ -1797,6 +1797,13 @@ export default function AskLipuvkaWeb() {
                       className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
                     />
 
+                    <input
+                      type="text"
+                      name="kontakt"
+                      placeholder="Kontakt (e-mail nebo telefon – nepovinné)"
+                      className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
+                    />
+
                     <textarea
                       name="zprava"
                       placeholder="Napište nám váš podnět..."
@@ -1883,30 +1890,109 @@ export default function AskLipuvkaWeb() {
                     Děkujeme všem partnerům, kteří podporují mládež ASK Lipůvka.
                   </p>
 
-                  <div className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-green-700">
-                    Hlavní partner
+                  <div className="space-y-6">
+                    <a
+                      href="https://revelop.cz/"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex justify-center transition hover:-translate-y-1 hover:scale-[1.02]"
+                    >
+                      <img
+                        src="/partneri/revelop.png"
+                        alt="Revelop"
+                        className="h-24 w-auto rounded-2xl object-contain shadow-sm"
+                      />
+                    </a>
+
+                    <a
+                      href="https://www.blistr.cz"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex justify-center transition hover:-translate-y-1 hover:scale-[1.02]"
+                    >
+                      <img
+                        src="/partneri/dh.jpg"
+                        alt="BLISTR"
+                        className="h-24 w-auto rounded-2xl object-contain shadow-sm"
+                      />
+                    </a>
                   </div>
 
-                  <div className="space-y-6">
-                    {partners
-                      .filter((partner) => partner.featured)
-                      .map((partner) => (
-                        <a
-                          key={partner.name}
-                          href={partner.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="block rounded-3xl border border-[#dfd1b8] bg-[#fdf9f2] p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                        >
-                          <div className="flex min-h-[120px] items-center justify-center rounded-2xl bg-[#efe4d2] px-6 py-6">
-                            <img
-                              src={partner.logo}
-                              alt={partner.name}
-                              className="max-h-24 w-auto object-contain"
-                            />
-                          </div>
-                        </a>
-                      ))}
+                  <div className="mt-10 text-center">
+                    <button
+                      type="button"
+                      onClick={() => openClubPopup('partner-nabidka')}
+                      className="font-semibold text-green-700 underline underline-offset-4 hover:text-green-800"
+                    >
+                      Proč nás podpořit?
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {clubPopupContent === 'partner-nabidka' && (
+                <>
+                  <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
+                    <h2 className="text-3xl font-bold text-green-700">Spolupráce s ASK Lipůvka</h2>
+                  </div>
+
+                  <p className="mb-8 text-gray-700">
+                    Co vám můžeme nabídnout jako partnerovi:
+                  </p>
+
+                  <div className="mb-8 overflow-hidden rounded-3xl shadow-sm">
+                    <img
+                      src="/partneri/deti.jpg"
+                      alt="Děti ASK Lipůvka na tréninku"
+                      className="h-auto w-full object-cover"
+                    />
+                  </div>
+
+                  <div className="mx-auto max-w-2xl space-y-8 text-left">
+                    <div>
+                      <div className="text-2xl font-bold text-green-700">⚽ Viditelnost</div>
+                      <ul className="mt-3 space-y-2 text-lg text-gray-700">
+                        <li>• logo na webu</li>
+                        <li>• logo na sociálních sítích</li>
+                        <li>• zmínky u příspěvků</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <div className="text-2xl font-bold text-green-700">👥 Lokální dosah</div>
+                      <ul className="mt-3 space-y-2 text-lg text-gray-700">
+                        <li>• rodiče + děti + komunita</li>
+                        <li>• lidé z Lipůvky a okolí</li>
+                        <li>• reální zákazníci (ne fake dosah)</li>
+                      </ul>
+                    </div>
+
+                    <div>
+                      <div className="text-2xl font-bold text-green-700">❤️ Smysl</div>
+                      <ul className="mt-3 space-y-2 text-lg text-gray-700">
+                        <li>• podpora mládeže</li>
+                        <li>• sport</li>
+                        <li>• komunita</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="mt-10 text-center">
+                    <p className="text-gray-700">
+                      Chcete podpořit mládež ASK Lipůvka?
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => openClubPopup('podnety')}
+                      className="mt-4 font-semibold text-green-700 underline underline-offset-4 hover:text-green-800"
+                    >
+                      Napište nám
+                    </button>
+
+                    <p className="mt-2 text-xs text-gray-500">
+                      Kontakt můžete přidat dobrovolně (e-mail / telefon).
+                    </p>
                   </div>
                 </>
               )}
@@ -2484,7 +2570,7 @@ export default function AskLipuvkaWeb() {
             href="https://www.facebook.com/people/ASK-Lip%C5%AFvka/100093969443650/"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-14 items-center gap-2 rounded-xl bg-blue-600 px-5 text-base font-bold text-white transition hover:scale-105 hover:bg-blue-700"
+            className="inline-flex h-14 items-center gap-2 rounded-xl bg-blue-600 px-5 text-base font-bold text-white transition hover:-translate-y-1 hover:scale-105 hover:bg-blue-700 hover:shadow-lg"
             aria-label="Facebook ASK Lipůvka"
             title="Facebook ASK Lipůvka"
           >
@@ -2503,14 +2589,14 @@ export default function AskLipuvkaWeb() {
             href="https://revelop.cz/"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-14 items-center justify-center rounded-xl border border-gray-200 bg-white px-5 shadow-sm transition hover:scale-105 hover:shadow-md"
+            className="inline-flex h-14 items-center justify-center overflow-hidden rounded-2xl transition hover:-translate-y-1 hover:scale-105 hover:shadow-lg"
             aria-label="Revelop"
             title="Revelop"
           >
             <img
               src="/partneri/revelop.png"
               alt="Revelop"
-              className="h-8 w-auto object-contain"
+              className="h-14 w-auto object-contain"
             />
           </a>
 
@@ -2518,14 +2604,14 @@ export default function AskLipuvkaWeb() {
             href="https://www.blistr.cz"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-14 items-center justify-center rounded-xl border border-gray-200 bg-white px-5 shadow-sm transition hover:scale-105 hover:shadow-md"
+            className="inline-flex h-14 items-center justify-center overflow-hidden rounded-2xl transition hover:-translate-y-1 hover:scale-105 hover:shadow-lg"
             aria-label="BLISTR"
             title="BLISTR"
           >
             <img
               src="/partneri/dh.jpg"
               alt="BLISTR"
-              className="h-8 w-auto object-contain"
+              className="h-14 w-auto object-contain"
             />
           </a>
 
@@ -2533,7 +2619,7 @@ export default function AskLipuvkaWeb() {
             href="https://asklipuvka.cz"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex h-14 items-center rounded-xl border border-green-600 px-5 text-base font-bold text-green-700 transition hover:scale-105 hover:bg-green-50"
+            className="inline-flex h-14 items-center rounded-xl border border-green-600 px-5 text-base font-bold text-green-700 transition hover:-translate-y-1 hover:scale-105 hover:bg-green-50 hover:shadow-lg"
           >
             "A" tým muži
           </a>
