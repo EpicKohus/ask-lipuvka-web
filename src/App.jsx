@@ -908,7 +908,7 @@ export default function AskLipuvkaWeb() {
 
         @keyframes sponsorGlow {
           0% { box-shadow: 0 0 0 rgba(34, 197, 94, 0.00); transform: translateY(0); }
-          50% { box-shadow: 0 0 28px rgba(34, 197, 94, 0.18); transform: translateY(-2px); }
+          50% { box-shadow: 0 0 28px rgba(34, 197, 94, 0.12); transform: translateY(-2px); }
           100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0.00); transform: translateY(0); }
         }
 
@@ -1634,7 +1634,11 @@ export default function AskLipuvkaWeb() {
         >
           <div className="flex min-h-full items-start justify-center">
             <div
-              className="relative my-4 w-full max-w-4xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              className={`relative my-4 w-full max-w-4xl rounded-2xl p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out] ${
+                clubPopupContent === 'partneri'
+                  ? 'border border-green-100 bg-gradient-to-br from-white to-green-50'
+                  : 'bg-white'
+              }`}
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -1901,26 +1905,30 @@ export default function AskLipuvkaWeb() {
                                 href={partner.url}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="block rounded-3xl bg-black p-6 text-center shadow-lg transition hover:scale-[1.02]"
+                                className="block rounded-3xl border border-gray-200 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                                 style={{ animation: 'sponsorGlow 3s ease-in-out infinite' }}
                               >
-                                <img
-                                  src={partner.logo}
-                                  alt={partner.name}
-                                  className="mx-auto max-h-24 object-contain"
-                                />
+                                <div className="flex min-h-[120px] items-center justify-center rounded-2xl bg-black px-6 py-6">
+                                  <img
+                                    src={partner.logo}
+                                    alt={partner.name}
+                                    className="mx-auto max-h-24 object-contain"
+                                  />
+                                </div>
                               </a>
                             ) : (
                               <div
                                 key={partner.name}
-                                className="block rounded-3xl bg-black p-6 text-center shadow-lg"
+                                className="block rounded-3xl border border-gray-200 bg-white p-4 shadow-sm"
                                 style={{ animation: 'sponsorGlow 3s ease-in-out infinite' }}
                               >
-                                <img
-                                  src={partner.logo}
-                                  alt={partner.name}
-                                  className="mx-auto max-h-24 object-contain"
-                                />
+                                <div className="flex min-h-[120px] items-center justify-center rounded-2xl bg-black px-6 py-6">
+                                  <img
+                                    src={partner.logo}
+                                    alt={partner.name}
+                                    className="mx-auto max-h-24 object-contain"
+                                  />
+                                </div>
                               </div>
                             )
                           )}
@@ -2533,7 +2541,7 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <footer className="py-8 text-center text-gray-500">
-        <div className="mb-4 flex flex-wrap items-center justify-center gap-5">
+        <div className="mb-6 flex flex-wrap items-center justify-center gap-5">
           <a
             href="https://www.facebook.com/people/ASK-Lip%C5%AFvka/100093969443650/"
             target="_blank"
@@ -2553,31 +2561,33 @@ export default function AskLipuvkaWeb() {
             Facebook
           </a>
 
-          <a
-            href="https://revelop.cz/"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center rounded-xl bg-black px-5 py-3 shadow-sm transition hover:scale-105 hover:shadow-md"
-            aria-label="Revelop"
-            title="Revelop"
-          >
-            <img
-              src="/partneri/revelop.png"
-              alt="Revelop"
-              className="h-8 w-auto object-contain"
-            />
-          </a>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <a
+              href="https://revelop.cz/"
+              target="_blank"
+              rel="noreferrer"
+              className="flex h-20 w-[220px] items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              aria-label="Revelop"
+              title="Revelop"
+            >
+              <img
+                src="/partneri/revelop.png"
+                alt="Revelop"
+                className="max-h-10 w-auto object-contain"
+              />
+            </a>
 
-          <div
-            className="inline-flex items-center justify-center rounded-xl bg-black px-5 py-3 shadow-sm"
-            aria-label="DH"
-            title="DH"
-          >
-            <img
-              src="/partneri/dh.jpg"
-              alt="DH"
-              className="h-8 w-auto object-contain"
-            />
+            <div
+              className="flex h-20 w-[220px] items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+              aria-label="DH"
+              title="DH"
+            >
+              <img
+                src="/partneri/dh.jpg"
+                alt="DH"
+                className="max-h-10 w-auto object-contain"
+              />
+            </div>
           </div>
 
           <a
