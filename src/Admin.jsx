@@ -22,6 +22,7 @@ export default function AskLipuvkaWeb() {
 
   const [activeCategory, setActiveCategory] = useState('mladsi-pripravka');
   const [visitCount, setVisitCount] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const [firebaseNews, setFirebaseNews] = useState([]);
   const [firebaseMatches, setFirebaseMatches] = useState([]);
@@ -30,6 +31,8 @@ export default function AskLipuvkaWeb() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
 
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
@@ -68,10 +71,43 @@ export default function AskLipuvkaWeb() {
       featured: true,
     },
     {
-      name: 'DH',
+      name: 'BLISTR',
       logo: '/partneri/dh.jpg',
-      url: '',
+      url: 'https://www.blistr.cz',
       featured: true,
+    },
+  ];
+
+  const faqItems = [
+    {
+      question: 'Kolik stojí fotbal?',
+      answer:
+        'Členský příspěvek je 1 000 Kč za půl roku. Snažíme se, aby byl fotbal dostupný pro všechny děti, a zároveň aby to u nás mělo smysl a děti to bavilo.',
+    },
+    {
+      question: 'Co když dítě nikdy nehrálo fotbal?',
+      answer:
+        'To vůbec nevadí. Děti se u nás učí úplně od začátku.',
+    },
+    {
+      question: 'Může si to dítě jen vyzkoušet?',
+      answer:
+        'Ano, klidně přijďte na trénink a uvidíte, jestli ho to bude bavit.',
+    },
+    {
+      question: 'Co potřebuje dítě na trénink?',
+      answer:
+        'Stačí sportovní oblečení, boty a pití. Oblečení je dobré přizpůsobit počasí, protože většina tréninků probíhá venku.',
+    },
+    {
+      question: 'Jaké soutěže hrajeme a pro jak staré děti?',
+      answer:
+        'V sezóně 2025/2026 hrajeme soutěže v kategorii U9 v rámci okresu Blansko. Od sezóny 2026/2027 chceme přidat i kategorii U11, aby děti mohly přirozeně pokračovat dál. U9 je přibližně pro děti 7–9 let, U11 pak pro starší děti.',
+    },
+    {
+      question: 'Od kolika let berete děti?',
+      answer:
+        'Přibližně od 5 let.',
     },
   ];
 
@@ -331,7 +367,15 @@ export default function AskLipuvkaWeb() {
   ];
 
   const parseMatchDate = (dateString) => {
-    const parts = dateString.split('.').map((part) => part.trim()).filter(Boolean);
+    if (!dateString || typeof dateString !== 'string') return new Date('2100-01-01');
+
+    const parts = dateString
+      .split('.')
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    if (parts.length < 3) return new Date('2100-01-01');
+
     const [day, month, year] = parts;
     return new Date(Number(year), Number(month) - 1, Number(day));
   };
@@ -405,6 +449,18 @@ export default function AskLipuvkaWeb() {
     selectedAlbum && selectedPhotoIndex !== null
       ? selectedAlbum.photos?.[selectedPhotoIndex]
       : null;
+
+  const selectedMatchStyle = selectedMatch
+    ? getCategoryStyle(selectedMatch.category)
+    : getCategoryStyle(activeCategory);
+
+  const selectedMatchShortLabel = selectedMatch
+    ? getCategoryShortLabel(selectedMatch.category)
+    : activeCategoryShortLabel;
+
+  const selectedMatchLabel = selectedMatch
+    ? categories.find((category) => category.id === selectedMatch.category)?.label || activeCategoryLabel
+    : activeCategoryLabel;
 
   const getCategoryShortLabel = (categoryId) => {
     const cat = categories.find((c) => c.id === categoryId);
@@ -484,16 +540,35 @@ export default function AskLipuvkaWeb() {
   };
 
   const selectTeam = (categoryId) => {
-    setActiveCategory(categoryId);
-    setShowAllTeamAlbums(false);
-    setIsTeamsDropdownOpen(false);
-    setIsMobileTeamsDropdownOpen(false);
-    setIsMobileMenuOpen(false);
+    if (categoryId === activeCategory) {
+      setShowAllTeamAlbums(false);
+      setIsTeamsDropdownOpen(false);
+      setIsMobileTeamsDropdownOpen(false);
+      setIsMobileMenuOpen(false);
 
-    const topSection = document.getElementById('top');
-    if (topSection) {
-      topSection.scrollIntoView({ behavior: 'smooth' });
+      const topSection = document.getElementById('top');
+      if (topSection) {
+        topSection.scrollIntoView({ behavior: 'smooth' });
+      }
+      return;
     }
+
+    setIsTransitioning(true);
+
+    setTimeout(() => {
+      setActiveCategory(categoryId);
+      setShowAllTeamAlbums(false);
+      setIsTeamsDropdownOpen(false);
+      setIsMobileTeamsDropdownOpen(false);
+      setIsMobileMenuOpen(false);
+
+      const topSection = document.getElementById('top');
+      if (topSection) {
+        topSection.scrollIntoView({ behavior: 'smooth' });
+      }
+
+      setIsTransitioning(false);
+    }, 180);
   };
 
   const closeGallery = () => {
@@ -754,6 +829,7 @@ export default function AskLipuvkaWeb() {
 
   const openClubPopup = (content) => {
     setClubPopupContent(content);
+    setOpenFaqIndex(null);
     setIsClubDropdownOpen(false);
     setIsMobileMenuOpen(false);
     setIsMobileClubDropdownOpen(false);
@@ -774,7 +850,7 @@ export default function AskLipuvkaWeb() {
         type="button"
         key={`${m.date}-${m.opponent}`}
         onClick={() => setSelectedMatch(m)}
-        className={`w-full rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+        className={`w-full rounded-2xl border p-5 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
           isToday
             ? 'border-green-500 bg-green-50 ring-2 ring-green-300 shadow-lg'
             : categoryStyle.light
@@ -833,7 +909,7 @@ export default function AskLipuvkaWeb() {
         <div className="relative h-56 w-full overflow-hidden bg-black">
           <video
             src={coverSrc}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
             muted
             playsInline
             preload="metadata"
@@ -847,7 +923,15 @@ export default function AskLipuvkaWeb() {
       );
     }
 
-    return <img src={coverSrc} alt={album.title} className="h-56 w-full object-cover" />;
+    return (
+      <div className="overflow-hidden">
+        <img
+          src={coverSrc}
+          alt={album.title}
+          className="h-56 w-full object-cover transition duration-500 group-hover:scale-105"
+        />
+      </div>
+    );
   };
 
   const renderGalleryThumb = (media, index, title) => {
@@ -857,12 +941,12 @@ export default function AskLipuvkaWeb() {
           type="button"
           key={`${media}-${index}`}
           onClick={() => setSelectedPhotoIndex(index)}
-          className="overflow-hidden rounded-2xl bg-black"
+          className="overflow-hidden rounded-2xl bg-black transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
         >
           <div className="relative">
             <video
               src={media}
-              className="h-40 w-full rounded-2xl object-cover transition hover:scale-105"
+              className="h-40 w-full rounded-2xl object-cover transition duration-300 hover:scale-110"
               muted
               playsInline
               preload="metadata"
@@ -882,12 +966,12 @@ export default function AskLipuvkaWeb() {
         type="button"
         key={`${media}-${index}`}
         onClick={() => setSelectedPhotoIndex(index)}
-        className="overflow-hidden rounded-2xl"
+        className="overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
       >
         <img
           src={media}
           alt={`${title} ${index + 1}`}
-          className="h-40 w-full rounded-2xl object-cover transition hover:scale-105"
+          className="h-40 w-full rounded-2xl object-cover transition duration-300 hover:scale-110"
         />
       </button>
     );
@@ -906,15 +990,39 @@ export default function AskLipuvkaWeb() {
           to { opacity: 1; transform: scale(1); }
         }
 
-        @keyframes sponsorGlow {
-          0% { box-shadow: 0 0 0 rgba(34, 197, 94, 0.00); transform: translateY(0); }
-          50% { box-shadow: 0 0 28px rgba(34, 197, 94, 0.18); transform: translateY(-2px); }
-          100% { box-shadow: 0 0 0 rgba(34, 197, 94, 0.00); transform: translateY(0); }
-        }
-
         @keyframes hintBounce {
           0%, 100% { transform: translateY(0); opacity: 0.85; }
           50% { transform: translateY(6px); opacity: 1; }
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(24px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes expand {
+          from {
+            opacity: 0;
+            transform: translateY(-6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-slideUp {
+          animation: slideUp 0.6s ease-out;
+        }
+
+        .animate-expand {
+          animation: expand 0.25s ease-out;
         }
       `}</style>
 
@@ -998,6 +1106,14 @@ export default function AskLipuvkaWeb() {
                     className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
                   >
                     Pro rodiče
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openClubPopup('faq')}
+                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                  >
+                    FAQ
                   </button>
 
                   <button
@@ -1178,6 +1294,14 @@ export default function AskLipuvkaWeb() {
 
                   <button
                     type="button"
+                    onClick={() => openClubPopup('faq')}
+                    className="px-8 py-3 text-left text-gray-700"
+                  >
+                    FAQ
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => openClubPopup('nabor')}
                     className="px-8 py-3 text-left text-gray-700"
                   >
@@ -1191,16 +1315,16 @@ export default function AskLipuvkaWeb() {
                   >
                     Registrace hráče
                   </button>
+
+                  <button
+                    type="button"
+                    onClick={() => openClubPopup('podnety')}
+                    className="px-8 py-3 text-left text-gray-700"
+                  >
+                    Kniha podnětů
+                  </button>
                 </div>
               )}
-
-              <button
-                type="button"
-                onClick={() => openClubPopup('podnety')}
-                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
-              >
-                Kniha podnětů
-              </button>
 
               <button
                 type="button"
@@ -1234,7 +1358,11 @@ export default function AskLipuvkaWeb() {
         id="top"
         className="relative flex min-h-[72vh] items-center justify-center px-4 text-center md:h-[80vh]"
       >
-        <img src="/field.png" alt="hřiště" className="absolute inset-0 h-full w-full object-cover" />
+        <img
+          src="/field.png"
+          alt="hřiště"
+          className="absolute inset-0 h-full w-full object-cover scale-105 transition duration-[6000ms] hover:scale-110"
+        />
         <div className="absolute inset-0 bg-black/35" />
 
         <div className="relative z-10 max-w-xl text-center">
@@ -1258,10 +1386,10 @@ export default function AskLipuvkaWeb() {
                   key={category.id}
                   type="button"
                   onClick={() => selectTeam(category.id)}
-                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all duration-300 ${
                     isActive
                       ? `${categoryStyle.button} shadow-lg`
-                      : 'bg-white text-gray-800 hover:scale-105'
+                      : 'bg-white text-gray-800 hover:scale-105 hover:shadow-lg'
                   }`}
                 >
                   {category.label}
@@ -1296,186 +1424,191 @@ export default function AskLipuvkaWeb() {
         </a>
       </section>
 
-      <section id="novinky" className="mx-auto max-w-5xl px-6 py-14">
-        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
-          <div className="mb-2 flex flex-wrap items-center gap-3">
-            <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
-              {activeCategoryLabel}
+      <div className={`transition-opacity duration-300 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+        <section id="novinky" className="animate-slideUp mx-auto max-w-5xl px-6 py-14">
+          <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
+            <div className="mb-2 flex flex-wrap items-center gap-3">
+              <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
+                {activeCategoryLabel}
+              </div>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
+                {activeCategoryShortLabel}
+              </span>
             </div>
-            <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
-              {activeCategoryShortLabel}
-            </span>
-          </div>
 
-          <h2 className={`mb-4 text-3xl font-bold ${activeCategoryStyle.text}`}>Novinky</h2>
+            <h2 className={`mb-4 text-3xl font-bold ${activeCategoryStyle.text}`}>Novinky</h2>
 
-          {filteredNews.length > 0 ? (
-            <div className="space-y-4">
-              {filteredNews.map((item) => (
-                <div key={`${item.category}-${item.title}`} className="rounded-2xl bg-white p-5 shadow-sm">
-                  <div className={`mb-2 text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
-                    {item.date}
-                  </div>
-                  <h3 className="mb-2 text-xl font-bold text-gray-900">{item.title}</h3>
-                  <p className="text-gray-700">{item.text}</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
-              Pro tuto kategorii zatím nejsou doplněné žádné novinky.
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section id="zapasy" className="mx-auto max-w-5xl px-6 py-14">
-        <div className="mb-3 flex flex-wrap items-center gap-3">
-          <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
-            {activeCategoryLabel}
-          </div>
-          <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
-            {activeCategoryShortLabel}
-          </span>
-        </div>
-
-        <div className="mb-6">
-          <h2 className={`mb-2 text-3xl font-bold ${activeCategoryStyle.text}`}>Nadcházející zápasy</h2>
-
-          <button
-            type="button"
-            onClick={() => setIsScheduleOpen(true)}
-            className={`mt-4 rounded-xl px-6 py-3 font-semibold transition hover:scale-[1.02] ${activeCategoryStyle.button}`}
-          >
-            Rozpis zápasů – Jaro 2026
-          </button>
-        </div>
-
-        <div className="space-y-4">
-          {upcomingMatches.length > 0 ? (
-            upcomingMatches.map((m) => renderMatchCard(m, false))
-          ) : (
-            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
-              V následujících 14 dnech nejsou pro tuto kategorii naplánované žádné zápasy.
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-5xl px-6 py-14">
-        <div className="mb-3 flex flex-wrap items-center gap-3">
-          <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
-            {activeCategoryLabel}
-          </div>
-          <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
-            {activeCategoryShortLabel}
-          </span>
-        </div>
-
-        <h2 className={`mb-6 text-3xl font-bold ${activeCategoryStyle.text}`}>Odehrané zápasy</h2>
-
-        <div className="space-y-4">
-          {playedMatches.length > 0 ? (
-            playedMatches.map((m) => renderMatchCard(m, true))
-          ) : (
-            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
-              Pro tuto kategorii zatím nejsou žádné odehrané zápasy.
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-5xl px-6 pb-14">
-        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
-          <div className="mb-2 flex flex-wrap items-center gap-3">
-            <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
-              {activeCategoryLabel}
-            </div>
-            <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
-              {activeCategoryShortLabel}
-            </span>
-          </div>
-
-          <h2 className={`mb-4 text-3xl font-bold ${activeCategoryStyle.text}`}>Kdy trénujeme</h2>
-
-          <div className="rounded-2xl bg-white p-6 text-lg shadow-sm">
-            {activeCategory === 'predpripravka' && (
-              <>
-                <div className="mb-2 font-bold text-gray-900">Předpřípravka (U7)</div>
-                <div className="text-gray-700">Čtvrtek 17:00–18:00</div>
-              </>
-            )}
-
-            {activeCategory === 'mladsi-pripravka' && (
-              <>
-                <div className="mb-2 font-bold text-gray-900">Mladší přípravka (U9)</div>
-                <div className="text-gray-700">Úterý a čtvrtek 16:30–18:00</div>
-              </>
-            )}
-
-            {activeCategory === 'starsi-pripravka' && (
-              <>
-                <div className="mb-2 font-bold text-gray-900">Starší přípravka (U11)</div>
-                <div className="text-gray-700">Středa 17:00–18:00</div>
-              </>
-            )}
-          </div>
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-5xl px-6 pb-14">
-        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
-          <div className="mb-2 flex flex-wrap items-center gap-3">
-            <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
-              {activeCategoryLabel}
-            </div>
-            <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
-              {activeCategoryShortLabel}
-            </span>
-          </div>
-
-          <h2 className={`mb-6 text-3xl font-bold ${activeCategoryStyle.text}`}>Fotky</h2>
-
-          {teamGalleryAlbums.length > 0 ? (
-            <>
-              <div className="grid gap-6 md:grid-cols-2">
-                {visibleTeamGalleryAlbums.map((album) => (
-                  <button
-                    type="button"
-                    key={album.id}
-                    onClick={() => openTeamAlbum(album)}
-                    className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+            {filteredNews.length > 0 ? (
+              <div className="space-y-4">
+                {filteredNews.map((item) => (
+                  <div
+                    key={`${item.category}-${item.title}`}
+                    className="rounded-2xl bg-white p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                   >
-                    {renderAlbumCover(album)}
-                    <div className="p-5">
-                      <div className="text-xl font-bold text-gray-900">{album.title}</div>
-                      <div className="mt-1 text-sm text-gray-500">
-                        {album.photos?.length || 0} položek
-                      </div>
+                    <div className={`mb-2 text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
+                      {item.date}
                     </div>
-                  </button>
+                    <h3 className="mb-2 text-xl font-bold text-gray-900">{item.title}</h3>
+                    <p className="text-gray-700">{item.text}</p>
+                  </div>
                 ))}
               </div>
+            ) : (
+              <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
+                Pro tuto kategorii zatím nejsou doplněné žádné novinky.
+              </div>
+            )}
+          </div>
+        </section>
 
-              {hasMoreTeamAlbums && (
-                <div className="mt-6 text-center">
-                  <button
-                    type="button"
-                    onClick={() => setShowAllTeamAlbums((prev) => !prev)}
-                    className={`rounded-xl px-6 py-3 font-semibold transition ${activeCategoryStyle.button}`}
-                  >
-                    {showAllTeamAlbums ? 'Zobrazit méně alb' : 'Zobrazit všechna alba'}
-                  </button>
-                </div>
-              )}
-            </>
-          ) : (
-            <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
-              Pro tuto kategorii zatím nejsou doplněná žádná alba.
+        <section id="zapasy" className="animate-slideUp mx-auto max-w-5xl px-6 py-14">
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
+              {activeCategoryLabel}
             </div>
-          )}
-        </div>
-      </section>
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
+              {activeCategoryShortLabel}
+            </span>
+          </div>
+
+          <div className="mb-6">
+            <h2 className={`mb-2 text-3xl font-bold ${activeCategoryStyle.text}`}>Nadcházející zápasy</h2>
+
+            <button
+              type="button"
+              onClick={() => setIsScheduleOpen(true)}
+              className={`mt-4 rounded-xl px-6 py-3 font-semibold transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${activeCategoryStyle.button}`}
+            >
+              Rozpis zápasů – Jaro 2026
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {upcomingMatches.length > 0 ? (
+              upcomingMatches.map((m) => renderMatchCard(m, false))
+            ) : (
+              <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+                V následujících 14 dnech nejsou pro tuto kategorii naplánované žádné zápasy.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="animate-slideUp mx-auto max-w-5xl px-6 py-14">
+          <div className="mb-3 flex flex-wrap items-center gap-3">
+            <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
+              {activeCategoryLabel}
+            </div>
+            <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
+              {activeCategoryShortLabel}
+            </span>
+          </div>
+
+          <h2 className={`mb-6 text-3xl font-bold ${activeCategoryStyle.text}`}>Odehrané zápasy</h2>
+
+          <div className="space-y-4">
+            {playedMatches.length > 0 ? (
+              playedMatches.map((m) => renderMatchCard(m, true))
+            ) : (
+              <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+                Pro tuto kategorii zatím nejsou žádné odehrané zápasy.
+              </div>
+            )}
+          </div>
+        </section>
+
+        <section className="animate-slideUp mx-auto max-w-5xl px-6 pb-14">
+          <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
+            <div className="mb-2 flex flex-wrap items-center gap-3">
+              <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
+                {activeCategoryLabel}
+              </div>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
+                {activeCategoryShortLabel}
+              </span>
+            </div>
+
+            <h2 className={`mb-4 text-3xl font-bold ${activeCategoryStyle.text}`}>Kdy trénujeme</h2>
+
+            <div className="rounded-2xl bg-white p-6 text-lg shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+              {activeCategory === 'predpripravka' && (
+                <>
+                  <div className="mb-2 font-bold text-gray-900">Předpřípravka (U7)</div>
+                  <div className="text-gray-700">Čtvrtek 17:00–18:00</div>
+                </>
+              )}
+
+              {activeCategory === 'mladsi-pripravka' && (
+                <>
+                  <div className="mb-2 font-bold text-gray-900">Mladší přípravka (U9)</div>
+                  <div className="text-gray-700">Úterý a čtvrtek 16:30–18:00</div>
+                </>
+              )}
+
+              {activeCategory === 'starsi-pripravka' && (
+                <>
+                  <div className="mb-2 font-bold text-gray-900">Starší přípravka (U11)</div>
+                  <div className="text-gray-700">Středa 17:00–18:00</div>
+                </>
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="animate-slideUp mx-auto max-w-5xl px-6 pb-14">
+          <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
+            <div className="mb-2 flex flex-wrap items-center gap-3">
+              <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
+                {activeCategoryLabel}
+              </div>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
+                {activeCategoryShortLabel}
+              </span>
+            </div>
+
+            <h2 className={`mb-6 text-3xl font-bold ${activeCategoryStyle.text}`}>Fotky</h2>
+
+            {teamGalleryAlbums.length > 0 ? (
+              <>
+                <div className="grid gap-6 md:grid-cols-2">
+                  {visibleTeamGalleryAlbums.map((album) => (
+                    <button
+                      type="button"
+                      key={album.id}
+                      onClick={() => openTeamAlbum(album)}
+                      className="group overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
+                    >
+                      {renderAlbumCover(album)}
+                      <div className="p-5">
+                        <div className="text-xl font-bold text-gray-900">{album.title}</div>
+                        <div className="mt-1 text-sm text-gray-500">
+                          {album.photos?.length || 0} položek
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {hasMoreTeamAlbums && (
+                  <div className="mt-6 text-center">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllTeamAlbums((prev) => !prev)}
+                      className={`rounded-xl px-6 py-3 font-semibold transition-all duration-300 hover:scale-[1.02] hover:shadow-lg ${activeCategoryStyle.button}`}
+                    >
+                      {showAllTeamAlbums ? 'Zobrazit méně alb' : 'Zobrazit všechna alba'}
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
+                Pro tuto kategorii zatím nejsou doplněná žádná alba.
+              </div>
+            )}
+          </div>
+        </section>
+      </div>
 
       {isGalleryOpen && !selectedAlbum && (
         <div
@@ -1508,7 +1641,7 @@ export default function AskLipuvkaWeb() {
                         setSelectedAlbum(album);
                         setSelectedPhotoIndex(null);
                       }}
-                      className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                      className="group overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                     >
                       {renderAlbumCover(album)}
                       <div className="p-5">
@@ -1542,7 +1675,7 @@ export default function AskLipuvkaWeb() {
                 <button
                   type="button"
                   onClick={backFromAlbum}
-                  className="rounded-xl border border-gray-300 px-4 py-2 font-semibold text-gray-700 hover:bg-gray-100"
+                  className="rounded-xl border border-gray-300 px-4 py-2 font-semibold text-gray-700 transition hover:bg-gray-100"
                 >
                   ← Zpět na alba
                 </button>
@@ -1634,7 +1767,13 @@ export default function AskLipuvkaWeb() {
         >
           <div className="flex min-h-full items-start justify-center">
             <div
-              className="relative my-4 w-full max-w-4xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              className={`relative my-4 w-full max-w-4xl rounded-2xl p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out] ${
+                clubPopupContent === 'partneri' ||
+                clubPopupContent === 'partner-nabidka' ||
+                clubPopupContent === 'faq'
+                  ? 'bg-[#f7f3eb]'
+                  : 'bg-white'
+              }`}
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -1699,7 +1838,7 @@ export default function AskLipuvkaWeb() {
                       </p>
                     </div>
 
-                    <div className="rounded-2xl bg-gray-50 p-6">
+                    <div className="rounded-2xl bg-gray-50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
                       <h3 className="mb-3 text-xl font-bold text-green-600">Na čem si zakládáme</h3>
                       <ul className="space-y-2 text-gray-700">
                         <li>• radost ze hry a pohybu</li>
@@ -1709,7 +1848,7 @@ export default function AskLipuvkaWeb() {
                       </ul>
                     </div>
 
-                    <div className="rounded-2xl bg-gray-50 p-6">
+                    <div className="rounded-2xl bg-gray-50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
                       <h3 className="mb-3 text-xl font-bold text-green-600">Co od vás potřebujeme</h3>
                       <ul className="space-y-2 text-gray-700">
                         <li>• podporujte děti bez zbytečného tlaku na výkon</li>
@@ -1719,7 +1858,7 @@ export default function AskLipuvkaWeb() {
                       </ul>
                     </div>
 
-                    <div className="rounded-2xl bg-gray-50 p-6">
+                    <div className="rounded-2xl bg-gray-50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
                       <h3 className="mb-3 text-xl font-bold text-green-600">Co nabízíme</h3>
                       <ul className="space-y-2 text-gray-700">
                         <li>• přátelské a bezpečné prostředí</li>
@@ -1729,7 +1868,7 @@ export default function AskLipuvkaWeb() {
                       </ul>
                     </div>
 
-                    <div className="rounded-2xl bg-gray-50 p-6">
+                    <div className="rounded-2xl bg-gray-50 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
                       <h3 className="mb-3 text-xl font-bold text-green-600">Důležité</h3>
                       <p className="leading-7 text-gray-700">
                         Každé dítě se vyvíjí jiným tempem. Naším cílem není pouze vyhrávat,
@@ -1740,13 +1879,98 @@ export default function AskLipuvkaWeb() {
                 </>
               )}
 
+              {clubPopupContent === 'faq' && (
+                <>
+                  <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
+                    <h2 className="text-3xl font-bold text-green-700">Máte otázky?</h2>
+                  </div>
+
+                  <p className="mb-8 text-gray-700">
+                    Tady najdete odpovědi na to, co rodiče nejčastěji zajímá.
+                  </p>
+
+                  <div className="mb-8 overflow-hidden rounded-3xl bg-white/60 p-1 shadow-sm">
+                    <div className="flex h-[130px] items-center justify-center rounded-[22px] bg-gradient-to-br from-[#f2eadc] to-[#e8dcc6]">
+                      <div className="flex flex-wrap items-center justify-center gap-4 text-4xl md:text-5xl">
+                        <span>❓</span>
+                        <span>❔</span>
+                        <span>❓</span>
+                        <span>❔</span>
+                        <span>❓</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    {faqItems.map((item, index) => {
+                      const isOpen = openFaqIndex === index;
+
+                      return (
+                        <div
+                          key={item.question}
+                          className="overflow-hidden rounded-2xl border border-[#e6dccd] bg-white shadow-sm transition-all duration-300 hover:shadow-lg"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => setOpenFaqIndex(isOpen ? null : index)}
+                            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-[#faf7f2]"
+                          >
+                            <div className="flex items-start gap-3">
+                              <span className="mt-0.5 text-lg">❓</span>
+                              <span className="font-semibold text-gray-900">{item.question}</span>
+                            </div>
+                            <span className="text-xl text-green-700">{isOpen ? '−' : '+'}</span>
+                          </button>
+
+                          {isOpen && (
+                            <div className="animate-expand border-t border-[#efe6d8] px-5 py-4 text-gray-700">
+                              {item.answer}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-10 rounded-2xl bg-white/70 p-6 text-center shadow-sm">
+                    <p className="text-gray-700">
+                      Nenašli jste odpověď?
+                    </p>
+
+                    <p className="mt-2 text-sm text-gray-600">
+                      Klidně nám napište nebo zavolejte.
+                    </p>
+
+                    <div className="mt-4 space-y-1 text-green-700">
+                      <div className="font-semibold">Radek Mánek</div>
+                      <div>
+                        <a href="tel:606148368" className="hover:underline">606 148 368</a>
+                      </div>
+                      <div>
+                        <a href="mailto:radek.manek@email.cz" className="hover:underline">
+                          radek.manek@email.cz
+                        </a>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => openClubPopup('podnety')}
+                      className="mt-5 rounded-xl bg-green-600 px-6 py-3 font-semibold text-white transition-all duration-300 hover:scale-105 hover:bg-green-700 hover:shadow-lg"
+                    >
+                      Napsat podnět / dotaz
+                    </button>
+                  </div>
+                </>
+              )}
+
               {clubPopupContent === 'nabor' && (
                 <>
                   <div className="overflow-hidden rounded-3xl border border-green-100 bg-white shadow-sm">
                     <img
                       src="/nabor/nabor.png"
                       alt="Nábor hráčů ASK Lipůvka"
-                      className="h-auto w-full object-cover"
+                      className="h-auto w-full object-cover transition duration-500 hover:scale-[1.02]"
                     />
                   </div>
 
@@ -1770,7 +1994,7 @@ export default function AskLipuvkaWeb() {
                       <button
                         type="button"
                         onClick={openRecruitmentFromPopup}
-                        className="rounded-xl bg-green-600 px-8 py-3 font-semibold text-white transition hover:scale-[1.02] hover:bg-green-700"
+                        className="rounded-xl bg-green-600 px-8 py-3 font-semibold text-white transition-all duration-300 hover:scale-[1.02] hover:bg-green-700 hover:shadow-lg"
                       >
                         Přihlásit dítě
                       </button>
@@ -1799,6 +2023,13 @@ export default function AskLipuvkaWeb() {
                       className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
                     />
 
+                    <input
+                      type="text"
+                      name="kontakt"
+                      placeholder="Kontakt (e-mail nebo telefon – nepovinné)"
+                      className="w-full rounded-xl border border-gray-300 bg-white p-3 text-black placeholder:text-gray-500"
+                    />
+
                     <textarea
                       name="zprava"
                       placeholder="Napište nám váš podnět..."
@@ -1809,7 +2040,7 @@ export default function AskLipuvkaWeb() {
 
                     <button
                       type="submit"
-                      className="w-full rounded-xl bg-green-600 py-3 font-semibold text-white"
+                      className="w-full rounded-xl bg-green-600 py-3 font-semibold text-white transition-all duration-300 hover:bg-green-700 hover:shadow-lg"
                     >
                       Odeslat
                     </button>
@@ -1837,7 +2068,7 @@ export default function AskLipuvkaWeb() {
                           href="https://mapy.cz/zakladni?source=addr&id=10845160&x=16.5539949&y=49.3398458&z=17"
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white"
+                          className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white transition-all duration-300 hover:-translate-y-1 hover:bg-green-700 hover:shadow-lg"
                         >
                           Otevřít v Mapy.cz
                         </a>
@@ -1846,13 +2077,13 @@ export default function AskLipuvkaWeb() {
                           href="https://www.google.com/maps/search/?api=1&query=Lipuvka+390+679+22+Lipuvka"
                           target="_blank"
                           rel="noreferrer"
-                          className="rounded-xl border border-gray-400 px-6 py-3 font-semibold text-gray-700"
+                          className="rounded-xl border border-gray-400 px-6 py-3 font-semibold text-gray-700 transition-all duration-300 hover:-translate-y-1 hover:bg-gray-50 hover:shadow-lg"
                         >
                           Navigovat (Google)
                         </a>
                       </div>
 
-                      <div className="rounded-2xl bg-gray-50 p-5">
+                      <div className="rounded-2xl bg-gray-50 p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
                         <h3 className="mb-2 text-lg font-bold text-gray-900">Praktické info</h3>
                         <ul className="space-y-2 text-gray-700">
                           <li>• Příjezd je možný přímo k areálu.</li>
@@ -1862,7 +2093,7 @@ export default function AskLipuvkaWeb() {
                       </div>
                     </div>
 
-                    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+                    <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all duration-300 hover:shadow-lg">
                       <iframe
                         title="Mapa areálu ASK Lipůvka"
                         src="https://www.google.com/maps?q=Lipuvka%20390%20679%2022%20Lipuvka&z=16&output=embed"
@@ -1878,90 +2109,107 @@ export default function AskLipuvkaWeb() {
               {clubPopupContent === 'partneri' && (
                 <>
                   <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
-                    <h2 className="text-3xl font-bold text-green-600">Partneři & sponzoři</h2>
+                    <h2 className="text-3xl font-bold text-green-700">Partneři & sponzoři</h2>
                   </div>
 
-                  <p className="mb-8 text-gray-600">
+                  <p className="mb-8 text-gray-700">
                     Děkujeme všem partnerům, kteří podporují mládež ASK Lipůvka.
                   </p>
 
-                  {partners.some((partner) => partner.featured) && (
-                    <div className="mb-10">
-                      <div className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-green-600">
-                        Hlavní partner
-                      </div>
+                  <div className="space-y-6">
+                    {partners.map((partner) => (
+                      <a
+                        key={partner.name}
+                        href={partner.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex justify-center transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]"
+                      >
+                        <img
+                          src={partner.logo}
+                          alt={partner.name}
+                          className="h-24 w-auto rounded-2xl object-contain shadow-sm"
+                        />
+                      </a>
+                    ))}
+                  </div>
 
-                      <div className="space-y-6">
-                        {partners
-                          .filter((partner) => partner.featured)
-                          .map((partner) =>
-                            partner.url ? (
-                              <a
-                                key={partner.name}
-                                href={partner.url}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="block rounded-3xl bg-black p-6 text-center shadow-lg transition hover:scale-[1.02]"
-                                style={{ animation: 'sponsorGlow 3s ease-in-out infinite' }}
-                              >
-                                <img
-                                  src={partner.logo}
-                                  alt={partner.name}
-                                  className="mx-auto max-h-24 object-contain"
-                                />
-                              </a>
-                            ) : (
-                              <div
-                                key={partner.name}
-                                className="block rounded-3xl bg-black p-6 text-center shadow-lg"
-                                style={{ animation: 'sponsorGlow 3s ease-in-out infinite' }}
-                              >
-                                <img
-                                  src={partner.logo}
-                                  alt={partner.name}
-                                  className="mx-auto max-h-24 object-contain"
-                                />
-                              </div>
-                            )
-                          )}
-                      </div>
-                    </div>
-                  )}
+                  <div className="mt-10 text-center">
+                    <button
+                      type="button"
+                      onClick={() => openClubPopup('partner-nabidka')}
+                      className="font-semibold text-green-700 underline underline-offset-4 hover:text-green-800"
+                    >
+                      Proč nás podpořit?
+                    </button>
+                  </div>
+                </>
+              )}
 
-                  {partners.filter((partner) => !partner.featured).length > 0 && (
-                    <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 md:grid-cols-4">
-                      {partners
-                        .filter((partner) => !partner.featured)
-                        .map((partner) =>
-                          partner.url ? (
-                            <a
-                              key={partner.name}
-                              href={partner.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="flex items-center justify-center rounded-2xl bg-gray-50 p-5 shadow-sm transition hover:scale-105 hover:shadow-md"
-                            >
-                              <img
-                                src={partner.logo}
-                                alt={partner.name}
-                                className="max-h-16 object-contain"
-                              />
-                            </a>
-                          ) : (
-                            <div
-                              key={partner.name}
-                              className="flex items-center justify-center rounded-2xl bg-gray-50 p-5 shadow-sm"
-                            >
-                              <img
-                                src={partner.logo}
-                                alt={partner.name}
-                                className="max-h-16 object-contain"
-                              />
-                            </div>
-                          )
-                        )}
+              {clubPopupContent === 'partner-nabidka' && (
+                <>
+                  <div className="mb-2 flex flex-wrap items-center gap-3 pr-10">
+                    <h2 className="text-3xl font-bold text-green-700">Spolupráce s ASK Lipůvka</h2>
+                  </div>
+
+                  <p className="mb-8 text-gray-700">
+                    Co vám můžeme nabídnout jako partnerovi:
+                  </p>
+
+                  <div className="mb-8 overflow-hidden rounded-3xl shadow-sm">
+                    <img
+                      src="/partneri/deti.jpg"
+                      alt="Děti ASK Lipůvka na tréninku"
+                      className="h-[220px] w-full object-cover transition duration-500 hover:scale-[1.03]"
+                    />
+                  </div>
+
+                  <div className="mx-auto max-w-2xl space-y-8 text-left">
+                    <div className="transition-all duration-300 hover:-translate-y-1">
+                      <div className="text-2xl font-bold text-green-700">⚽ Viditelnost</div>
+                      <ul className="mt-3 space-y-2 text-lg text-gray-700">
+                        <li>• logo na webu</li>
+                        <li>• logo na sociálních sítích</li>
+                        <li>• zmínky u příspěvků</li>
+                      </ul>
                     </div>
-                  )}
+
+                    <div className="transition-all duration-300 hover:-translate-y-1">
+                      <div className="text-2xl font-bold text-green-700">👥 Lokální dosah</div>
+                      <ul className="mt-3 space-y-2 text-lg text-gray-700">
+                        <li>• rodiče + děti + komunita</li>
+                        <li>• lidé z Lipůvky a okolí</li>
+                        <li>• reální zákazníci (ne fake dosah)</li>
+                      </ul>
+                    </div>
+
+                    <div className="transition-all duration-300 hover:-translate-y-1">
+                      <div className="text-2xl font-bold text-green-700">❤️ Smysl</div>
+                      <ul className="mt-3 space-y-2 text-lg text-gray-700">
+                        <li>• podpora mládeže</li>
+                        <li>• sport</li>
+                        <li>• komunita</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="mt-10 text-center">
+                    <p className="text-gray-700">
+                      Chcete podpořit mládež ASK Lipůvka?
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => openClubPopup('podnety')}
+                      className="mt-4 font-semibold text-green-700 underline underline-offset-4 hover:text-green-800"
+                    >
+                      Napište nám
+                    </button>
+
+                    <p className="mt-2 text-xs text-gray-500">
+                      Kontakt můžete přidat dobrovolně (e-mail / telefon).
+                    </p>
+                  </div>
                 </>
               )}
             </div>
@@ -2054,7 +2302,7 @@ export default function AskLipuvkaWeb() {
                     setTermsAccepted(true);
                     setIsTermsOpen(false);
                   }}
-                  className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white hover:bg-green-700"
+                  className="rounded-xl bg-green-600 px-6 py-3 font-semibold text-white transition-all duration-300 hover:bg-green-700 hover:shadow-lg"
                 >
                   Rozumím a souhlasím
                 </button>
@@ -2082,11 +2330,11 @@ export default function AskLipuvkaWeb() {
                 ×
               </button>
 
-              <div className="relative h-56 w-full">
+              <div className="relative h-56 w-full overflow-hidden">
                 <img
                   src={activeCategoryImage}
                   alt={activeCategoryLabel}
-                  className="h-full w-full object-cover"
+                  className="h-full w-full object-cover transition duration-700 hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-black/45" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
@@ -2116,7 +2364,7 @@ export default function AskLipuvkaWeb() {
                       return (
                         <div
                           key={`schedule-${m.date}-${m.opponent}`}
-                          className={`rounded-2xl border p-5 shadow-sm ${
+                          className={`rounded-2xl border p-5 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
                             isToday
                               ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
                               : categoryStyle.light
@@ -2286,9 +2534,9 @@ export default function AskLipuvkaWeb() {
               <button
                 type="submit"
                 disabled={!termsAccepted}
-                className={`w-full rounded-xl py-3 font-semibold text-white transition ${
+                className={`w-full rounded-xl py-3 font-semibold text-white transition-all duration-300 ${
                   termsAccepted
-                    ? 'bg-green-600 hover:bg-green-700'
+                    ? 'bg-green-600 hover:bg-green-700 hover:shadow-lg'
                     : 'cursor-not-allowed bg-gray-300'
                 }`}
               >
@@ -2325,7 +2573,7 @@ export default function AskLipuvkaWeb() {
                 {team.management.map((person) => (
                   <div
                     key={person.name}
-                    className="rounded-2xl bg-gray-100 p-5 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                    className="rounded-2xl bg-gray-100 p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                   >
                     <img
                       src={person.photo}
@@ -2375,7 +2623,7 @@ export default function AskLipuvkaWeb() {
                   return (
                     <div
                       key={person.name}
-                      className="rounded-2xl bg-gray-100 p-5 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                      className="rounded-2xl bg-gray-100 p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl"
                     >
                       <img
                         src={person.photo}
@@ -2439,11 +2687,11 @@ export default function AskLipuvkaWeb() {
 
             <div className="mb-6 border-b border-gray-200 pb-4 pr-10">
               <div className="mb-2 flex flex-wrap items-center gap-3">
-                <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
-                  Detail zápasu • {activeCategoryLabel}
+                <div className={`text-sm font-semibold uppercase tracking-wide ${selectedMatchStyle.text}`}>
+                  Detail zápasu • {selectedMatchLabel}
                 </div>
-                <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
-                  {activeCategoryShortLabel}
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${selectedMatchStyle.softBadge}`}>
+                  {selectedMatchShortLabel}
                 </span>
               </div>
 
@@ -2472,16 +2720,16 @@ export default function AskLipuvkaWeb() {
 
             <div className="grid gap-8 xl:grid-cols-2">
               <div>
-                <h3 className={`mb-3 text-xl font-bold ${activeCategoryStyle.text}`}>Fotky</h3>
+                <h3 className={`mb-3 text-xl font-bold ${selectedMatchStyle.text}`}>Fotky</h3>
 
-                {selectedMatch.photos.length > 0 ? (
+                {selectedMatch.photos?.length > 0 ? (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {selectedMatch.photos.map((photo, index) => (
+                    {selectedMatch.photos?.map((photo, index) => (
                       <img
                         key={`${photo}-${index}`}
                         src={photo}
                         alt={`Fotka k zápasu ${index + 1}`}
-                        className="h-64 w-full rounded-2xl object-cover shadow-sm"
+                        className="h-64 w-full rounded-2xl object-cover shadow-sm transition duration-300 hover:scale-[1.02] hover:shadow-lg"
                       />
                     ))}
                   </div>
@@ -2491,7 +2739,7 @@ export default function AskLipuvkaWeb() {
               </div>
 
               <div>
-                <h3 className={`mb-3 text-xl font-bold ${activeCategoryStyle.text}`}>Článek k zápasu</h3>
+                <h3 className={`mb-3 text-xl font-bold ${selectedMatchStyle.text}`}>Článek k zápasu</h3>
 
                 <div className="rounded-2xl bg-gray-50 p-5">
                   {parseMatchDate(selectedMatch.date) < todayStart ? (
@@ -2519,7 +2767,7 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <section className="mx-auto max-w-5xl px-6 pb-10">
-        <div className="rounded-2xl bg-gray-50 p-6 text-center shadow-sm">
+        <div className="rounded-2xl bg-gray-50 p-6 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
           <h3 className="mb-3 text-xl font-bold text-gray-800">Mládežnické týmy ASK Lipůvka</h3>
 
           <p className="text-gray-700">
@@ -2533,12 +2781,12 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <footer className="py-8 text-center text-gray-500">
-        <div className="mb-4 flex flex-wrap items-center justify-center gap-5">
+        <div className="mb-6 flex flex-wrap items-center justify-center gap-5">
           <a
             href="https://www.facebook.com/people/ASK-Lip%C5%AFvka/100093969443650/"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-base font-bold text-white transition hover:scale-105 hover:bg-blue-700"
+            className="inline-flex h-14 items-center gap-2 rounded-xl bg-blue-600 px-5 text-base font-bold text-white transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:bg-blue-700 hover:shadow-lg"
             aria-label="Facebook ASK Lipůvka"
             title="Facebook ASK Lipůvka"
           >
@@ -2553,38 +2801,29 @@ export default function AskLipuvkaWeb() {
             Facebook
           </a>
 
-          <a
-            href="https://revelop.cz/"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex items-center justify-center rounded-xl bg-black px-5 py-3 shadow-sm transition hover:scale-105 hover:shadow-md"
-            aria-label="Revelop"
-            title="Revelop"
-          >
-            <img
-              src="/partneri/revelop.png"
-              alt="Revelop"
-              className="h-8 w-auto object-contain"
-            />
-          </a>
-
-          <div
-            className="inline-flex items-center justify-center rounded-xl bg-black px-5 py-3 shadow-sm"
-            aria-label="DH"
-            title="DH"
-          >
-            <img
-              src="/partneri/dh.jpg"
-              alt="DH"
-              className="h-8 w-auto object-contain"
-            />
-          </div>
+          {partners.map((partner) => (
+            <a
+              key={partner.name}
+              href={partner.url}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-14 items-center justify-center overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:shadow-lg"
+              aria-label={partner.name}
+              title={partner.name}
+            >
+              <img
+                src={partner.logo}
+                alt={partner.name}
+                className="h-14 w-auto object-contain"
+              />
+            </a>
+          ))}
 
           <a
             href="https://asklipuvka.cz"
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center rounded-xl border border-green-600 px-5 py-3 text-base font-bold text-green-700 transition hover:scale-105 hover:bg-green-50"
+            className="inline-flex h-14 items-center rounded-xl border border-green-600 px-5 text-base font-bold text-green-700 transition-all duration-300 hover:-translate-y-1 hover:scale-105 hover:bg-green-50 hover:shadow-lg"
           >
             "A" tým muži
           </a>
