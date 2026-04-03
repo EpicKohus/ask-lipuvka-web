@@ -883,7 +883,7 @@ export default function AskLipuvkaWeb() {
             <button
               type="button"
               onClick={() => openMatchPhotoReport(m)}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold transition hover:scale-[1.02] ${categoryStyle.button}`}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition hover:scale-105 hover:shadow-md ${categoryStyle.button}`}
             >
               Fotky
             </button>
@@ -2678,14 +2678,14 @@ export default function AskLipuvkaWeb() {
 
               {parseMatchDate(selectedMatch.date) < todayStart && getMatchAlbum(selectedMatch) && (
                 <div className="mt-4">
-                  <button
-                    type="button"
-                    onClick={() => openMatchPhotoReport(selectedMatch)}
-                    className={`rounded-xl px-5 py-3 font-semibold transition hover:scale-[1.02] ${activeCategoryStyle.button}`}
-                  >
-                    Fotky ze zápasu
-                  </button>
-                </div>
+                 <button
+                   type="button"
+                   onClick={() => openMatchPhotoReport(selectedMatch)}
+                  className={`flex items-center gap-2 rounded-xl px-5 py-3 font-semibold transition hover:scale-105 hover:shadow-md ${activeCategoryStyle.button}`}
+                 >
+                  <span>📸</span>
+                  Fotky ze zápasu ({getMatchAlbum(selectedMatch)?.photos?.length || 0})
+                </button>                </div>
               )}
             </div>
 
@@ -2702,7 +2702,7 @@ export default function AskLipuvkaWeb() {
                           key={`${photo}-${index}`}
                           src={photo}
                           alt={`Fotka k zápasu ${index + 1}`}
-                          className="h-64 w-full rounded-2xl object-cover shadow-sm"
+                          className="h-64 w-full rounded-2xl object-cover shadow-sm transition hover:scale-105"
                         />
                       ))}
                   </div>
