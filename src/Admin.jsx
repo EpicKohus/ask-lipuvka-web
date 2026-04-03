@@ -44,6 +44,7 @@ export default function Admin() {
     articleTitle: '',
     article: '',
     photosText: '',
+    galleryAlbumId: '',
   });
 
   const [editingGalleryId, setEditingGalleryId] = useState(null);
@@ -53,6 +54,10 @@ export default function Admin() {
     title: '',
     cover: '',
     photosText: '',
+    folder: '',
+    fromNumber: '1',
+    toNumber: '',
+    coverNumber: '1',
   });
 
   const sectionButtonClass = (isActive) =>
@@ -87,6 +92,71 @@ export default function Admin() {
 
   const formatPhotosText = (photos = []) => photos.join('\n');
 
+  const normalizeFolderPath = (folder) => {
+    const trimmed = folder.trim();
+    if (!trimmed) return '';
+    const withLeadingSlash = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+    return withLeadingSlash.replace(/\/+$/, '');
+  };
+
+  const generatePhotoPaths = (folder, fromNumber, toNumber) => {
+    const normalizedFolder = normalizeFolderPath(folder);
+    const from = Number(fromNumber);
+    const to = Number(toNumber);
+
+    if (!normalizedFolder) {
+      return { error: 'Vyplň složku s fotkami.' };
+    }
+
+    if (!Number.isInteger(from) || !Number.isInteger(to) || from < 1 || to < 1) {
+      return { error: 'Čísla fotek musí být celá čísla větší než 0.' };
+    }
+
+    if (from > to) {
+      return { error: 'Pole "Od čísla" musí být menší nebo stejné jako "Do čísla".' };
+    }
+
+    const photos = [];
+    for (let i = from; i <= to; i += 1) {
+      photos.push(`${normalizedFolder}/${i}.jpg`);
+    }
+
+    return { photos, normalizedFolder };
+  };
+
+  const galleryPreview = useMemo(() => {
+    const result = generatePhotoPaths(
+      galleryForm.folder,
+      galleryForm.fromNumber,
+      galleryForm.toNumber
+    );
+
+    if (result.error) {
+      return {
+        error: result.error,
+        photos: [],
+        cover: '',
+      };
+    }
+
+    const coverNumber = Number(galleryForm.coverNumber);
+    const validCoverNumber =
+      Number.isInteger(coverNumber) && coverNumber >= 1
+        ? coverNumber
+        : Number(galleryForm.fromNumber) || 1;
+
+    return {
+      error: '',
+      photos: result.photos,
+      cover: `${result.normalizedFolder}/${validCoverNumber}.jpg`,
+    };
+  }, [
+    galleryForm.folder,
+    galleryForm.fromNumber,
+    galleryForm.toNumber,
+    galleryForm.coverNumber,
+  ]);
+
   const resetMatchForm = () => {
     setEditingMatchId(null);
     setMatchForm({
@@ -100,6 +170,7 @@ export default function Admin() {
       articleTitle: '',
       article: '',
       photosText: '',
+      galleryAlbumId: '',
     });
   };
 
@@ -111,6 +182,10 @@ export default function Admin() {
       title: '',
       cover: '',
       photosText: '',
+      folder: '',
+      fromNumber: '1',
+      toNumber: '',
+      coverNumber: '1',
     });
   };
 
@@ -197,6 +272,41 @@ export default function Admin() {
     }));
   };
 
+  const handleGenerateGalleryPhotos = () => {
+    const result = generatePhotoPaths(
+      galleryForm.folder,
+      galleryForm.fromNumber,
+      galleryForm.toNumber
+    );
+
+    if (result.error) {
+      alert(result.error);
+      return;
+    }
+
+    const coverNumber = Number(galleryForm.coverNumber);
+    const fallbackCoverNumber = Number(galleryForm.fromNumber) || 1;
+    const finalCoverNumber =
+      Number.isInteger(coverNumber) && coverNumber >= 1 ? coverNumber : fallbackCoverNumber;
+
+    setGalleryForm((prev) => ({
+      ...prev,
+      folder: result.normalizedFolder,
+      cover: `${result.normalizedFolder}/${finalCoverNumber}.jpg`,
+      photosText: result.photos.join('\n'),
+    }));
+  };
+
+  const handleClearGalleryGenerator = () => {
+    setGalleryForm((prev) => ({
+      ...prev,
+      folder: '',
+      fromNumber: '1',
+      toNumber: '',
+      coverNumber: '1',
+    }));
+  };
+
   const handleSaveNews = async (e) => {
     e.preventDefault();
 
@@ -280,6 +390,7 @@ export default function Admin() {
         articleTitle: matchForm.articleTitle.trim(),
         article: matchForm.article.trim(),
         photos: parsePhotosText(matchForm.photosText),
+        galleryAlbumId: matchForm.galleryAlbumId || '',
       };
 
       if (editingMatchId) {
@@ -312,6 +423,7 @@ export default function Admin() {
       articleTitle: match.articleTitle || '',
       article: match.article || '',
       photosText: formatPhotosText(match.photos || []),
+      galleryAlbumId: match.galleryAlbumId || '',
     });
     setActiveSection('matches');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -344,6 +456,13 @@ export default function Admin() {
       return;
     }
 
+    const parsedPhotos = parsePhotosText(galleryForm.photosText);
+
+    if (parsedPhotos.length === 0) {
+      alert('Album musí obsahovat alespoň jednu fotku.');
+      return;
+    }
+
     if (galleryForm.type === 'team' && !galleryForm.category) {
       alert('Vyber kategorii týmu.');
       return;
@@ -357,7 +476,7 @@ export default function Admin() {
         category: galleryForm.type === 'team' ? galleryForm.category : '',
         title: galleryForm.title.trim(),
         cover: galleryForm.cover.trim(),
-        photos: parsePhotosText(galleryForm.photosText),
+        photos: parsedPhotos,
       };
 
       if (editingGalleryId) {
@@ -385,6 +504,10 @@ export default function Admin() {
       title: album.title || '',
       cover: album.cover || '',
       photosText: formatPhotosText(album.photos || []),
+      folder: '',
+      fromNumber: '1',
+      toNumber: '',
+      coverNumber: '1',
     });
     setActiveSection('gallery');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -411,6 +534,9 @@ export default function Admin() {
 
   const getCategoryLabel = (categoryId) =>
     categories.find((category) => category.id === categoryId)?.label || categoryId;
+
+  const getAlbumLabel = (albumId) =>
+    galleryAlbums.find((album) => album.id === albumId)?.title || 'Nenapojeno';
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 md:px-6">
@@ -738,6 +864,25 @@ export default function Admin() {
                       </div>
                     </div>
 
+                    <div>
+                      <label className={labelClass}>Fotoreport album</label>
+                      <select
+                        value={matchForm.galleryAlbumId}
+                        onChange={(e) => handleMatchChange('galleryAlbumId', e.target.value)}
+                        className={inputClass}
+                      >
+                        <option value="">Bez fotoreportu</option>
+                        {sortedGallery.map((album) => (
+                          <option key={album.id} value={album.id}>
+                            {album.title}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="mt-2 text-sm text-gray-500">
+                        Tady vybereš album, které se pak automaticky otevře přes tlačítko Fotoreport.
+                      </div>
+                    </div>
+
                     <button type="submit" disabled={saving} className={greenButtonClass}>
                       {saving
                         ? 'Ukládám…'
@@ -770,8 +915,13 @@ export default function Admin() {
                             {match.home ? 'Domácí zápas' : 'Venkovní zápas'}
                           </div>
 
-                          <div className="mb-4 text-sm text-gray-700">
+                          <div className="mb-2 text-sm text-gray-700">
                             <span className="font-semibold">Výsledek:</span> {match.result}
+                          </div>
+
+                          <div className="mb-4 text-sm text-gray-700">
+                            <span className="font-semibold">Fotoreport:</span>{' '}
+                            {match.galleryAlbumId ? getAlbumLabel(match.galleryAlbumId) : 'nenapojen'}
                           </div>
 
                           <div className="flex flex-wrap gap-3">
@@ -827,7 +977,7 @@ export default function Admin() {
                     )}
                   </div>
 
-                  <form onSubmit={handleSaveGallery} className="space-y-5">
+                  <form onSubmit={handleSaveGallery} className="space-y-6">
                     <div>
                       <label className={labelClass}>Typ alba</label>
                       <select
@@ -863,9 +1013,121 @@ export default function Admin() {
                         type="text"
                         value={galleryForm.title}
                         onChange={(e) => handleGalleryChange('title', e.target.value)}
-                        placeholder="Např. 1. kolo"
+                        placeholder="Např. 11. kolo"
                         className={inputClass}
                       />
+                    </div>
+
+                    <div className="rounded-2xl border border-green-200 bg-white/80 p-5">
+                      <div className="mb-4">
+                        <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                          Automatické generování fotek
+                        </div>
+                        <div className="mt-1 text-sm text-gray-600">
+                          Vyplň složku a rozsah fotek, admin ti sám připraví celý seznam cest.
+                        </div>
+                      </div>
+
+                      <div className="space-y-5">
+                        <div>
+                          <label className={labelClass}>Složka s fotkami</label>
+                          <input
+                            type="text"
+                            value={galleryForm.folder}
+                            onChange={(e) => handleGalleryChange('folder', e.target.value)}
+                            placeholder="/zapasy/jaro26/11kolo"
+                            className={inputClass}
+                          />
+                        </div>
+
+                        <div className="grid gap-5 md:grid-cols-3">
+                          <div>
+                            <label className={labelClass}>Od čísla</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={galleryForm.fromNumber}
+                              onChange={(e) => handleGalleryChange('fromNumber', e.target.value)}
+                              placeholder="1"
+                              className={inputClass}
+                            />
+                          </div>
+
+                          <div>
+                            <label className={labelClass}>Do čísla</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={galleryForm.toNumber}
+                              onChange={(e) => handleGalleryChange('toNumber', e.target.value)}
+                              placeholder="44"
+                              className={inputClass}
+                            />
+                          </div>
+
+                          <div>
+                            <label className={labelClass}>Číslo cover fotky</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={galleryForm.coverNumber}
+                              onChange={(e) => handleGalleryChange('coverNumber', e.target.value)}
+                              placeholder="1"
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap gap-3">
+                          <button
+                            type="button"
+                            onClick={handleGenerateGalleryPhotos}
+                            className={greenButtonClass}
+                          >
+                            Vygenerovat fotky
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={handleClearGalleryGenerator}
+                            className={outlineButtonClass}
+                          >
+                            Vyčistit generátor
+                          </button>
+                        </div>
+
+                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                          <div className="mb-2 text-sm font-semibold text-gray-800">
+                            Rychlý náhled
+                          </div>
+
+                          {galleryPreview.error ? (
+                            <div className="text-sm text-gray-500">{galleryPreview.error}</div>
+                          ) : (
+                            <div className="space-y-2 text-sm text-gray-700">
+                              <div>
+                                <span className="font-semibold">Počet fotek:</span>{' '}
+                                {galleryPreview.photos.length}
+                              </div>
+                              <div className="break-all">
+                                <span className="font-semibold">Cover:</span> {galleryPreview.cover}
+                              </div>
+                              {galleryPreview.photos[0] && (
+                                <div className="break-all">
+                                  <span className="font-semibold">První fotka:</span>{' '}
+                                  {galleryPreview.photos[0]}
+                                </div>
+                              )}
+                              {galleryPreview.photos[galleryPreview.photos.length - 1] && (
+                                <div className="break-all">
+                                  <span className="font-semibold">Poslední fotka:</span>{' '}
+                                  {galleryPreview.photos[galleryPreview.photos.length - 1]}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </div>
 
                     <div>
@@ -874,7 +1136,7 @@ export default function Admin() {
                         type="text"
                         value={galleryForm.cover}
                         onChange={(e) => handleGalleryChange('cover', e.target.value)}
-                        placeholder="/galerie/1zapas/1.jpg"
+                        placeholder="/zapasy/jaro26/11kolo/1.jpg"
                         className={inputClass}
                       />
                     </div>
@@ -882,16 +1144,16 @@ export default function Admin() {
                     <div>
                       <label className={labelClass}>Fotky v albu</label>
                       <textarea
-                        rows="8"
+                        rows="10"
                         value={galleryForm.photosText}
                         onChange={(e) => handleGalleryChange('photosText', e.target.value)}
-                        placeholder={`/galerie/1zapas/1.jpg
-/galerie/1zapas/2.jpg
-/galerie/1zapas/3.jpg`}
+                        placeholder={`/zapasy/jaro26/11kolo/1.jpg
+/zapasy/jaro26/11kolo/2.jpg
+/zapasy/jaro26/11kolo/3.jpg`}
                         className={inputClass}
                       />
                       <div className="mt-2 text-sm text-gray-500">
-                        Jedna cesta k fotce na řádek.
+                        Jedna cesta k fotce na řádek. Můžeš vyplnit ručně, nebo použít generátor nahoře.
                       </div>
                     </div>
 
@@ -923,7 +1185,7 @@ export default function Admin() {
 
                         <div className="mb-2 text-lg font-bold text-gray-900">{album.title}</div>
 
-                        <div className="mb-2 text-sm text-gray-500">
+                        <div className="mb-2 break-all text-sm text-gray-500">
                           Cover: {album.cover || 'není'}
                         </div>
 
