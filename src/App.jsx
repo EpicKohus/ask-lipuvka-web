@@ -381,6 +381,21 @@ export default function AskLipuvkaWeb() {
     return /\.(mp4|webm|ogg)$/i.test(filePath);
   };
 
+  const hasMatchReport = (match) => {
+    const hasRealPhotos =
+      Array.isArray(match.photos) &&
+      match.photos.length > 0 &&
+      !(match.photos.length === 1 && match.photos[0] === '/field.png');
+
+    const hasArticle =
+      Boolean(match.articleTitle?.trim()) || Boolean(match.article?.trim());
+
+    const hasResult =
+      Boolean(match.result?.trim()) && match.result.trim().toLowerCase() !== 'doplnit';
+
+    return hasRealPhotos || hasArticle || hasResult;
+  };
+
   const availableNews = useMemo(() => {
     return firebaseNews.length > 0 ? firebaseNews : newsItems;
   }, [firebaseNews]);
@@ -803,7 +818,9 @@ export default function AskLipuvkaWeb() {
 
   const renderMatchCard = (m, showResult = true) => {
     const isToday = isSameDay(parseMatchDate(m.date), todayStart);
+    const isPlayed = parseMatchDate(m.date) < todayStart;
     const categoryStyle = getCategoryStyle(m.category);
+    const showPhotoReport = isPlayed && hasMatchReport(m);
 
     return (
       <button
@@ -816,46 +833,63 @@ export default function AskLipuvkaWeb() {
             : categoryStyle.light
         }`}
       >
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex flex-wrap items-center gap-2 text-lg font-bold text-gray-900">
-                <span>
-                  {m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
-                </span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${categoryStyle.badge}`}>
-                  {getCategoryShortLabel(m.category)}
-                </span>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 text-lg font-bold text-gray-900">
+                  <span>
+                    {m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
+                  </span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${categoryStyle.badge}`}>
+                    {getCategoryShortLabel(m.category)}
+                  </span>
+                </div>
+
+                {isToday && (
+                  <span className="animate-pulse rounded-full bg-green-600 px-4 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-md">
+                    DNES
+                  </span>
+                )}
               </div>
 
-              {isToday && (
-                <span className="animate-pulse rounded-full bg-green-600 px-4 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-md">
-                  DNES
+              <div className="mt-1 text-sm text-gray-500">
+                {m.date} • {m.time} • {m.home ? 'Domácí zápas' : 'Venkovní zápas'}
+                {!m.home && m.venue ? ` • ${m.venue}` : ''}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span
+                className={`rounded-full px-3 py-1 text-sm font-semibold ${
+                  m.home ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                }`}
+              >
+                {m.home ? 'Domácí' : 'Venkovní'}
+              </span>
+
+              {showResult && (
+                <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
+                  Výsledek: {m.result}
                 </span>
               )}
             </div>
+          </div>
 
-            <div className="mt-1 text-sm text-gray-500">
-              {m.date} • {m.time} • {m.home ? 'Domácí zápas' : 'Venkovní zápas'}
-              {!m.home && m.venue ? ` • ${m.venue}` : ''}
+          {showPhotoReport && (
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedMatch(m);
+                }}
+                className={`rounded-xl px-4 py-2 text-sm font-semibold transition hover:scale-[1.02] ${categoryStyle.button}`}
+              >
+                Fotoreport
+              </button>
             </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span
-              className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                m.home ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
-              }`}
-            >
-              {m.home ? 'Domácí' : 'Venkovní'}
-            </span>
-
-            {showResult && (
-              <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
-                Výsledek: {m.result}
-              </span>
-            )}
-          </div>
+          )}
         </div>
       </button>
     );
@@ -2611,7 +2645,7 @@ export default function AskLipuvkaWeb() {
             <div className="mb-6 border-b border-gray-200 pb-4 pr-10">
               <div className="mb-2 flex flex-wrap items-center gap-3">
                 <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
-                  Detail zápasu • {activeCategoryLabel}
+                  {parseMatchDate(selectedMatch.date) < todayStart ? 'Fotoreport ze zápasu' : 'Detail zápasu'} • {activeCategoryLabel}
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
                   {activeCategoryShortLabel}
@@ -2645,33 +2679,51 @@ export default function AskLipuvkaWeb() {
               <div>
                 <h3 className={`mb-3 text-xl font-bold ${activeCategoryStyle.text}`}>Fotky</h3>
 
-                {selectedMatch.photos.length > 0 ? (
+                {selectedMatch.photos.filter((photo) => photo !== '/field.png').length > 0 ? (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {selectedMatch.photos.map((photo, index) => (
-                      <img
-                        key={`${photo}-${index}`}
-                        src={photo}
-                        alt={`Fotka k zápasu ${index + 1}`}
-                        className="h-64 w-full rounded-2xl object-cover shadow-sm"
-                      />
-                    ))}
+                    {selectedMatch.photos
+                      .filter((photo) => photo !== '/field.png')
+                      .map((photo, index) => (
+                        <img
+                          key={`${photo}-${index}`}
+                          src={photo}
+                          alt={`Fotka k zápasu ${index + 1}`}
+                          className="h-64 w-full rounded-2xl object-cover shadow-sm"
+                        />
+                      ))}
                   </div>
                 ) : (
-                  <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">Fotky k zápasu budou doplněny.</div>
+                  <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">
+                    Fotky k zápasu budou doplněny.
+                  </div>
                 )}
               </div>
 
               <div>
-                <h3 className={`mb-3 text-xl font-bold ${activeCategoryStyle.text}`}>Článek k zápasu</h3>
+                <h3 className={`mb-3 text-xl font-bold ${activeCategoryStyle.text}`}>
+                  {parseMatchDate(selectedMatch.date) < todayStart ? 'Report ze zápasu' : 'Článek k zápasu'}
+                </h3>
 
                 <div className="rounded-2xl bg-gray-50 p-5">
                   {parseMatchDate(selectedMatch.date) < todayStart ? (
-                    <>
-                      <div className="mb-2 text-lg font-semibold text-gray-900">{selectedMatch.articleTitle}</div>
-                      <p className="leading-7 text-gray-700">{selectedMatch.article}</p>
-                    </>
+                    selectedMatch.articleTitle?.trim() || selectedMatch.article?.trim() ? (
+                      <>
+                        {selectedMatch.articleTitle?.trim() && (
+                          <div className="mb-2 text-lg font-semibold text-gray-900">
+                            {selectedMatch.articleTitle}
+                          </div>
+                        )}
+                        {selectedMatch.article?.trim() ? (
+                          <p className="leading-7 text-gray-700">{selectedMatch.article}</p>
+                        ) : (
+                          <div className="text-gray-500">Komentář zápasu bude doplněn.</div>
+                        )}
+                      </>
+                    ) : (
+                      <div className="text-gray-500">Komentář zápasu bude doplněn.</div>
+                    )
                   ) : (
-                    <div className="text-gray-500">Komentář zápasu bude doplněn</div>
+                    <div className="text-gray-500">Komentář zápasu bude doplněn.</div>
                   )}
                 </div>
               </div>
