@@ -62,21 +62,6 @@ export default function AskLipuvkaWeb() {
     },
   ];
 
-  const partners = [
-    {
-      name: 'Revelop',
-      logo: '/partneri/revelop.png',
-      url: 'https://revelop.cz/',
-      featured: true,
-    },
-    {
-      name: 'BLISTR',
-      logo: '/partneri/dh.jpg',
-      url: 'https://www.blistr.cz',
-      featured: true,
-    },
-  ];
-
   const faqItems = [
     {
       question: 'Kolik stojí fotbal?',
@@ -85,13 +70,11 @@ export default function AskLipuvkaWeb() {
     },
     {
       question: 'Co když dítě nikdy nehrálo fotbal?',
-      answer:
-        'To vůbec nevadí. Děti se u nás učí úplně od začátku.',
+      answer: 'To vůbec nevadí. Děti se u nás učí úplně od začátku.',
     },
     {
       question: 'Může si to dítě jen vyzkoušet?',
-      answer:
-        'Ano, klidně přijďte na trénink a uvidíte, jestli ho to bude bavit.',
+      answer: 'Ano, klidně přijďte na trénink a uvidíte, jestli ho to bude bavit.',
     },
     {
       question: 'Co potřebuje dítě na trénink?',
@@ -105,8 +88,7 @@ export default function AskLipuvkaWeb() {
     },
     {
       question: 'Od kolika let berete děti?',
-      answer:
-        'Přibližně od 5 let.',
+      answer: 'Přibližně od 5 let.',
     },
   ];
 
@@ -126,7 +108,7 @@ export default function AskLipuvkaWeb() {
     {
       category: 'starsi-pripravka',
       title: 'Starší přípravka je připravena do budoucna',
-      text: 'Kategorie je založená dopředu, aby bylo možné snadno přidat zápasy, trenéry i další novinky pro příští sezonu.',
+      text: 'Kategorie je založená dopředu, aby bylo možné snadno doplnit zápasy, trenéry i další novinky pro příští sezonu.',
       date: '1. 4. 2026',
     },
   ];
@@ -823,17 +805,19 @@ export default function AskLipuvkaWeb() {
     const showPhotoReport = isPlayed && hasMatchReport(m);
 
     return (
-      <button
-        type="button"
+      <div
         key={`${m.date}-${m.opponent}`}
-        onClick={() => setSelectedMatch(m)}
-        className={`w-full rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+        className={`rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
           isToday
             ? 'border-green-500 bg-green-50 ring-2 ring-green-300 shadow-lg'
             : categoryStyle.light
         }`}
       >
-        <div className="flex flex-col gap-4">
+        <button
+          type="button"
+          onClick={() => setSelectedMatch(m)}
+          className="w-full text-left"
+        >
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -875,23 +859,20 @@ export default function AskLipuvkaWeb() {
               )}
             </div>
           </div>
+        </button>
 
-          {showPhotoReport && (
-            <div className="flex flex-wrap gap-3">
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedMatch(m);
-                }}
-                className={`rounded-xl px-4 py-2 text-sm font-semibold transition hover:scale-[1.02] ${categoryStyle.button}`}
-              >
-                Fotoreport
-              </button>
-            </div>
-          )}
-        </div>
-      </button>
+        {showPhotoReport && (
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => setSelectedMatch(m)}
+              className={`rounded-xl px-4 py-2 text-sm font-semibold transition hover:scale-[1.02] ${categoryStyle.button}`}
+            >
+              Fotoreport
+            </button>
+          </div>
+        )}
+      </div>
     );
   };
 
@@ -1099,7 +1080,11 @@ export default function AskLipuvkaWeb() {
               )}
             </div>
 
-            <button type="button" onClick={() => openClubPopup('partneri')} className="hover:text-green-600">
+            <button
+              type="button"
+              onClick={() => openClubPopup('partneri')}
+              className="hover:text-green-600"
+            >
               Partneři
             </button>
 
@@ -1593,7 +1578,9 @@ export default function AskLipuvkaWeb() {
                       {renderAlbumCover(album)}
                       <div className="p-5">
                         <div className="text-xl font-bold text-gray-900">{album.title}</div>
-                        <div className="mt-1 text-sm text-gray-500">{album.photos?.length || 0} položek</div>
+                        <div className="mt-1 text-sm text-gray-500">
+                          {album.photos?.length || 0} položek
+                        </div>
                       </div>
                     </button>
                   ))}
@@ -1880,9 +1867,7 @@ export default function AskLipuvkaWeb() {
                   </div>
 
                   <div className="mt-10 rounded-2xl bg-white/70 p-6 text-center shadow-sm">
-                    <p className="text-gray-700">
-                      Nenašli jste odpověď?
-                    </p>
+                    <p className="text-gray-700">Nenašli jste odpověď?</p>
 
                     <p className="mt-2 text-sm text-gray-600">
                       Klidně nám napište nebo zavolejte.
