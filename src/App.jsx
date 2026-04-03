@@ -885,7 +885,7 @@ export default function AskLipuvkaWeb() {
               onClick={() => openMatchPhotoReport(m)}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition hover:scale-[1.02] ${categoryStyle.button}`}
             >
-              Fotoreport
+              Fotky
             </button>
           </div>
         )}
@@ -2683,7 +2683,7 @@ export default function AskLipuvkaWeb() {
                     onClick={() => openMatchPhotoReport(selectedMatch)}
                     className={`rounded-xl px-5 py-3 font-semibold transition hover:scale-[1.02] ${activeCategoryStyle.button}`}
                   >
-                    Fotoreport
+                    Fotky ze zápasu
                   </button>
                 </div>
               )}
