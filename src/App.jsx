@@ -212,6 +212,7 @@ export default function AskLipuvkaWeb() {
       article:
         'Naši nejmenší fotbalisté odehráli poslední halový turnaj zimní přípravy. Ve všech zápasech prokázali bojovnost a fotbalové srdce. Nakonec se probojovali do finále, kdy rozhodujícím gólem Tobíka Hudce v posledních minutách vybojovali krásné první místo. Děkujeme hráčům a v neposlední řadě rodičům za podporu.',
       photos: ['/zapasy/blansko1.jpg', '/zapasy/blansko2.jpg'],
+      galleryAlbumId: '',
     },
     {
       category: 'mladsi-pripravka',
@@ -224,6 +225,7 @@ export default function AskLipuvkaWeb() {
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
+      galleryAlbumId: '',
     },
     {
       category: 'mladsi-pripravka',
@@ -236,6 +238,7 @@ export default function AskLipuvkaWeb() {
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
+      galleryAlbumId: '',
     },
     {
       category: 'mladsi-pripravka',
@@ -248,6 +251,7 @@ export default function AskLipuvkaWeb() {
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
+      galleryAlbumId: '',
     },
     {
       category: 'mladsi-pripravka',
@@ -260,6 +264,7 @@ export default function AskLipuvkaWeb() {
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
+      galleryAlbumId: '',
     },
     {
       category: 'mladsi-pripravka',
@@ -272,6 +277,7 @@ export default function AskLipuvkaWeb() {
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
+      galleryAlbumId: '',
     },
     {
       category: 'mladsi-pripravka',
@@ -284,6 +290,7 @@ export default function AskLipuvkaWeb() {
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
+      galleryAlbumId: '',
     },
     {
       category: 'mladsi-pripravka',
@@ -296,6 +303,7 @@ export default function AskLipuvkaWeb() {
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
+      galleryAlbumId: '',
     },
     {
       category: 'mladsi-pripravka',
@@ -308,6 +316,7 @@ export default function AskLipuvkaWeb() {
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
+      galleryAlbumId: '',
     },
     {
       category: 'mladsi-pripravka',
@@ -320,6 +329,7 @@ export default function AskLipuvkaWeb() {
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
+      galleryAlbumId: '',
     },
     {
       category: 'mladsi-pripravka',
@@ -332,6 +342,7 @@ export default function AskLipuvkaWeb() {
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
+      galleryAlbumId: '',
     },
     {
       category: 'mladsi-pripravka',
@@ -344,6 +355,7 @@ export default function AskLipuvkaWeb() {
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
+      galleryAlbumId: '',
     },
   ];
 
@@ -361,21 +373,6 @@ export default function AskLipuvkaWeb() {
   const isVideoFile = (filePath) => {
     if (!filePath || typeof filePath !== 'string') return false;
     return /\.(mp4|webm|ogg)$/i.test(filePath);
-  };
-
-  const hasMatchReport = (match) => {
-    const hasRealPhotos =
-      Array.isArray(match.photos) &&
-      match.photos.length > 0 &&
-      !(match.photos.length === 1 && match.photos[0] === '/field.png');
-
-    const hasArticle =
-      Boolean(match.articleTitle?.trim()) || Boolean(match.article?.trim());
-
-    const hasResult =
-      Boolean(match.result?.trim()) && match.result.trim().toLowerCase() !== 'doplnit';
-
-    return hasRealPhotos || hasArticle || hasResult;
   };
 
   const availableNews = useMemo(() => {
@@ -485,6 +482,26 @@ export default function AskLipuvkaWeb() {
   };
 
   const activeCategoryStyle = getCategoryStyle(activeCategory);
+
+  const getMatchAlbum = (match) => {
+    if (!match?.galleryAlbumId) return null;
+    return firebaseGallery.find((album) => album.id === match.galleryAlbumId) || null;
+  };
+
+  const openMatchPhotoReport = (match) => {
+    const album = getMatchAlbum(match);
+
+    if (!album) {
+      alert('K tomuto zápasu zatím není napojené album fotoreportu.');
+      return;
+    }
+
+    setSelectedMatch(null);
+    setGallerySource(album.type === 'team' ? 'team' : 'global');
+    setSelectedAlbum(album);
+    setSelectedPhotoIndex(null);
+    setIsGalleryOpen(true);
+  };
 
   const goToPrevPhoto = () => {
     if (!selectedAlbum || selectedPhotoIndex === null || !selectedAlbum.photos?.length) return;
@@ -802,7 +819,7 @@ export default function AskLipuvkaWeb() {
     const isToday = isSameDay(parseMatchDate(m.date), todayStart);
     const isPlayed = parseMatchDate(m.date) < todayStart;
     const categoryStyle = getCategoryStyle(m.category);
-    const showPhotoReport = isPlayed && hasMatchReport(m);
+    const hasPhotoReport = isPlayed && Boolean(getMatchAlbum(m));
 
     return (
       <div
@@ -861,11 +878,11 @@ export default function AskLipuvkaWeb() {
           </div>
         </button>
 
-        {showPhotoReport && (
+        {hasPhotoReport && (
           <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
-              onClick={() => setSelectedMatch(m)}
+              onClick={() => openMatchPhotoReport(m)}
               className={`rounded-xl px-4 py-2 text-sm font-semibold transition hover:scale-[1.02] ${categoryStyle.button}`}
             >
               Fotoreport
@@ -2630,7 +2647,7 @@ export default function AskLipuvkaWeb() {
             <div className="mb-6 border-b border-gray-200 pb-4 pr-10">
               <div className="mb-2 flex flex-wrap items-center gap-3">
                 <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
-                  {parseMatchDate(selectedMatch.date) < todayStart ? 'Fotoreport ze zápasu' : 'Detail zápasu'} • {activeCategoryLabel}
+                  Detail zápasu • {activeCategoryLabel}
                 </div>
                 <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
                   {activeCategoryShortLabel}
@@ -2656,6 +2673,18 @@ export default function AskLipuvkaWeb() {
               {parseMatchDate(selectedMatch.date) < todayStart && (
                 <div className="mt-3 inline-flex rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
                   Výsledek: {selectedMatch.result}
+                </div>
+              )}
+
+              {parseMatchDate(selectedMatch.date) < todayStart && getMatchAlbum(selectedMatch) && (
+                <div className="mt-4">
+                  <button
+                    type="button"
+                    onClick={() => openMatchPhotoReport(selectedMatch)}
+                    className={`rounded-xl px-5 py-3 font-semibold transition hover:scale-[1.02] ${activeCategoryStyle.button}`}
+                  >
+                    Fotoreport
+                  </button>
                 </div>
               )}
             </div>
