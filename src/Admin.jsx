@@ -86,13 +86,11 @@ export default function AskLipuvkaWeb() {
     },
     {
       question: 'Co když dítě nikdy nehrálo fotbal?',
-      answer:
-        'To vůbec nevadí. Děti se u nás učí úplně od začátku.',
+      answer: 'To vůbec nevadí. Děti se u nás učí úplně od začátku.',
     },
     {
       question: 'Může si to dítě jen vyzkoušet?',
-      answer:
-        'Ano, klidně přijďte na trénink a uvidíte, jestli ho to bude bavit.',
+      answer: 'Ano, klidně přijďte na trénink a uvidíte, jestli ho to bude bavit.',
     },
     {
       question: 'Co potřebuje dítě na trénink?',
@@ -106,8 +104,7 @@ export default function AskLipuvkaWeb() {
     },
     {
       question: 'Od kolika let berete děti?',
-      answer:
-        'Přibližně od 5 let.',
+      answer: 'Přibližně od 5 let.',
     },
   ];
 
@@ -450,18 +447,6 @@ export default function AskLipuvkaWeb() {
       ? selectedAlbum.photos?.[selectedPhotoIndex]
       : null;
 
-  const selectedMatchStyle = selectedMatch
-    ? getCategoryStyle(selectedMatch.category)
-    : getCategoryStyle(activeCategory);
-
-  const selectedMatchShortLabel = selectedMatch
-    ? getCategoryShortLabel(selectedMatch.category)
-    : activeCategoryShortLabel;
-
-  const selectedMatchLabel = selectedMatch
-    ? categories.find((category) => category.id === selectedMatch.category)?.label || activeCategoryLabel
-    : activeCategoryLabel;
-
   const getCategoryShortLabel = (categoryId) => {
     const cat = categories.find((c) => c.id === categoryId);
     return cat?.shortLabel || '';
@@ -507,6 +492,18 @@ export default function AskLipuvkaWeb() {
         };
     }
   };
+
+  const selectedMatchStyle = selectedMatch
+    ? getCategoryStyle(selectedMatch.category)
+    : getCategoryStyle(activeCategory);
+
+  const selectedMatchShortLabel = selectedMatch
+    ? getCategoryShortLabel(selectedMatch.category)
+    : activeCategoryShortLabel;
+
+  const selectedMatchLabel = selectedMatch
+    ? categories.find((category) => category.id === selectedMatch.category)?.label || activeCategoryLabel
+    : activeCategoryLabel;
 
   const activeCategoryStyle = getCategoryStyle(activeCategory);
 
