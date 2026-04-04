@@ -40,8 +40,10 @@ export default function Admin() {
     time: '',
     home: true,
     venue: 'Lipůvka',
+    matchLabel1: '',
     result1: '',
     scorers1: '',
+    matchLabel2: '',
     result2: '',
     scorers2: '',
     articleTitle: '',
@@ -169,8 +171,10 @@ export default function Admin() {
       time: '',
       home: true,
       venue: 'Lipůvka',
+      matchLabel1: '',
       result1: '',
       scorers1: '',
+      matchLabel2: '',
       result2: '',
       scorers2: '',
       articleTitle: '',
@@ -392,8 +396,10 @@ export default function Admin() {
         time: matchForm.time.trim(),
         home: matchForm.home,
         venue: matchForm.venue.trim(),
+        matchLabel1: matchForm.matchLabel1.trim(),
         result1: matchForm.result1.trim(),
         scorers1: matchForm.scorers1.trim(),
+        matchLabel2: matchForm.matchLabel2.trim(),
         result2: matchForm.result2.trim(),
         scorers2: matchForm.scorers2.trim(),
         articleTitle: matchForm.articleTitle.trim(),
@@ -428,8 +434,10 @@ export default function Admin() {
       time: match.time || '',
       home: Boolean(match.home),
       venue: match.venue || '',
+      matchLabel1: match.matchLabel1 || '',
       result1: match.result1 || '',
       scorers1: match.scorers1 || '',
+      matchLabel2: match.matchLabel2 || '',
       result2: match.result2 || '',
       scorers2: match.scorers2 || '',
       articleTitle: match.articleTitle || '',
@@ -838,11 +846,22 @@ export default function Admin() {
                     </div>
 
                     <div className="rounded-2xl border border-green-200 bg-white p-5">
-                      <div className="mb-4 text-lg font-bold text-green-700">1. zápas</div>
+                      <div className="mb-4 text-lg font-bold text-green-700">1. blok</div>
 
                       <div className="space-y-4">
                         <div>
-                          <label className={labelClass}>Výsledek 1. zápasu</label>
+                          <label className={labelClass}>Název 1. bloku</label>
+                          <input
+                            type="text"
+                            value={matchForm.matchLabel1}
+                            onChange={(e) => handleMatchChange('matchLabel1', e.target.value)}
+                            placeholder="Např. vs. RDR RJY / Turnaj / Přátelák"
+                            className={inputClass}
+                          />
+                        </div>
+
+                        <div>
+                          <label className={labelClass}>Výsledek 1. bloku</label>
                           <input
                             type="text"
                             value={matchForm.result1}
@@ -853,7 +872,7 @@ export default function Admin() {
                         </div>
 
                         <div>
-                          <label className={labelClass}>Střelci 1. zápasu</label>
+                          <label className={labelClass}>Střelci 1. bloku</label>
                           <textarea
                             rows="3"
                             value={matchForm.scorers1}
@@ -870,11 +889,22 @@ Svoboda 1x`}
                     </div>
 
                     <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                      <div className="mb-4 text-lg font-bold text-gray-700">2. zápas (nepovinné)</div>
+                      <div className="mb-4 text-lg font-bold text-gray-700">2. blok (nepovinné)</div>
 
                       <div className="space-y-4">
                         <div>
-                          <label className={labelClass}>Výsledek 2. zápasu</label>
+                          <label className={labelClass}>Název 2. bloku</label>
+                          <input
+                            type="text"
+                            value={matchForm.matchLabel2}
+                            onChange={(e) => handleMatchChange('matchLabel2', e.target.value)}
+                            placeholder="Např. vs. RDR RJ / Finále / Přátelák"
+                            className={inputClass}
+                          />
+                        </div>
+
+                        <div>
+                          <label className={labelClass}>Výsledek 2. bloku</label>
                           <input
                             type="text"
                             value={matchForm.result2}
@@ -885,7 +915,7 @@ Svoboda 1x`}
                         </div>
 
                         <div>
-                          <label className={labelClass}>Střelci 2. zápasu</label>
+                          <label className={labelClass}>Střelci 2. bloku</label>
                           <textarea
                             rows="3"
                             value={matchForm.scorers2}
@@ -895,7 +925,7 @@ Hudec 1x`}
                             className={inputClass}
                           />
                           <div className="mt-2 text-sm text-gray-500">
-                            Nepovinné. Když druhý zápas nebyl, nech prázdné.
+                            Nepovinné. Když druhý blok nebyl, nech prázdné.
                           </div>
                         </div>
                       </div>
@@ -971,6 +1001,8 @@ Hudec 1x`}
                   {sortedMatches.length > 0 ? (
                     sortedMatches.map((match) => {
                       const categoryLabel = getCategoryLabel(match.category);
+                      const label1 = match.matchLabel1 || '1. blok';
+                      const label2 = match.matchLabel2 || '2. blok';
 
                       return (
                         <div key={match.id} className={cardClass}>
@@ -990,24 +1022,24 @@ Hudec 1x`}
                           </div>
 
                           <div className="mb-2 text-sm text-gray-700">
-                            <span className="font-semibold">1. zápas:</span>{' '}
+                            <span className="font-semibold">{label1}:</span>{' '}
                             {match.result1 || 'neuveden'}
                           </div>
 
                           <div className="mb-2 text-sm text-gray-700">
-                            <span className="font-semibold">Střelci 1. zápasu:</span>{' '}
+                            <span className="font-semibold">Střelci:</span>{' '}
                             {formatScorersPreview(match.scorers1)}
                           </div>
 
                           {match.result2 && (
                             <>
                               <div className="mb-2 text-sm text-gray-700">
-                                <span className="font-semibold">2. zápas:</span>{' '}
+                                <span className="font-semibold">{label2}:</span>{' '}
                                 {match.result2}
                               </div>
 
                               <div className="mb-2 text-sm text-gray-700">
-                                <span className="font-semibold">Střelci 2. zápasu:</span>{' '}
+                                <span className="font-semibold">Střelci:</span>{' '}
                                 {formatScorersPreview(match.scorers2)}
                               </div>
                             </>
