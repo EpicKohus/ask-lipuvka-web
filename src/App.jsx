@@ -207,8 +207,10 @@ export default function AskLipuvkaWeb() {
       time: '---',
       home: false,
       venue: 'Blansko',
-      result: '1. místo v turnaji',
-      scorers: '',
+      result1: '1. místo v turnaji',
+      scorers1: '',
+      result2: '',
+      scorers2: '',
       articleTitle: 'Halový turnaj Blansko',
       article:
         'Naši nejmenší fotbalisté odehráli poslední halový turnaj zimní přípravy. Ve všech zápasech prokázali bojovnost a fotbalové srdce. Nakonec se probojovali do finále, kdy rozhodujícím gólem Tobíka Hudce v posledních minutách vybojovali krásné první místo. Děkujeme hráčům a v neposlední řadě rodičům za podporu.',
@@ -222,8 +224,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
-      result: 'doplnit',
-      scorers: '',
+      result1: '',
+      scorers1: '',
+      result2: '',
+      scorers2: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -236,8 +240,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
-      result: 'doplnit',
-      scorers: '',
+      result1: '',
+      scorers1: '',
+      result2: '',
+      scorers2: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -250,8 +256,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: false,
       venue: 'hřiště Olomučany',
-      result: 'doplnit',
-      scorers: '',
+      result1: '',
+      scorers1: '',
+      result2: '',
+      scorers2: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -264,8 +272,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
-      result: 'doplnit',
-      scorers: '',
+      result1: '',
+      scorers1: '',
+      result2: '',
+      scorers2: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -278,8 +288,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
-      result: 'doplnit',
-      scorers: '',
+      result1: '',
+      scorers1: '',
+      result2: '',
+      scorers2: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -292,8 +304,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: false,
       venue: 'hřiště Jedovnice',
-      result: 'doplnit',
-      scorers: '',
+      result1: '',
+      scorers1: '',
+      result2: '',
+      scorers2: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -306,8 +320,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
-      result: 'doplnit',
-      scorers: '',
+      result1: '',
+      scorers1: '',
+      result2: '',
+      scorers2: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -320,8 +336,10 @@ export default function AskLipuvkaWeb() {
       time: '10:15',
       home: false,
       venue: 'hřiště Knínice',
-      result: 'doplnit',
-      scorers: '',
+      result1: '',
+      scorers1: '',
+      result2: '',
+      scorers2: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -334,8 +352,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
-      result: 'doplnit',
-      scorers: '',
+      result1: '',
+      scorers1: '',
+      result2: '',
+      scorers2: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -348,8 +368,10 @@ export default function AskLipuvkaWeb() {
       time: '16:30 / 17:30',
       home: false,
       venue: 'hřiště Letovice',
-      result: 'doplnit',
-      scorers: '',
+      result1: '',
+      scorers1: '',
+      result2: '',
+      scorers2: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -362,8 +384,10 @@ export default function AskLipuvkaWeb() {
       time: '14:00 / 15:00',
       home: true,
       venue: 'Lipůvka',
-      result: 'doplnit',
-      scorers: '',
+      result1: '',
+      scorers1: '',
+      result2: '',
+      scorers2: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -842,6 +866,9 @@ export default function AskLipuvkaWeb() {
     const categoryStyle = getCategoryStyle(m.category);
     const hasPhotoReport = isPlayed && Boolean(getMatchAlbum(m));
 
+    const firstPlayedResult = m.result1?.trim();
+    const secondPlayedResult = m.result2?.trim();
+
     return (
       <div
         key={`${m.date}-${m.opponent}`}
@@ -891,9 +918,18 @@ export default function AskLipuvkaWeb() {
               </span>
 
               {showResult && (
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
-                  Výsledek: {m.result}
-                </span>
+                <div className="flex flex-col gap-2 text-right">
+                  {firstPlayedResult && (
+                    <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
+                      1. zápas: {firstPlayedResult}
+                    </span>
+                  )}
+                  {secondPlayedResult && (
+                    <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
+                      2. zápas: {secondPlayedResult}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -2387,9 +2423,24 @@ export default function AskLipuvkaWeb() {
                                 {m.home ? 'Domácí' : 'Venkovní'}
                               </span>
 
-                              <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
-                                {isPlayed ? `Výsledek: ${m.result}` : 'Zápas před námi'}
-                              </span>
+                              {isPlayed ? (
+                                <div className="flex flex-col gap-2 text-right">
+                                  {m.result1 && (
+                                    <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
+                                      1. zápas: {m.result1}
+                                    </span>
+                                  )}
+                                  {m.result2 && (
+                                    <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
+                                      2. zápas: {m.result2}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
+                                  Zápas před námi
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -2692,15 +2743,40 @@ export default function AskLipuvkaWeb() {
               )}
 
               {parseMatchDate(selectedMatch.date) < todayStart && (
-                <div className="mt-3 inline-flex rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
-                  Výsledek: {selectedMatch.result}
-                </div>
-              )}
+                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                  {selectedMatch.result1 && (
+                    <div className="rounded-2xl bg-gray-50 p-4">
+                      <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
+                        1. zápas
+                      </div>
+                      <div className="text-base font-semibold text-gray-900">
+                        Výsledek: {selectedMatch.result1}
+                      </div>
+                      {formatScorers(selectedMatch.scorers1) && (
+                        <div className="mt-2 text-sm text-gray-700">
+                          <span className="font-semibold">⚽ Střelci:</span>{' '}
+                          {formatScorers(selectedMatch.scorers1)}
+                        </div>
+                      )}
+                    </div>
+                  )}
 
-              {parseMatchDate(selectedMatch.date) < todayStart && formatScorers(selectedMatch.scorers) && (
-                <div className="mt-3 text-sm font-medium text-gray-700">
-                  <span className="font-semibold">⚽ Střelci:</span>{' '}
-                  {formatScorers(selectedMatch.scorers)}
+                  {selectedMatch.result2 && (
+                    <div className="rounded-2xl bg-gray-50 p-4">
+                      <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
+                        2. zápas
+                      </div>
+                      <div className="text-base font-semibold text-gray-900">
+                        Výsledek: {selectedMatch.result2}
+                      </div>
+                      {formatScorers(selectedMatch.scorers2) && (
+                        <div className="mt-2 text-sm text-gray-700">
+                          <span className="font-semibold">⚽ Střelci:</span>{' '}
+                          {formatScorers(selectedMatch.scorers2)}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
