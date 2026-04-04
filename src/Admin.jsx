@@ -9,12 +9,19 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 
+const ADMIN_PASSWORD = 'Radek1986';
+const ADMIN_STORAGE_KEY = 'ask-lipuvka-admin-auth';
+
 export default function Admin() {
   const categories = [
     { id: 'predpripravka', label: 'Předpřípravka (U7)' },
     { id: 'mladsi-pripravka', label: 'Mladší přípravka (U9)' },
     { id: 'starsi-pripravka', label: 'Starší přípravka (U11)' },
   ];
+
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [loginError, setLoginError] = useState('');
 
   const [activeSection, setActiveSection] = useState('news');
 
@@ -83,6 +90,15 @@ export default function Admin() {
 
   const dangerButtonClass =
     'rounded-xl bg-red-600 px-4 py-3 font-semibold text-white transition hover:bg-red-700';
+
+  useEffect(() => {
+    const storedAuth = localStorage.getItem(ADMIN_STORAGE_KEY);
+    if (storedAuth === 'true') {
+      setIsAuthenticated(true);
+    } else {
+      setLoading(false);
+    }
+  }, []);
 
   const parsePhotosText = (text) =>
     text
@@ -223,8 +239,10 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    loadAllData();
-  }, []);
+    if (isAuthenticated) {
+      loadAllData();
+    }
+  }, [isAuthenticated]);
 
   const newsByCategory = useMemo(() => {
     return categories.map((category) => ({
@@ -538,6 +556,77 @@ export default function Admin() {
   const getAlbumLabel = (albumId) =>
     galleryAlbums.find((album) => album.id === albumId)?.title || 'Nenapojeno';
 
+  const handleLogin = (e) => {
+    e.preventDefault();
+
+    if (passwordInput === ADMIN_PASSWORD) {
+      localStorage.setItem(ADMIN_STORAGE_KEY, 'true');
+      setIsAuthenticated(true);
+      setLoginError('');
+      setPasswordInput('');
+      return;
+    }
+
+    setLoginError('Špatné heslo.');
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem(ADMIN_STORAGE_KEY);
+    setIsAuthenticated(false);
+    setPasswordInput('');
+    setLoginError('');
+    setLoading(false);
+  };
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 md:px-6">
+        <div className="mx-auto flex min-h-[80vh] max-w-md items-center justify-center">
+          <div className="w-full rounded-3xl border border-green-100 bg-white p-8 shadow-sm">
+            <div className="mb-3 inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+              Admin panel
+            </div>
+
+            <h1 className="text-3xl font-black text-green-700">Přihlášení</h1>
+            <p className="mt-2 text-gray-600">
+              Pro vstup do administrace zadej heslo.
+            </p>
+
+            <form onSubmit={handleLogin} className="mt-6 space-y-4">
+              <div>
+                <label className={labelClass}>Heslo</label>
+                <input
+                  type="password"
+                  value={passwordInput}
+                  onChange={(e) => setPasswordInput(e.target.value)}
+                  placeholder="Zadej heslo"
+                  className={inputClass}
+                />
+              </div>
+
+              {loginError && (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-600">
+                  {loginError}
+                </div>
+              )}
+
+              <button type="submit" className={`${greenButtonClass} w-full`}>
+                Přihlásit se
+              </button>
+
+              <a
+                href="/"
+                className="block text-center font-semibold text-green-700 hover:underline"
+              >
+                ← Zpět na web
+              </a>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 md:px-6">
       <div className="mx-auto max-w-7xl">
@@ -555,12 +644,22 @@ export default function Admin() {
               </p>
             </div>
 
-            <a
-              href="/"
-              className="inline-flex items-center justify-center rounded-xl border border-green-200 bg-green-50 px-5 py-3 font-semibold text-green-700 transition hover:bg-green-100"
-            >
-              ← Zpět na web
-            </a>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="/"
+                className="inline-flex items-center justify-center rounded-xl border border-green-200 bg-green-50 px-5 py-3 font-semibold text-green-700 transition hover:bg-green-100"
+              >
+                ← Zpět na web
+              </a>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex items-center justify-center rounded-xl bg-red-600 px-5 py-3 font-semibold text-white transition hover:bg-red-700"
+              >
+                Odhlásit se
+              </button>
+            </div>
           </div>
         </div>
 
