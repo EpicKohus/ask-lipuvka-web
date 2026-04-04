@@ -40,8 +40,10 @@ export default function Admin() {
     time: '',
     home: true,
     venue: 'Lipůvka',
-    result: 'doplnit',
-    scorers: '',
+    result1: '',
+    scorers1: '',
+    result2: '',
+    scorers2: '',
     articleTitle: '',
     article: '',
     photosText: '',
@@ -167,8 +169,10 @@ export default function Admin() {
       time: '',
       home: true,
       venue: 'Lipůvka',
-      result: 'doplnit',
-      scorers: '',
+      result1: '',
+      scorers1: '',
+      result2: '',
+      scorers2: '',
       articleTitle: '',
       article: '',
       photosText: '',
@@ -388,8 +392,10 @@ export default function Admin() {
         time: matchForm.time.trim(),
         home: matchForm.home,
         venue: matchForm.venue.trim(),
-        result: matchForm.result.trim() || 'doplnit',
-        scorers: matchForm.scorers.trim(),
+        result1: matchForm.result1.trim(),
+        scorers1: matchForm.scorers1.trim(),
+        result2: matchForm.result2.trim(),
+        scorers2: matchForm.scorers2.trim(),
         articleTitle: matchForm.articleTitle.trim(),
         article: matchForm.article.trim(),
         photos: parsePhotosText(matchForm.photosText),
@@ -422,8 +428,10 @@ export default function Admin() {
       time: match.time || '',
       home: Boolean(match.home),
       venue: match.venue || '',
-      result: match.result || 'doplnit',
-      scorers: match.scorers || '',
+      result1: match.result1 || '',
+      scorers1: match.scorers1 || '',
+      result2: match.result2 || '',
+      scorers2: match.scorers2 || '',
       articleTitle: match.articleTitle || '',
       article: match.article || '',
       photosText: formatPhotosText(match.photos || []),
@@ -829,29 +837,67 @@ export default function Admin() {
                       </div>
                     </div>
 
-                    <div>
-                      <label className={labelClass}>Výsledek</label>
-                      <input
-                        type="text"
-                        value={matchForm.result}
-                        onChange={(e) => handleMatchChange('result', e.target.value)}
-                        placeholder="Např. 5:3 nebo 1. místo v turnaji"
-                        className={inputClass}
-                      />
+                    <div className="rounded-2xl border border-green-200 bg-white p-5">
+                      <div className="mb-4 text-lg font-bold text-green-700">1. zápas</div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className={labelClass}>Výsledek 1. zápasu</label>
+                          <input
+                            type="text"
+                            value={matchForm.result1}
+                            onChange={(e) => handleMatchChange('result1', e.target.value)}
+                            placeholder="Např. 5:3"
+                            className={inputClass}
+                          />
+                        </div>
+
+                        <div>
+                          <label className={labelClass}>Střelci 1. zápasu</label>
+                          <textarea
+                            rows="3"
+                            value={matchForm.scorers1}
+                            onChange={(e) => handleMatchChange('scorers1', e.target.value)}
+                            placeholder={`Novák 2x
+Svoboda 1x`}
+                            className={inputClass}
+                          />
+                          <div className="mt-2 text-sm text-gray-500">
+                            Nepovinné. Jeden střelec na řádek.
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
-                    <div>
-                      <label className={labelClass}>Střelci</label>
-                      <textarea
-                        rows="3"
-                        value={matchForm.scorers}
-                        onChange={(e) => handleMatchChange('scorers', e.target.value)}
-                        placeholder={`Novák 2x
-Svoboda 1x`}
-                        className={inputClass}
-                      />
-                      <div className="mt-2 text-sm text-gray-500">
-                        Nepovinné. Jeden střelec na řádek.
+                    <div className="rounded-2xl border border-gray-200 bg-white p-5">
+                      <div className="mb-4 text-lg font-bold text-gray-700">2. zápas (nepovinné)</div>
+
+                      <div className="space-y-4">
+                        <div>
+                          <label className={labelClass}>Výsledek 2. zápasu</label>
+                          <input
+                            type="text"
+                            value={matchForm.result2}
+                            onChange={(e) => handleMatchChange('result2', e.target.value)}
+                            placeholder="Např. 3:2"
+                            className={inputClass}
+                          />
+                        </div>
+
+                        <div>
+                          <label className={labelClass}>Střelci 2. zápasu</label>
+                          <textarea
+                            rows="3"
+                            value={matchForm.scorers2}
+                            onChange={(e) => handleMatchChange('scorers2', e.target.value)}
+                            placeholder={`Novák 1x
+Hudec 1x`}
+                            className={inputClass}
+                          />
+                          <div className="mt-2 text-sm text-gray-500">
+                            Nepovinné. Když druhý zápas nebyl, nech prázdné.
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -944,13 +990,28 @@ Svoboda 1x`}
                           </div>
 
                           <div className="mb-2 text-sm text-gray-700">
-                            <span className="font-semibold">Výsledek:</span> {match.result}
+                            <span className="font-semibold">1. zápas:</span>{' '}
+                            {match.result1 || 'neuveden'}
                           </div>
 
                           <div className="mb-2 text-sm text-gray-700">
-                            <span className="font-semibold">Střelci:</span>{' '}
-                            {formatScorersPreview(match.scorers)}
+                            <span className="font-semibold">Střelci 1. zápasu:</span>{' '}
+                            {formatScorersPreview(match.scorers1)}
                           </div>
+
+                          {match.result2 && (
+                            <>
+                              <div className="mb-2 text-sm text-gray-700">
+                                <span className="font-semibold">2. zápas:</span>{' '}
+                                {match.result2}
+                              </div>
+
+                              <div className="mb-2 text-sm text-gray-700">
+                                <span className="font-semibold">Střelci 2. zápasu:</span>{' '}
+                                {formatScorersPreview(match.scorers2)}
+                              </div>
+                            </>
+                          )}
 
                           <div className="mb-4 text-sm text-gray-700">
                             <span className="font-semibold">Fotoreport:</span>{' '}
