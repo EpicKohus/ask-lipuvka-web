@@ -207,8 +207,10 @@ export default function AskLipuvkaWeb() {
       time: '---',
       home: false,
       venue: 'Blansko',
+      matchLabel1: 'Turnaj',
       result1: '1. místo v turnaji',
       scorers1: '',
+      matchLabel2: '',
       result2: '',
       scorers2: '',
       articleTitle: 'Halový turnaj Blansko',
@@ -224,8 +226,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
+      matchLabel1: '',
       result1: '',
       scorers1: '',
+      matchLabel2: '',
       result2: '',
       scorers2: '',
       articleTitle: '',
@@ -240,8 +244,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
+      matchLabel1: '',
       result1: '',
       scorers1: '',
+      matchLabel2: '',
       result2: '',
       scorers2: '',
       articleTitle: '',
@@ -256,8 +262,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: false,
       venue: 'hřiště Olomučany',
+      matchLabel1: '',
       result1: '',
       scorers1: '',
+      matchLabel2: '',
       result2: '',
       scorers2: '',
       articleTitle: '',
@@ -272,8 +280,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
+      matchLabel1: '',
       result1: '',
       scorers1: '',
+      matchLabel2: '',
       result2: '',
       scorers2: '',
       articleTitle: '',
@@ -288,8 +298,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
+      matchLabel1: '',
       result1: '',
       scorers1: '',
+      matchLabel2: '',
       result2: '',
       scorers2: '',
       articleTitle: '',
@@ -304,8 +316,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: false,
       venue: 'hřiště Jedovnice',
+      matchLabel1: '',
       result1: '',
       scorers1: '',
+      matchLabel2: '',
       result2: '',
       scorers2: '',
       articleTitle: '',
@@ -320,8 +334,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
+      matchLabel1: '',
       result1: '',
       scorers1: '',
+      matchLabel2: '',
       result2: '',
       scorers2: '',
       articleTitle: '',
@@ -336,8 +352,10 @@ export default function AskLipuvkaWeb() {
       time: '10:15',
       home: false,
       venue: 'hřiště Knínice',
+      matchLabel1: '',
       result1: '',
       scorers1: '',
+      matchLabel2: '',
       result2: '',
       scorers2: '',
       articleTitle: '',
@@ -352,8 +370,10 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
+      matchLabel1: '',
       result1: '',
       scorers1: '',
+      matchLabel2: '',
       result2: '',
       scorers2: '',
       articleTitle: '',
@@ -368,8 +388,10 @@ export default function AskLipuvkaWeb() {
       time: '16:30 / 17:30',
       home: false,
       venue: 'hřiště Letovice',
+      matchLabel1: '',
       result1: '',
       scorers1: '',
+      matchLabel2: '',
       result2: '',
       scorers2: '',
       articleTitle: '',
@@ -384,8 +406,10 @@ export default function AskLipuvkaWeb() {
       time: '14:00 / 15:00',
       home: true,
       venue: 'Lipůvka',
+      matchLabel1: '',
       result1: '',
       scorers1: '',
+      matchLabel2: '',
       result2: '',
       scorers2: '',
       articleTitle: '',
@@ -868,6 +892,8 @@ export default function AskLipuvkaWeb() {
 
     const firstPlayedResult = m.result1?.trim();
     const secondPlayedResult = m.result2?.trim();
+    const label1 = m.matchLabel1?.trim() || '1. blok';
+    const label2 = m.matchLabel2?.trim() || '2. blok';
 
     return (
       <div
@@ -921,12 +947,12 @@ export default function AskLipuvkaWeb() {
                 <div className="flex flex-col gap-2 text-right">
                   {firstPlayedResult && (
                     <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
-                      1. zápas: {firstPlayedResult}
+                      {label1}: {firstPlayedResult}
                     </span>
                   )}
                   {secondPlayedResult && (
                     <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
-                      2. zápas: {secondPlayedResult}
+                      {label2}: {secondPlayedResult}
                     </span>
                   )}
                 </div>
@@ -2376,6 +2402,8 @@ export default function AskLipuvkaWeb() {
                       const isToday = isSameDay(parseMatchDate(m.date), todayStart);
                       const isPlayed = parseMatchDate(m.date) < todayStart;
                       const categoryStyle = getCategoryStyle(m.category);
+                      const label1 = m.matchLabel1?.trim() || '1. blok';
+                      const label2 = m.matchLabel2?.trim() || '2. blok';
 
                       return (
                         <div
@@ -2427,12 +2455,12 @@ export default function AskLipuvkaWeb() {
                                 <div className="flex flex-col gap-2 text-right">
                                   {m.result1 && (
                                     <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
-                                      1. zápas: {m.result1}
+                                      {label1}: {m.result1}
                                     </span>
                                   )}
                                   {m.result2 && (
                                     <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
-                                      2. zápas: {m.result2}
+                                      {label2}: {m.result2}
                                     </span>
                                   )}
                                 </div>
@@ -2747,7 +2775,7 @@ export default function AskLipuvkaWeb() {
                   {selectedMatch.result1 && (
                     <div className="rounded-2xl bg-gray-50 p-4">
                       <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
-                        1. zápas
+                        {selectedMatch.matchLabel1?.trim() || '1. blok'}
                       </div>
                       <div className="text-base font-semibold text-gray-900">
                         Výsledek: {selectedMatch.result1}
@@ -2764,7 +2792,7 @@ export default function AskLipuvkaWeb() {
                   {selectedMatch.result2 && (
                     <div className="rounded-2xl bg-gray-50 p-4">
                       <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
-                        2. zápas
+                        {selectedMatch.matchLabel2?.trim() || '2. blok'}
                       </div>
                       <div className="text-base font-semibold text-gray-900">
                         Výsledek: {selectedMatch.result2}
