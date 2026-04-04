@@ -208,6 +208,7 @@ export default function AskLipuvkaWeb() {
       home: false,
       venue: 'Blansko',
       result: '1. místo v turnaji',
+      scorers: '',
       articleTitle: 'Halový turnaj Blansko',
       article:
         'Naši nejmenší fotbalisté odehráli poslední halový turnaj zimní přípravy. Ve všech zápasech prokázali bojovnost a fotbalové srdce. Nakonec se probojovali do finále, kdy rozhodujícím gólem Tobíka Hudce v posledních minutách vybojovali krásné první místo. Děkujeme hráčům a v neposlední řadě rodičům za podporu.',
@@ -222,6 +223,7 @@ export default function AskLipuvkaWeb() {
       home: true,
       venue: 'Lipůvka',
       result: 'doplnit',
+      scorers: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -235,6 +237,7 @@ export default function AskLipuvkaWeb() {
       home: true,
       venue: 'Lipůvka',
       result: 'doplnit',
+      scorers: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -248,6 +251,7 @@ export default function AskLipuvkaWeb() {
       home: false,
       venue: 'hřiště Olomučany',
       result: 'doplnit',
+      scorers: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -261,6 +265,7 @@ export default function AskLipuvkaWeb() {
       home: true,
       venue: 'Lipůvka',
       result: 'doplnit',
+      scorers: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -274,6 +279,7 @@ export default function AskLipuvkaWeb() {
       home: true,
       venue: 'Lipůvka',
       result: 'doplnit',
+      scorers: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -287,6 +293,7 @@ export default function AskLipuvkaWeb() {
       home: false,
       venue: 'hřiště Jedovnice',
       result: 'doplnit',
+      scorers: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -300,6 +307,7 @@ export default function AskLipuvkaWeb() {
       home: true,
       venue: 'Lipůvka',
       result: 'doplnit',
+      scorers: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -313,6 +321,7 @@ export default function AskLipuvkaWeb() {
       home: false,
       venue: 'hřiště Knínice',
       result: 'doplnit',
+      scorers: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -326,6 +335,7 @@ export default function AskLipuvkaWeb() {
       home: true,
       venue: 'Lipůvka',
       result: 'doplnit',
+      scorers: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -339,6 +349,7 @@ export default function AskLipuvkaWeb() {
       home: false,
       venue: 'hřiště Letovice',
       result: 'doplnit',
+      scorers: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -352,6 +363,7 @@ export default function AskLipuvkaWeb() {
       home: true,
       venue: 'Lipůvka',
       result: 'doplnit',
+      scorers: '',
       articleTitle: '',
       article: '',
       photos: ['/field.png'],
@@ -373,6 +385,15 @@ export default function AskLipuvkaWeb() {
   const isVideoFile = (filePath) => {
     if (!filePath || typeof filePath !== 'string') return false;
     return /\.(mp4|webm|ogg)$/i.test(filePath);
+  };
+
+  const formatScorers = (scorers) => {
+    if (!scorers || typeof scorers !== 'string') return '';
+    return scorers
+      .split('\n')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .join(', ');
   };
 
   const availableNews = useMemo(() => {
@@ -2676,16 +2697,24 @@ export default function AskLipuvkaWeb() {
                 </div>
               )}
 
+              {parseMatchDate(selectedMatch.date) < todayStart && formatScorers(selectedMatch.scorers) && (
+                <div className="mt-3 text-sm font-medium text-gray-700">
+                  <span className="font-semibold">⚽ Střelci:</span>{' '}
+                  {formatScorers(selectedMatch.scorers)}
+                </div>
+              )}
+
               {parseMatchDate(selectedMatch.date) < todayStart && getMatchAlbum(selectedMatch) && (
                 <div className="mt-4">
-                 <button
-                   type="button"
-                   onClick={() => openMatchPhotoReport(selectedMatch)}
-                  className={`flex items-center gap-2 rounded-xl px-5 py-3 font-semibold transition hover:scale-105 hover:shadow-md ${activeCategoryStyle.button}`}
-                 >
-                  <span>📸</span>
-                  Fotky ze zápasu ({getMatchAlbum(selectedMatch)?.photos?.length || 0})
-                </button>                </div>
+                  <button
+                    type="button"
+                    onClick={() => openMatchPhotoReport(selectedMatch)}
+                    className={`flex items-center gap-2 rounded-xl px-5 py-3 font-semibold transition hover:scale-105 hover:shadow-md ${activeCategoryStyle.button}`}
+                  >
+                    <span>📸</span>
+                    Fotky ze zápasu ({getMatchAlbum(selectedMatch)?.photos?.length || 0})
+                  </button>
+                </div>
               )}
             </div>
 
