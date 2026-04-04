@@ -2406,9 +2406,14 @@ export default function AskLipuvkaWeb() {
                       const label2 = m.matchLabel2?.trim() || '2. blok';
 
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={`schedule-${m.date}-${m.opponent}`}
-                          className={`rounded-2xl border p-5 shadow-sm ${
+                          onClick={() => {
+                            setIsScheduleOpen(false);
+                            setSelectedMatch(m);
+                          }}
+                          className={`group w-full rounded-2xl border p-5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
                             isToday
                               ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
                               : categoryStyle.light
@@ -2439,6 +2444,24 @@ export default function AskLipuvkaWeb() {
 
                               <div className="mt-2 text-sm font-medium text-gray-700">
                                 Hraje se: {m.home ? 'Lipůvka' : m.venue || 'bude doplněno'}
+                              </div>
+
+                              <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition duration-200 group-hover:scale-[1.03] group-hover:shadow-md">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-4 w-4 transition duration-200 group-hover:scale-110 group-hover:rotate-3"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
+                                  />
+                                </svg>
+                                Detail zápasu
                               </div>
                             </div>
 
@@ -2471,7 +2494,7 @@ export default function AskLipuvkaWeb() {
                               )}
                             </div>
                           </div>
-                        </div>
+                        </button>
                       );
                     })
                   ) : (
