@@ -1518,7 +1518,7 @@ export default function AskLipuvkaWeb() {
 
         <div className="space-y-4">
           {upcomingMatches.length > 0 ? (
-            upcomingMatches.map((m) => renderMatchCard(m, false))
+          upcomingMatches.map((m) => renderMatchCard(m, Boolean(m.result1 ||           m.result2)))
           ) : (
             <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
               V následujících 14 dnech nejsou pro tuto kategorii naplánované žádné zápasy.
