@@ -11,9 +11,9 @@ import {
 
 export default function Admin() {
   const categories = [
-    { id: 'predpripravka', label: 'Předpřípravka (U7)' },
-    { id: 'mladsi-pripravka', label: 'Mladší přípravka (U9)' },
-    { id: 'starsi-pripravka', label: 'Starší přípravka (U11)' },
+    { id: 'predpripravka', label: 'Předpřípravka (U7)', shortLabel: 'U7' },
+    { id: 'mladsi-pripravka', label: 'Mladší přípravka (U9)', shortLabel: 'U9' },
+    { id: 'starsi-pripravka', label: 'Starší přípravka (U11)', shortLabel: 'U11' },
   ];
 
   const [activeSection, setActiveSection] = useState('news');
@@ -24,6 +24,9 @@ export default function Admin() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [matchListCategoryFilter, setMatchListCategoryFilter] = useState('all');
+  const [matchListStatusFilter, setMatchListStatusFilter] = useState('all');
 
   const [newsForm, setNewsForm] = useState({
     category: 'mladsi-pripravka',
@@ -183,6 +186,19 @@ export default function Admin() {
     return `${year}-${mm}-${dd}`;
   };
 
+  const parseMatchDate = (match) => {
+    if (match?.dateISO) return new Date(match.dateISO);
+    if (!match?.date) return new Date(0);
+
+    const parts = match.date
+      .split('.')
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    const [day, month, year] = parts;
+    return new Date(Number(year), Number(month) - 1, Number(day));
+  };
+
   const resetMatchForm = () => {
     setEditingMatchId(null);
     setMatchForm({
@@ -267,20 +283,21 @@ export default function Admin() {
   }, [newsItems]);
 
   const sortedMatches = useMemo(() => {
-    const parseDate = (match) => {
-      if (match.dateISO) return new Date(match.dateISO);
-
-      if (!match.date) return new Date(0);
-      const parts = match.date
-        .split('.')
-        .map((part) => part.trim())
-        .filter(Boolean);
-      const [day, month, year] = parts;
-      return new Date(Number(year), Number(month) - 1, Number(day));
-    };
-
-    return [...matches].sort((a, b) => parseDate(a) - parseDate(b));
+    return [...matches].sort((a, b) => parseMatchDate(a) - parseMatchDate(b));
   }, [matches]);
+
+  const filteredMatches = useMemo(() => {
+    return sortedMatches.filter((match) => {
+      const categoryOk =
+        matchListCategoryFilter === 'all' || match.category === matchListCategoryFilter;
+
+      const status = match.status || 'planned';
+      const statusOk =
+        matchListStatusFilter === 'all' || status === matchListStatusFilter;
+
+      return categoryOk && statusOk;
+    });
+  }, [sortedMatches, matchListCategoryFilter, matchListStatusFilter]);
 
   const sortedGallery = useMemo(() => {
     return [...galleryAlbums].sort((a, b) => a.title.localeCompare(b.title, 'cs'));
@@ -472,10 +489,7 @@ export default function Admin() {
 
   const handleEditMatch = (match) => {
     const hasSecondBlock = Boolean(
-      match.hasSecondBlock ||
-        match.matchLabel2 ||
-        match.result2 ||
-        match.scorers2
+      match.hasSecondBlock || match.matchLabel2 || match.result2 || match.scorers2
     );
 
     setEditingMatchId(match.id);
@@ -608,6 +622,9 @@ export default function Admin() {
 
   const getCategoryLabel = (categoryId) =>
     categories.find((category) => category.id === categoryId)?.label || categoryId;
+
+  const getCategoryShortLabel = (categoryId) =>
+    categories.find((category) => category.id === categoryId)?.shortLabel || categoryId;
 
   const getAlbumLabel = (albumId) =>
     galleryAlbums.find((album) => album.id === albumId)?.title || 'Nenapojeno';
@@ -804,7 +821,7 @@ export default function Admin() {
             )}
 
             {activeSection === 'matches' && (
-              <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+              <div className="grid gap-8 xl:grid-cols-[1.12fr_0.88fr]">
                 <div className="space-y-6">
                   <div className={cardSoftClass}>
                     <div className="mb-6 flex items-center justify-between gap-3">
@@ -1122,9 +1139,56 @@ Večeřa 1x`}
                 </div>
 
                 <div className="space-y-5">
-                  {sortedMatches.length > 0 ? (
-                    sortedMatches.map((match) => {
+                  <div className="rounded-3xl border border-green-100 bg-white p-5 shadow-sm">
+                    <div className="mb-4 flex flex-col gap-4">
+                      <div>
+                        <div className="text-lg font-bold text-gray-900">Přehled zápasů</div>
+                        <div className="text-sm text-gray-500">
+                          Filtruj si zápasy podle kategorie a stavu.
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                        <div>
+                          <label className={labelClass}>Kategorie</label>
+                          <select
+                            value={matchListCategoryFilter}
+                            onChange={(e) => setMatchListCategoryFilter(e.target.value)}
+                            className={inputClass}
+                          >
+                            <option value="all">Všechny kategorie</option>
+                            {categories.map((category) => (
+                              <option key={category.id} value={category.id}>
+                                {category.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className={labelClass}>Status</label>
+                          <select
+                            value={matchListStatusFilter}
+                            onChange={(e) => setMatchListStatusFilter(e.target.value)}
+                            className={inputClass}
+                          >
+                            <option value="all">Všechny</option>
+                            <option value="planned">Plánováno</option>
+                            <option value="played">Odehráno</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-2xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
+                      Zobrazeno zápasů: <span className="font-bold text-gray-900">{filteredMatches.length}</span>
+                    </div>
+                  </div>
+
+                  {filteredMatches.length > 0 ? (
+                    filteredMatches.map((match) => {
                       const categoryLabel = getCategoryLabel(match.category);
+                      const shortLabel = getCategoryShortLabel(match.category);
                       const label1 = match.matchLabel1 || '1. blok';
                       const label2 = match.matchLabel2 || '2. blok';
                       const isPlayed = match.status === 'played';
@@ -1136,9 +1200,13 @@ Večeřa 1x`}
                       );
 
                       return (
-                        <div key={match.id} className={cardClass}>
-                          <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <div key={match.id} className="rounded-2xl border border-green-100 bg-white p-5 shadow-sm">
+                          <div className="mb-4 flex flex-wrap items-center gap-2">
                             <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                              {shortLabel}
+                            </span>
+
+                            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
                               {categoryLabel}
                             </span>
 
@@ -1151,49 +1219,64 @@ Večeřa 1x`}
                             >
                               {isPlayed ? 'Odehráno' : 'Plánováno'}
                             </span>
+
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-bold ${
+                                match.home
+                                  ? 'bg-green-100 text-green-700'
+                                  : 'bg-red-100 text-red-600'
+                              }`}
+                            >
+                              {match.home ? 'Domácí' : 'Venkovní'}
+                            </span>
                           </div>
 
-                          <div className="mb-1 text-lg font-bold text-gray-900">
+                          <div className="mb-1 text-sm font-semibold uppercase tracking-wide text-green-700">
+                            {match.date} • {match.time}
+                          </div>
+
+                          <div className="mb-3 text-xl font-bold text-gray-900">
                             {match.home
                               ? `ASK Lipůvka vs. ${match.opponent}`
                               : `${match.opponent} vs. ASK Lipůvka`}
                           </div>
 
-                          <div className="mb-3 text-sm text-gray-500">
-                            {match.date} • {match.time} •{' '}
-                            {match.home ? 'Domácí zápas' : 'Venkovní zápas'}
+                          <div className="mb-4 text-sm text-gray-500">
+                            {match.home ? 'Místo: Lipůvka' : `Místo: ${match.venue || 'bude doplněno'}`}
                           </div>
 
-                          <div className="mb-2 text-sm text-gray-700">
-                            <span className="font-semibold">{label1}:</span>{' '}
-                            {match.result1 || 'neuveden'}
+                          <div className="space-y-3 rounded-2xl bg-gray-50 p-4">
+                            <div className="text-sm text-gray-700">
+                              <span className="font-semibold">{label1}:</span>{' '}
+                              {match.result1 || 'neuveden'}
+                            </div>
+
+                            <div className="text-sm text-gray-700">
+                              <span className="font-semibold">Střelci:</span>{' '}
+                              {formatScorersPreview(match.scorers1)}
+                            </div>
+
+                            {hasSecondBlock && (
+                              <>
+                                <div className="border-t border-gray-200 pt-3 text-sm text-gray-700">
+                                  <span className="font-semibold">{label2}:</span>{' '}
+                                  {match.result2 || 'neuveden'}
+                                </div>
+
+                                <div className="text-sm text-gray-700">
+                                  <span className="font-semibold">Střelci:</span>{' '}
+                                  {formatScorersPreview(match.scorers2)}
+                                </div>
+                              </>
+                            )}
                           </div>
 
-                          <div className="mb-2 text-sm text-gray-700">
-                            <span className="font-semibold">Střelci:</span>{' '}
-                            {formatScorersPreview(match.scorers1)}
-                          </div>
-
-                          {hasSecondBlock && (
-                            <>
-                              <div className="mb-2 text-sm text-gray-700">
-                                <span className="font-semibold">{label2}:</span>{' '}
-                                {match.result2 || 'neuveden'}
-                              </div>
-
-                              <div className="mb-2 text-sm text-gray-700">
-                                <span className="font-semibold">Střelci:</span>{' '}
-                                {formatScorersPreview(match.scorers2)}
-                              </div>
-                            </>
-                          )}
-
-                          <div className="mb-4 text-sm text-gray-700">
+                          <div className="mt-4 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700">
                             <span className="font-semibold">Fotoreport:</span>{' '}
                             {match.galleryAlbumId ? getAlbumLabel(match.galleryAlbumId) : 'nenapojen'}
                           </div>
 
-                          <div className="flex flex-wrap gap-3">
+                          <div className="mt-5 flex flex-wrap gap-3">
                             <button
                               type="button"
                               onClick={() => handleEditMatch(match)}
@@ -1215,7 +1298,9 @@ Večeřa 1x`}
                     })
                   ) : (
                     <div className={cardClass}>
-                      <div className="text-gray-500">Zatím tu nejsou žádné zápasy.</div>
+                      <div className="text-gray-500">
+                        Pro vybraný filtr tu nejsou žádné zápasy.
+                      </div>
                     </div>
                   )}
                 </div>
