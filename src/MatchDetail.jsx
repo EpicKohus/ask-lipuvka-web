@@ -177,6 +177,9 @@ export default function MatchDetail() {
       ? selectedAlbum.photos?.[selectedPhotoIndex]
       : null;
 
+  const hasInlinePhotos = cleanPhotos.length > 0;
+  const hasAlbum = Boolean(linkedAlbum);
+
   const openAlbum = () => {
     if (!linkedAlbum) return;
     setSelectedAlbum(linkedAlbum);
@@ -184,15 +187,14 @@ export default function MatchDetail() {
   };
 
   const openInlinePhotoGallery = (index) => {
-    const sourcePhotos = cleanPhotos.length > 0 ? cleanPhotos : linkedAlbum?.photos || [];
-    if (!sourcePhotos.length) return;
+    if (!cleanPhotos.length) return;
 
     setSelectedAlbum({
       id: 'inline-match-photos',
       title: match.home
         ? `ASK Lipůvka vs. ${match.opponent}`
         : `${match.opponent} vs. ASK Lipůvka`,
-      photos: sourcePhotos,
+      photos: cleanPhotos,
     });
     setSelectedPhotoIndex(index);
   };
@@ -479,72 +481,68 @@ export default function MatchDetail() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>Fotky</h2>
+          {!hasAlbum && (
+            <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+              <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>Fotky</h2>
 
-            {cleanPhotos.length > 0 ? (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  {cleanPhotos.slice(0, 2).map((photo, index) =>
-                    isVideoFile(photo) ? (
-                      <button
-                        type="button"
-                        key={`${photo}-${index}`}
-                        onClick={() => openInlinePhotoGallery(index)}
-                        className="overflow-hidden rounded-2xl bg-black"
-                      >
-                        <video
-                          src={photo}
-                          className="h-40 w-full rounded-2xl object-cover"
-                          muted
-                          playsInline
-                          preload="metadata"
-                        />
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        key={`${photo}-${index}`}
-                        onClick={() => openInlinePhotoGallery(index)}
-                        className="overflow-hidden rounded-2xl"
-                      >
-                        <img
-                          src={photo}
-                          alt={`Fotka k zápasu ${index + 1}`}
-                          className="h-40 w-full rounded-2xl object-cover transition hover:scale-[1.02]"
-                        />
-                      </button>
-                    )
-                  )}
-                </div>
-
-                {(cleanPhotos.length > 2 || linkedAlbum) && (
-                  <div className="mt-4">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (linkedAlbum) {
-                          openAlbum();
-                        } else {
-                          openInlinePhotoGallery(0);
-                        }
-                      }}
-                      className="text-sm font-semibold text-green-600 transition hover:text-green-700"
-                    >
-                      Zobrazit všechny fotky →
-                    </button>
+              {hasInlinePhotos ? (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    {cleanPhotos.slice(0, 2).map((photo, index) =>
+                      isVideoFile(photo) ? (
+                        <button
+                          type="button"
+                          key={`${photo}-${index}`}
+                          onClick={() => openInlinePhotoGallery(index)}
+                          className="overflow-hidden rounded-2xl bg-black"
+                        >
+                          <video
+                            src={photo}
+                            className="h-40 w-full rounded-2xl object-cover"
+                            muted
+                            playsInline
+                            preload="metadata"
+                          />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          key={`${photo}-${index}`}
+                          onClick={() => openInlinePhotoGallery(index)}
+                          className="overflow-hidden rounded-2xl"
+                        >
+                          <img
+                            src={photo}
+                            alt={`Fotka k zápasu ${index + 1}`}
+                            className="h-40 w-full rounded-2xl object-cover transition hover:scale-[1.02]"
+                          />
+                        </button>
+                      )
+                    )}
                   </div>
-                )}
-              </>
-            ) : (
-              <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">
-                Zatím nejsou přidané žádné fotky přímo k zápasu.
-              </div>
-            )}
-          </div>
+
+                  {cleanPhotos.length > 2 && (
+                    <div className="mt-4">
+                      <button
+                        type="button"
+                        onClick={() => openInlinePhotoGallery(0)}
+                        className="text-sm font-semibold text-green-600 transition hover:text-green-700"
+                      >
+                        Zobrazit všechny fotky →
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">
+                  Zatím nejsou přidané žádné fotky k zápasu.
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {linkedAlbum && (
+        {hasAlbum && (
           <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
             <div className="relative">
               {!isVideoFile(linkedAlbum.cover || linkedAlbum.photos?.[0]) ? (
@@ -582,6 +580,14 @@ export default function MatchDetail() {
               >
                 Fotky ze zápasu
               </button>
+            </div>
+          </div>
+        )}
+
+        {!hasAlbum && !hasInlinePhotos && (
+          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">
+              K tomuto zápasu zatím nejsou přidané žádné fotky ani album.
             </div>
           </div>
         )}
