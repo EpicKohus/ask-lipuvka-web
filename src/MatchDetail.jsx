@@ -183,6 +183,20 @@ export default function MatchDetail() {
     setSelectedPhotoIndex(null);
   };
 
+  const openInlinePhotoGallery = (index) => {
+    const sourcePhotos = cleanPhotos.length > 0 ? cleanPhotos : linkedAlbum?.photos || [];
+    if (!sourcePhotos.length) return;
+
+    setSelectedAlbum({
+      id: 'inline-match-photos',
+      title: match.home
+        ? `ASK Lipůvka vs. ${match.opponent}`
+        : `${match.opponent} vs. ASK Lipůvka`,
+      photos: sourcePhotos,
+    });
+    setSelectedPhotoIndex(index);
+  };
+
   const goToPrevPhoto = () => {
     if (!selectedAlbum || selectedPhotoIndex === null || !selectedAlbum.photos?.length) return;
     setSelectedPhotoIndex((prev) => (prev === 0 ? selectedAlbum.photos.length - 1 : prev - 1));
@@ -445,60 +459,91 @@ export default function MatchDetail() {
               )}
             </div>
 
-            <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>
-                {isPlayed ? 'Report' : 'Info k zápasu'}
-              </h2>
+            <div className="grid gap-6 md:grid-cols-2">
+              <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>
+                  {isPlayed ? 'Report' : 'Info k zápasu'}
+                </h2>
 
-              <div className="rounded-2xl bg-gray-50 p-5">
-                {match.articleTitle?.trim() && (
-                  <div className="mb-3 text-xl font-bold text-gray-900">
-                    {match.articleTitle}
+                <div className="rounded-2xl bg-gray-50 p-5">
+                  {match.articleTitle?.trim() && (
+                    <div className="mb-3 text-xl font-bold text-gray-900">
+                      {match.articleTitle}
+                    </div>
+                  )}
+
+                  <p className="leading-7 text-gray-700">
+                    {match.article ||
+                      (isPlayed
+                        ? 'Komentář zápasu bude doplněn.'
+                        : 'Podrobnější informace k zápasu budou doplněny.')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>Fotky</h2>
+
+                {cleanPhotos.length > 0 ? (
+                  <>
+                    <div className="grid grid-cols-2 gap-3">
+                      {cleanPhotos.slice(0, 2).map((photo, index) =>
+                        isVideoFile(photo) ? (
+                          <button
+                            type="button"
+                            key={`${photo}-${index}`}
+                            onClick={() => openInlinePhotoGallery(index)}
+                            className="overflow-hidden rounded-2xl bg-black"
+                          >
+                            <video
+                              src={photo}
+                              className="h-40 w-full rounded-2xl object-cover"
+                              muted
+                              playsInline
+                              preload="metadata"
+                            />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            key={`${photo}-${index}`}
+                            onClick={() => openInlinePhotoGallery(index)}
+                            className="overflow-hidden rounded-2xl"
+                          >
+                            <img
+                              src={photo}
+                              alt={`Fotka k zápasu ${index + 1}`}
+                              className="h-40 w-full rounded-2xl object-cover transition hover:scale-[1.02]"
+                            />
+                          </button>
+                        )
+                      )}
+                    </div>
+
+                    {(cleanPhotos.length > 2 || linkedAlbum) && (
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (linkedAlbum) {
+                              openAlbum();
+                            } else {
+                              openInlinePhotoGallery(0);
+                            }
+                          }}
+                          className="text-sm font-semibold text-green-600 transition hover:text-green-700"
+                        >
+                          Zobrazit všechny fotky →
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">
+                    Zatím nejsou přidané žádné fotky přímo k zápasu.
                   </div>
                 )}
-
-                <p className="leading-8 text-gray-700">
-                  {match.article ||
-                    (isPlayed
-                      ? 'Komentář zápasu bude doplněn.'
-                      : 'Podrobnější informace k zápasu budou doplněny.')}
-                </p>
               </div>
-            </div>
-
-            <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>Fotky</h2>
-
-              {cleanPhotos.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {cleanPhotos.map((photo, index) =>
-                    isVideoFile(photo) ? (
-                      <div
-                        key={`${photo}-${index}`}
-                        className="overflow-hidden rounded-2xl bg-black shadow-sm"
-                      >
-                        <video
-                          src={photo}
-                          controls
-                          className="h-64 w-full object-cover"
-                          preload="metadata"
-                        />
-                      </div>
-                    ) : (
-                      <img
-                        key={`${photo}-${index}`}
-                        src={photo}
-                        alt={`Fotka k zápasu ${index + 1}`}
-                        className="h-64 w-full rounded-2xl object-cover shadow-sm transition hover:scale-[1.02]"
-                      />
-                    )
-                  )}
-                </div>
-              ) : (
-                <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">
-                  Zatím nejsou přidané žádné fotky přímo k zápasu.
-                </div>
-              )}
             </div>
           </div>
 
