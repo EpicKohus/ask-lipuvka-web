@@ -36,10 +36,13 @@ export default function Admin() {
   const [matchForm, setMatchForm] = useState({
     category: 'mladsi-pripravka',
     date: '',
+    dateISO: '',
     opponent: '',
     time: '',
     home: true,
     venue: 'Lipůvka',
+    status: 'planned',
+    hasSecondBlock: false,
     matchLabel1: '',
     result1: '',
     scorers1: '',
@@ -48,7 +51,6 @@ export default function Admin() {
     scorers2: '',
     articleTitle: '',
     article: '',
-    photosText: '',
     galleryAlbumId: '',
   });
 
@@ -162,15 +164,37 @@ export default function Admin() {
     galleryForm.coverNumber,
   ]);
 
+  const formatDateToISO = (value) => {
+    if (!value) return '';
+
+    const parts = value
+      .split('.')
+      .map((part) => part.trim())
+      .filter(Boolean);
+
+    if (parts.length < 3) return '';
+
+    const [day, month, year] = parts;
+    const dd = String(Number(day)).padStart(2, '0');
+    const mm = String(Number(month)).padStart(2, '0');
+
+    if (!dd || !mm || !year || String(year).length !== 4) return '';
+
+    return `${year}-${mm}-${dd}`;
+  };
+
   const resetMatchForm = () => {
     setEditingMatchId(null);
     setMatchForm({
       category: 'mladsi-pripravka',
       date: '',
+      dateISO: '',
       opponent: '',
       time: '',
       home: true,
       venue: 'Lipůvka',
+      status: 'planned',
+      hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
       scorers1: '',
@@ -179,7 +203,6 @@ export default function Admin() {
       scorers2: '',
       articleTitle: '',
       article: '',
-      photosText: '',
       galleryAlbumId: '',
     });
   };
@@ -244,9 +267,11 @@ export default function Admin() {
   }, [newsItems]);
 
   const sortedMatches = useMemo(() => {
-    const parseDate = (dateString) => {
-      if (!dateString) return new Date(0);
-      const parts = dateString
+    const parseDate = (match) => {
+      if (match.dateISO) return new Date(match.dateISO);
+
+      if (!match.date) return new Date(0);
+      const parts = match.date
         .split('.')
         .map((part) => part.trim())
         .filter(Boolean);
@@ -254,7 +279,7 @@ export default function Admin() {
       return new Date(Number(year), Number(month) - 1, Number(day));
     };
 
-    return [...matches].sort((a, b) => parseDate(a.date) - parseDate(b.date));
+    return [...matches].sort((a, b) => parseDate(a) - parseDate(b));
   }, [matches]);
 
   const sortedGallery = useMemo(() => {
@@ -269,10 +294,28 @@ export default function Admin() {
   };
 
   const handleMatchChange = (field, value) => {
-    setMatchForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setMatchForm((prev) => {
+      const next = {
+        ...prev,
+        [field]: value,
+      };
+
+      if (field === 'date') {
+        next.dateISO = formatDateToISO(value);
+      }
+
+      if (field === 'hasSecondBlock' && value === false) {
+        next.matchLabel2 = '';
+        next.result2 = '';
+        next.scorers2 = '';
+      }
+
+      if (field === 'home' && value === true && !prev.venue.trim()) {
+        next.venue = 'Lipůvka';
+      }
+
+      return next;
+    });
   };
 
   const handleGalleryChange = (field, value) => {
@@ -392,19 +435,21 @@ export default function Admin() {
       const payload = {
         category: matchForm.category,
         date: matchForm.date.trim(),
+        dateISO: matchForm.dateISO || formatDateToISO(matchForm.date),
         opponent: matchForm.opponent.trim(),
         time: matchForm.time.trim(),
         home: matchForm.home,
         venue: matchForm.venue.trim(),
+        status: matchForm.status,
+        hasSecondBlock: matchForm.hasSecondBlock,
         matchLabel1: matchForm.matchLabel1.trim(),
         result1: matchForm.result1.trim(),
         scorers1: matchForm.scorers1.trim(),
-        matchLabel2: matchForm.matchLabel2.trim(),
-        result2: matchForm.result2.trim(),
-        scorers2: matchForm.scorers2.trim(),
+        matchLabel2: matchForm.hasSecondBlock ? matchForm.matchLabel2.trim() : '',
+        result2: matchForm.hasSecondBlock ? matchForm.result2.trim() : '',
+        scorers2: matchForm.hasSecondBlock ? matchForm.scorers2.trim() : '',
         articleTitle: matchForm.articleTitle.trim(),
         article: matchForm.article.trim(),
-        photos: parsePhotosText(matchForm.photosText),
         galleryAlbumId: matchForm.galleryAlbumId || '',
       };
 
@@ -426,14 +471,24 @@ export default function Admin() {
   };
 
   const handleEditMatch = (match) => {
+    const hasSecondBlock = Boolean(
+      match.hasSecondBlock ||
+        match.matchLabel2 ||
+        match.result2 ||
+        match.scorers2
+    );
+
     setEditingMatchId(match.id);
     setMatchForm({
       category: match.category || 'mladsi-pripravka',
       date: match.date || '',
+      dateISO: match.dateISO || formatDateToISO(match.date || ''),
       opponent: match.opponent || '',
       time: match.time || '',
       home: Boolean(match.home),
       venue: match.venue || '',
+      status: match.status || 'planned',
+      hasSecondBlock,
       matchLabel1: match.matchLabel1 || '',
       result1: match.result1 || '',
       scorers1: match.scorers1 || '',
@@ -442,7 +497,6 @@ export default function Admin() {
       scorers2: match.scorers2 || '',
       articleTitle: match.articleTitle || '',
       article: match.article || '',
-      photosText: formatPhotosText(match.photos || []),
       galleryAlbumId: match.galleryAlbumId || '',
     });
     setActiveSection('matches');
@@ -566,6 +620,10 @@ export default function Admin() {
       .filter(Boolean)
       .join(', ');
   };
+
+  const currentAlbum = matchForm.galleryAlbumId
+    ? galleryAlbums.find((album) => album.id === matchForm.galleryAlbumId)
+    : null;
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 md:px-6">
@@ -746,255 +804,321 @@ export default function Admin() {
             )}
 
             {activeSection === 'matches' && (
-              <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
-                <div className={cardSoftClass}>
-                  <div className="mb-6 flex items-center justify-between gap-3">
-                    <div>
-                      <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
-                        Správa zápasů
-                      </div>
-                      <h2 className="text-2xl font-bold text-green-700">
-                        {editingMatchId ? 'Upravit zápas' : 'Přidat zápas'}
-                      </h2>
-                    </div>
-
-                    {editingMatchId && (
-                      <button
-                        type="button"
-                        onClick={resetMatchForm}
-                        className={outlineButtonClass}
-                      >
-                        Zrušit editaci
-                      </button>
-                    )}
-                  </div>
-
-                  <form onSubmit={handleSaveMatch} className="space-y-5">
-                    <div>
-                      <label className={labelClass}>Kategorie</label>
-                      <select
-                        value={matchForm.category}
-                        onChange={(e) => handleMatchChange('category', e.target.value)}
-                        className={inputClass}
-                      >
-                        {categories.map((category) => (
-                          <option key={category.id} value={category.id}>
-                            {category.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div className="grid gap-5 md:grid-cols-2">
+              <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+                <div className="space-y-6">
+                  <div className={cardSoftClass}>
+                    <div className="mb-6 flex items-center justify-between gap-3">
                       <div>
-                        <label className={labelClass}>Datum</label>
-                        <input
-                          type="text"
-                          value={matchForm.date}
-                          onChange={(e) => handleMatchChange('date', e.target.value)}
-                          placeholder="Např. 14. 5. 2026"
-                          className={inputClass}
-                        />
+                        <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                          Správa zápasů
+                        </div>
+                        <h2 className="text-2xl font-bold text-green-700">
+                          {editingMatchId ? 'Upravit zápas' : 'Přidat zápas'}
+                        </h2>
                       </div>
 
-                      <div>
-                        <label className={labelClass}>Čas</label>
-                        <input
-                          type="text"
-                          value={matchForm.time}
-                          onChange={(e) => handleMatchChange('time', e.target.value)}
-                          placeholder="Např. 17:00 / 18:00"
-                          className={inputClass}
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>Soupeř</label>
-                      <input
-                        type="text"
-                        value={matchForm.opponent}
-                        onChange={(e) => handleMatchChange('opponent', e.target.value)}
-                        placeholder="Např. Blansko A a B"
-                        className={inputClass}
-                      />
-                    </div>
-
-                    <div className="grid gap-5 md:grid-cols-2">
-                      <div>
-                        <label className={labelClass}>Typ zápasu</label>
-                        <select
-                          value={matchForm.home ? 'home' : 'away'}
-                          onChange={(e) => handleMatchChange('home', e.target.value === 'home')}
-                          className={inputClass}
+                      {editingMatchId && (
+                        <button
+                          type="button"
+                          onClick={resetMatchForm}
+                          className={outlineButtonClass}
                         >
-                          <option value="home">Domácí</option>
-                          <option value="away">Venkovní</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className={labelClass}>Místo / hřiště</label>
-                        <input
-                          type="text"
-                          value={matchForm.venue}
-                          onChange={(e) => handleMatchChange('venue', e.target.value)}
-                          placeholder="Např. Lipůvka / hřiště Knínice"
-                          className={inputClass}
-                        />
-                      </div>
+                          Zrušit editaci
+                        </button>
+                      )}
                     </div>
 
-                    <div className="rounded-2xl border border-green-200 bg-white p-5">
-                      <div className="mb-4 text-lg font-bold text-green-700">1. blok</div>
+                    <form onSubmit={handleSaveMatch} className="space-y-6">
+                      <div className="rounded-2xl border border-green-200 bg-white p-5">
+                        <div className="mb-4 text-lg font-bold text-green-700">Základ zápasu</div>
 
-                      <div className="space-y-4">
-                        <div>
-                          <label className={labelClass}>Název 1. bloku</label>
-                          <input
-                            type="text"
-                            value={matchForm.matchLabel1}
-                            onChange={(e) => handleMatchChange('matchLabel1', e.target.value)}
-                            placeholder="Např. vs. RDR RJY / Turnaj / Přátelák"
-                            className={inputClass}
-                          />
+                        <div className="grid gap-5 md:grid-cols-2">
+                          <div>
+                            <label className={labelClass}>Kategorie</label>
+                            <select
+                              value={matchForm.category}
+                              onChange={(e) => handleMatchChange('category', e.target.value)}
+                              className={inputClass}
+                            >
+                              {categories.map((category) => (
+                                <option key={category.id} value={category.id}>
+                                  {category.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className={labelClass}>Status zápasu</label>
+                            <select
+                              value={matchForm.status}
+                              onChange={(e) => handleMatchChange('status', e.target.value)}
+                              className={inputClass}
+                            >
+                              <option value="planned">Plánováno</option>
+                              <option value="played">Odehráno</option>
+                            </select>
+                            <div className="mt-2 text-sm text-gray-500">
+                              Můžeš dát „odehráno“ i ve stejný den.
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className={labelClass}>Datum</label>
+                            <input
+                              type="text"
+                              value={matchForm.date}
+                              onChange={(e) => handleMatchChange('date', e.target.value)}
+                              placeholder="Např. 14. 5. 2026"
+                              className={inputClass}
+                            />
+                          </div>
+
+                          <div>
+                            <label className={labelClass}>Čas</label>
+                            <input
+                              type="text"
+                              value={matchForm.time}
+                              onChange={(e) => handleMatchChange('time', e.target.value)}
+                              placeholder="Např. 17:00 / 18:00"
+                              className={inputClass}
+                            />
+                          </div>
+
+                          <div className="md:col-span-2">
+                            <label className={labelClass}>Soupeř</label>
+                            <input
+                              type="text"
+                              value={matchForm.opponent}
+                              onChange={(e) => handleMatchChange('opponent', e.target.value)}
+                              placeholder="Např. Blansko A a B"
+                              className={inputClass}
+                            />
+                          </div>
+
+                          <div>
+                            <label className={labelClass}>Typ zápasu</label>
+                            <select
+                              value={matchForm.home ? 'home' : 'away'}
+                              onChange={(e) =>
+                                handleMatchChange('home', e.target.value === 'home')
+                              }
+                              className={inputClass}
+                            >
+                              <option value="home">Domácí</option>
+                              <option value="away">Venkovní</option>
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className={labelClass}>Místo / hřiště</label>
+                            <input
+                              type="text"
+                              value={matchForm.venue}
+                              onChange={(e) => handleMatchChange('venue', e.target.value)}
+                              placeholder="Např. Lipůvka / hřiště Knínice"
+                              className={inputClass}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-green-200 bg-white p-5">
+                        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                          <div className="text-lg font-bold text-green-700">Výsledek zápasu</div>
+
+                          <label className="inline-flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold text-gray-700">
+                            <input
+                              type="checkbox"
+                              checked={matchForm.hasSecondBlock}
+                              onChange={(e) =>
+                                handleMatchChange('hasSecondBlock', e.target.checked)
+                              }
+                              className="h-4 w-4"
+                            />
+                            Zápas má i 2. blok
+                          </label>
                         </div>
 
-                        <div>
-                          <label className={labelClass}>Výsledek 1. bloku</label>
-                          <input
-                            type="text"
-                            value={matchForm.result1}
-                            onChange={(e) => handleMatchChange('result1', e.target.value)}
-                            placeholder="Např. 5:3"
-                            className={inputClass}
-                          />
-                        </div>
+                        <div className="space-y-5">
+                          <div className="rounded-2xl border border-green-100 bg-green-50/40 p-4">
+                            <div className="mb-4 text-base font-bold text-green-700">1. blok</div>
 
-                        <div>
-                          <label className={labelClass}>Střelci 1. bloku</label>
-                          <textarea
-                            rows="3"
-                            value={matchForm.scorers1}
-                            onChange={(e) => handleMatchChange('scorers1', e.target.value)}
-                            placeholder={`Novák 2x
+                            <div className="space-y-4">
+                              <div>
+                                <label className={labelClass}>Název 1. bloku</label>
+                                <input
+                                  type="text"
+                                  value={matchForm.matchLabel1}
+                                  onChange={(e) =>
+                                    handleMatchChange('matchLabel1', e.target.value)
+                                  }
+                                  placeholder="Např. 1. zápas / Turnaj / Přátelák"
+                                  className={inputClass}
+                                />
+                              </div>
+
+                              <div>
+                                <label className={labelClass}>Výsledek 1. bloku</label>
+                                <input
+                                  type="text"
+                                  value={matchForm.result1}
+                                  onChange={(e) => handleMatchChange('result1', e.target.value)}
+                                  placeholder="Např. 5:3"
+                                  className={inputClass}
+                                />
+                              </div>
+
+                              <div>
+                                <label className={labelClass}>Střelci 1. bloku</label>
+                                <textarea
+                                  rows="3"
+                                  value={matchForm.scorers1}
+                                  onChange={(e) => handleMatchChange('scorers1', e.target.value)}
+                                  placeholder={`Novák 2x
 Svoboda 1x`}
-                            className={inputClass}
-                          />
-                          <div className="mt-2 text-sm text-gray-500">
-                            Nepovinné. Jeden střelec na řádek.
+                                  className={inputClass}
+                                />
+                                <div className="mt-2 text-sm text-gray-500">
+                                  Nepovinné. Každý střelec na nový řádek.
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {matchForm.hasSecondBlock && (
+                            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                              <div className="mb-4 text-base font-bold text-gray-700">2. blok</div>
+
+                              <div className="space-y-4">
+                                <div>
+                                  <label className={labelClass}>Název 2. bloku</label>
+                                  <input
+                                    type="text"
+                                    value={matchForm.matchLabel2}
+                                    onChange={(e) =>
+                                      handleMatchChange('matchLabel2', e.target.value)
+                                    }
+                                    placeholder="Např. 2. zápas / Finále / Přátelák"
+                                    className={inputClass}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className={labelClass}>Výsledek 2. bloku</label>
+                                  <input
+                                    type="text"
+                                    value={matchForm.result2}
+                                    onChange={(e) =>
+                                      handleMatchChange('result2', e.target.value)
+                                    }
+                                    placeholder="Např. 3:2"
+                                    className={inputClass}
+                                  />
+                                </div>
+
+                                <div>
+                                  <label className={labelClass}>Střelci 2. bloku</label>
+                                  <textarea
+                                    rows="3"
+                                    value={matchForm.scorers2}
+                                    onChange={(e) =>
+                                      handleMatchChange('scorers2', e.target.value)
+                                    }
+                                    placeholder={`Hudec 1x
+Večeřa 1x`}
+                                    className={inputClass}
+                                  />
+                                  <div className="mt-2 text-sm text-gray-500">
+                                    Nepovinné. Každý střelec na nový řádek.
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl border border-green-200 bg-white p-5">
+                        <div className="mb-4 text-lg font-bold text-green-700">Report</div>
+
+                        <div className="space-y-4">
+                          <div>
+                            <label className={labelClass}>Nadpis článku</label>
+                            <input
+                              type="text"
+                              value={matchForm.articleTitle}
+                              onChange={(e) =>
+                                handleMatchChange('articleTitle', e.target.value)
+                              }
+                              placeholder="Např. Halový turnaj Blansko"
+                              className={inputClass}
+                            />
+                          </div>
+
+                          <div>
+                            <label className={labelClass}>Článek k zápasu</label>
+                            <textarea
+                              rows="6"
+                              value={matchForm.article}
+                              onChange={(e) => handleMatchChange('article', e.target.value)}
+                              placeholder="Text článku nebo report ze zápasu"
+                              className={inputClass}
+                            />
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="rounded-2xl border border-gray-200 bg-white p-5">
-                      <div className="mb-4 text-lg font-bold text-gray-700">2. blok (nepovinné)</div>
+                      <div className="rounded-2xl border border-green-200 bg-white p-5">
+                        <div className="mb-4 text-lg font-bold text-green-700">Fotoreport</div>
 
-                      <div className="space-y-4">
-                        <div>
-                          <label className={labelClass}>Název 2. bloku</label>
-                          <input
-                            type="text"
-                            value={matchForm.matchLabel2}
-                            onChange={(e) => handleMatchChange('matchLabel2', e.target.value)}
-                            placeholder="Např. vs. RDR RJ / Finále / Přátelák"
-                            className={inputClass}
-                          />
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>Výsledek 2. bloku</label>
-                          <input
-                            type="text"
-                            value={matchForm.result2}
-                            onChange={(e) => handleMatchChange('result2', e.target.value)}
-                            placeholder="Např. 3:2"
-                            className={inputClass}
-                          />
-                        </div>
-
-                        <div>
-                          <label className={labelClass}>Střelci 2. bloku</label>
-                          <textarea
-                            rows="3"
-                            value={matchForm.scorers2}
-                            onChange={(e) => handleMatchChange('scorers2', e.target.value)}
-                            placeholder={`Novák 1x
-Hudec 1x`}
-                            className={inputClass}
-                          />
-                          <div className="mt-2 text-sm text-gray-500">
-                            Nepovinné. Když druhý blok nebyl, nech prázdné.
+                        <div className="space-y-4">
+                          <div>
+                            <label className={labelClass}>Fotoreport album</label>
+                            <select
+                              value={matchForm.galleryAlbumId}
+                              onChange={(e) =>
+                                handleMatchChange('galleryAlbumId', e.target.value)
+                              }
+                              className={inputClass}
+                            >
+                              <option value="">Bez fotoreportu</option>
+                              {sortedGallery.map((album) => (
+                                <option key={album.id} value={album.id}>
+                                  {album.title}
+                                </option>
+                              ))}
+                            </select>
+                            <div className="mt-2 text-sm text-gray-500">
+                              K zápasu už se nepřidávají ruční fotky. Vybereš album z galerie a to se použije na detailu zápasu.
+                            </div>
                           </div>
+
+                          {currentAlbum && (
+                            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                              <div className="text-sm font-semibold text-gray-800">
+                                Aktuálně vybrané album
+                              </div>
+                              <div className="mt-2 text-base font-bold text-gray-900">
+                                {currentAlbum.title}
+                              </div>
+                              <div className="mt-1 text-sm text-gray-500">
+                                Počet fotek: {currentAlbum.photos?.length || 0}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    </div>
 
-                    <div>
-                      <label className={labelClass}>Nadpis článku</label>
-                      <input
-                        type="text"
-                        value={matchForm.articleTitle}
-                        onChange={(e) => handleMatchChange('articleTitle', e.target.value)}
-                        placeholder="Např. Halový turnaj Blansko"
-                        className={inputClass}
-                      />
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>Článek k zápasu</label>
-                      <textarea
-                        rows="6"
-                        value={matchForm.article}
-                        onChange={(e) => handleMatchChange('article', e.target.value)}
-                        placeholder="Text článku"
-                        className={inputClass}
-                      />
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>Fotky k zápasu</label>
-                      <textarea
-                        rows="6"
-                        value={matchForm.photosText}
-                        onChange={(e) => handleMatchChange('photosText', e.target.value)}
-                        placeholder={`/zapasy/blansko1.jpg
-/zapasy/blansko2.jpg`}
-                        className={inputClass}
-                      />
-                      <div className="mt-2 text-sm text-gray-500">
-                        Jedna cesta na řádek.
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className={labelClass}>Fotoreport album</label>
-                      <select
-                        value={matchForm.galleryAlbumId}
-                        onChange={(e) => handleMatchChange('galleryAlbumId', e.target.value)}
-                        className={inputClass}
-                      >
-                        <option value="">Bez fotoreportu</option>
-                        {sortedGallery.map((album) => (
-                          <option key={album.id} value={album.id}>
-                            {album.title}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="mt-2 text-sm text-gray-500">
-                        Tady vybereš album, které se pak automaticky otevře přes tlačítko Fotoreport.
-                      </div>
-                    </div>
-
-                    <button type="submit" disabled={saving} className={greenButtonClass}>
-                      {saving
-                        ? 'Ukládám…'
-                        : editingMatchId
-                        ? 'Uložit úpravy zápasu'
-                        : 'Přidat zápas'}
-                    </button>
-                  </form>
+                      <button type="submit" disabled={saving} className={greenButtonClass}>
+                        {saving
+                          ? 'Ukládám…'
+                          : editingMatchId
+                          ? 'Uložit úpravy zápasu'
+                          : 'Přidat zápas'}
+                      </button>
+                    </form>
+                  </div>
                 </div>
 
                 <div className="space-y-5">
@@ -1003,11 +1127,30 @@ Hudec 1x`}
                       const categoryLabel = getCategoryLabel(match.category);
                       const label1 = match.matchLabel1 || '1. blok';
                       const label2 = match.matchLabel2 || '2. blok';
+                      const isPlayed = match.status === 'played';
+                      const hasSecondBlock = Boolean(
+                        match.hasSecondBlock ||
+                          match.matchLabel2 ||
+                          match.result2 ||
+                          match.scorers2
+                      );
 
                       return (
                         <div key={match.id} className={cardClass}>
-                          <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
-                            {categoryLabel}
+                          <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                              {categoryLabel}
+                            </span>
+
+                            <span
+                              className={`rounded-full px-3 py-1 text-xs font-bold ${
+                                isPlayed
+                                  ? 'bg-gray-900 text-white'
+                                  : 'bg-yellow-100 text-yellow-800'
+                              }`}
+                            >
+                              {isPlayed ? 'Odehráno' : 'Plánováno'}
+                            </span>
                           </div>
 
                           <div className="mb-1 text-lg font-bold text-gray-900">
@@ -1031,11 +1174,11 @@ Hudec 1x`}
                             {formatScorersPreview(match.scorers1)}
                           </div>
 
-                          {match.result2 && (
+                          {hasSecondBlock && (
                             <>
                               <div className="mb-2 text-sm text-gray-700">
                                 <span className="font-semibold">{label2}:</span>{' '}
-                                {match.result2}
+                                {match.result2 || 'neuveden'}
                               </div>
 
                               <div className="mb-2 text-sm text-gray-700">
