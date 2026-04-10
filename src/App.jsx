@@ -456,11 +456,23 @@ export default function AskLipuvkaWeb() {
     return firebaseGallery.filter((album) => album.type === 'global');
   }, [firebaseGallery]);
 
+  const getAlbumMatchDate = (albumId) => {
+    const linkedMatch = availableMatches.find((match) => match.galleryAlbumId === albumId);
+
+    if (!linkedMatch?.date) return new Date(0);
+
+    return parseMatchDate(linkedMatch.date);
+  };
+
+  const getAlbumMatch = (albumId) => {
+    return availableMatches.find((match) => match.galleryAlbumId === albumId) || null;
+  };
+
   const teamGalleryAlbums = useMemo(() => {
-    return firebaseGallery.filter(
-      (album) => album.type === 'team' && album.category === activeCategory
-    );
-  }, [firebaseGallery, activeCategory]);
+    return firebaseGallery
+      .filter((album) => album.type === 'team' && album.category === activeCategory)
+      .sort((a, b) => getAlbumMatchDate(b.id) - getAlbumMatchDate(a.id));
+  }, [firebaseGallery, activeCategory, availableMatches]);
 
   const visibleTeamGalleryAlbums = useMemo(() => {
     return showAllTeamAlbums ? teamGalleryAlbums : teamGalleryAlbums.slice(0, 3);
@@ -1604,22 +1616,29 @@ export default function AskLipuvkaWeb() {
           {teamGalleryAlbums.length > 0 ? (
             <>
               <div className="grid gap-6 md:grid-cols-2">
-                {visibleTeamGalleryAlbums.map((album) => (
-                  <button
-                    type="button"
-                    key={album.id}
-                    onClick={() => openTeamAlbum(album)}
-                    className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
-                  >
-                    {renderAlbumCover(album)}
-                    <div className="p-5">
-                      <div className="text-xl font-bold text-gray-900">{album.title}</div>
-                      <div className="mt-1 text-sm text-gray-500">
-                        {album.photos?.length || 0} položek
+                {visibleTeamGalleryAlbums.map((album) => {
+                  const linkedMatch = getAlbumMatch(album.id);
+
+                  return (
+                    <button
+                      type="button"
+                      key={album.id}
+                      onClick={() => openTeamAlbum(album)}
+                      className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                    >
+                      {renderAlbumCover(album)}
+                      <div className="p-5">
+                        <div className="text-xl font-bold text-gray-900">{album.title}</div>
+                        {linkedMatch?.date && (
+                          <div className="mt-1 text-sm text-gray-500">{linkedMatch.date}</div>
+                        )}
+                        <div className="mt-1 text-sm text-gray-500">
+                          {album.photos?.length || 0} položek
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
 
               {hasMoreTeamAlbums && (
