@@ -543,18 +543,18 @@ export default function MatchDetail() {
         </div>
 
         {hasAlbum && (
-          <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+          <div className="mx-auto w-full max-w-4xl overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
             <div className="relative">
               {!isVideoFile(linkedAlbum.cover || linkedAlbum.photos?.[0]) ? (
                 <img
                   src={linkedAlbum.cover || linkedAlbum.photos?.[0]}
                   alt={linkedAlbum.title}
-                  className="h-56 w-full object-cover"
+                  className="h-64 w-full object-cover object-center md:h-80"
                 />
               ) : (
                 <video
                   src={linkedAlbum.cover || linkedAlbum.photos?.[0]}
-                  className="h-56 w-full object-cover"
+                  className="h-64 w-full object-cover object-center md:h-80"
                   muted
                   playsInline
                   preload="metadata"
