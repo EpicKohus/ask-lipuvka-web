@@ -209,6 +209,8 @@ export default function AskLipuvkaWeb() {
       time: '---',
       home: false,
       venue: 'Blansko',
+      status: 'played',
+      hasSecondBlock: false,
       matchLabel1: 'Turnaj',
       result1: '1. místo v turnaji',
       scorers1: '',
@@ -218,7 +220,6 @@ export default function AskLipuvkaWeb() {
       articleTitle: 'Halový turnaj Blansko',
       article:
         'Naši nejmenší fotbalisté odehráli poslední halový turnaj zimní přípravy. Ve všech zápasech prokázali bojovnost a fotbalové srdce. Nakonec se probojovali do finále, kdy rozhodujícím gólem Tobíka Hudce v posledních minutách vybojovali krásné první místo. Děkujeme hráčům a v neposlední řadě rodičům za podporu.',
-      photos: ['/zapasy/blansko1.jpg', '/zapasy/blansko2.jpg'],
       galleryAlbumId: '',
     },
     {
@@ -228,6 +229,8 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
+      status: 'planned',
+      hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
       scorers1: '',
@@ -236,7 +239,6 @@ export default function AskLipuvkaWeb() {
       scorers2: '',
       articleTitle: '',
       article: '',
-      photos: ['/field.png'],
       galleryAlbumId: '',
     },
     {
@@ -246,6 +248,8 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
+      status: 'planned',
+      hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
       scorers1: '',
@@ -254,7 +258,6 @@ export default function AskLipuvkaWeb() {
       scorers2: '',
       articleTitle: '',
       article: '',
-      photos: ['/field.png'],
       galleryAlbumId: '',
     },
     {
@@ -264,6 +267,8 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: false,
       venue: 'hřiště Olomučany',
+      status: 'planned',
+      hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
       scorers1: '',
@@ -272,7 +277,6 @@ export default function AskLipuvkaWeb() {
       scorers2: '',
       articleTitle: '',
       article: '',
-      photos: ['/field.png'],
       galleryAlbumId: '',
     },
     {
@@ -282,6 +286,8 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
+      status: 'planned',
+      hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
       scorers1: '',
@@ -290,7 +296,6 @@ export default function AskLipuvkaWeb() {
       scorers2: '',
       articleTitle: '',
       article: '',
-      photos: ['/field.png'],
       galleryAlbumId: '',
     },
     {
@@ -300,6 +305,8 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
+      status: 'planned',
+      hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
       scorers1: '',
@@ -308,7 +315,6 @@ export default function AskLipuvkaWeb() {
       scorers2: '',
       articleTitle: '',
       article: '',
-      photos: ['/field.png'],
       galleryAlbumId: '',
     },
     {
@@ -318,6 +324,8 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: false,
       venue: 'hřiště Jedovnice',
+      status: 'planned',
+      hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
       scorers1: '',
@@ -326,7 +334,6 @@ export default function AskLipuvkaWeb() {
       scorers2: '',
       articleTitle: '',
       article: '',
-      photos: ['/field.png'],
       galleryAlbumId: '',
     },
     {
@@ -336,6 +343,8 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
+      status: 'planned',
+      hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
       scorers1: '',
@@ -344,7 +353,6 @@ export default function AskLipuvkaWeb() {
       scorers2: '',
       articleTitle: '',
       article: '',
-      photos: ['/field.png'],
       galleryAlbumId: '',
     },
     {
@@ -354,6 +362,8 @@ export default function AskLipuvkaWeb() {
       time: '10:15',
       home: false,
       venue: 'hřiště Knínice',
+      status: 'planned',
+      hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
       scorers1: '',
@@ -362,7 +372,6 @@ export default function AskLipuvkaWeb() {
       scorers2: '',
       articleTitle: '',
       article: '',
-      photos: ['/field.png'],
       galleryAlbumId: '',
     },
     {
@@ -372,6 +381,8 @@ export default function AskLipuvkaWeb() {
       time: '17:00 / 18:00',
       home: true,
       venue: 'Lipůvka',
+      status: 'planned',
+      hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
       scorers1: '',
@@ -380,7 +391,6 @@ export default function AskLipuvkaWeb() {
       scorers2: '',
       articleTitle: '',
       article: '',
-      photos: ['/field.png'],
       galleryAlbumId: '',
     },
     {
@@ -390,6 +400,8 @@ export default function AskLipuvkaWeb() {
       time: '16:30 / 17:30',
       home: false,
       venue: 'hřiště Letovice',
+      status: 'planned',
+      hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
       scorers1: '',
@@ -398,7 +410,6 @@ export default function AskLipuvkaWeb() {
       scorers2: '',
       articleTitle: '',
       article: '',
-      photos: ['/field.png'],
       galleryAlbumId: '',
     },
     {
@@ -408,6 +419,8 @@ export default function AskLipuvkaWeb() {
       time: '14:00 / 15:00',
       home: true,
       venue: 'Lipůvka',
+      status: 'planned',
+      hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
       scorers1: '',
@@ -416,7 +429,6 @@ export default function AskLipuvkaWeb() {
       scorers2: '',
       articleTitle: '',
       article: '',
-      photos: ['/field.png'],
       galleryAlbumId: '',
     },
   ];
@@ -448,6 +460,17 @@ export default function AskLipuvkaWeb() {
   const globalGalleryAlbums = useMemo(() => {
     return firebaseGallery.filter((album) => album.type === 'global');
   }, [firebaseGallery]);
+
+  const getMatchStatus = (match) => {
+    if (match?.status === 'played' || match?.status === 'planned') {
+      return match.status;
+    }
+
+    return parseMatchDate(match.date) < todayStart ? 'played' : 'planned';
+  };
+
+  const hasSecondMatchBlock = (match) =>
+    Boolean(match?.hasSecondBlock || match?.matchLabel2 || match?.result2 || match?.scorers2);
 
   const getAlbumMatchDate = (albumId) => {
     const linkedMatch = availableMatches.find((match) => match.galleryAlbumId === albumId);
@@ -481,21 +504,21 @@ export default function AskLipuvkaWeb() {
     [availableMatches, activeCategory]
   );
 
-  const upcomingMatches = filteredMatches
-    .filter((m) => {
-      const matchDate = parseMatchDate(m.date);
-      const diffDays = (matchDate - todayStart) / (1000 * 60 * 60 * 24);
-      return diffDays >= 0 && diffDays <= 14;
-    })
-    .sort((a, b) => parseMatchDate(a.date) - parseMatchDate(b.date));
+  const upcomingMatches = useMemo(() => {
+    return filteredMatches
+      .filter((m) => getMatchStatus(m) === 'planned')
+      .sort((a, b) => parseMatchDate(a.date) - parseMatchDate(b.date));
+  }, [filteredMatches, todayStart]);
 
-  const playedMatches = filteredMatches
-    .filter((m) => parseMatchDate(m.date) < todayStart)
-    .sort((a, b) => parseMatchDate(b.date) - parseMatchDate(a.date));
+  const playedMatches = useMemo(() => {
+    return filteredMatches
+      .filter((m) => getMatchStatus(m) === 'played')
+      .sort((a, b) => parseMatchDate(b.date) - parseMatchDate(a.date));
+  }, [filteredMatches, todayStart]);
 
-  const fullScheduleMatches = [...filteredMatches].sort(
-    (a, b) => parseMatchDate(a.date) - parseMatchDate(b.date)
-  );
+  const fullScheduleMatches = useMemo(() => {
+    return [...filteredMatches].sort((a, b) => parseMatchDate(a.date) - parseMatchDate(b.date));
+  }, [filteredMatches]);
 
   const activeCategoryData = categories.find((category) => category.id === activeCategory);
   const activeCategoryLabel = activeCategoryData?.label || '';
@@ -884,10 +907,12 @@ export default function AskLipuvkaWeb() {
   };
 
   const renderMatchCard = (m, showResult = true) => {
+    const matchStatus = getMatchStatus(m);
     const isToday = isSameDay(parseMatchDate(m.date), todayStart);
-    const isPlayed = parseMatchDate(m.date) < todayStart;
+    const isPlayed = matchStatus === 'played';
     const categoryStyle = getCategoryStyle(m.category);
     const hasPhotoReport = isPlayed && Boolean(getMatchAlbum(m));
+    const hasSecondBlock = hasSecondMatchBlock(m);
 
     const firstPlayedResult = m.result1?.trim();
     const secondPlayedResult = m.result2?.trim();
@@ -925,6 +950,16 @@ export default function AskLipuvkaWeb() {
                     DNES
                   </span>
                 )}
+
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold ${
+                    isPlayed
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}
+                >
+                  {isPlayed ? 'ODEHRÁNO' : 'PLÁNOVÁNO'}
+                </span>
               </div>
 
               <div className="mt-1 text-sm text-gray-500">
@@ -942,14 +977,14 @@ export default function AskLipuvkaWeb() {
                 {m.home ? 'Domácí' : 'Venkovní'}
               </span>
 
-              {showResult && (
+              {showResult && (firstPlayedResult || secondPlayedResult) && (
                 <div className="flex flex-col gap-2 text-right">
                   {firstPlayedResult && (
                     <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
                       {label1}: {firstPlayedResult}
                     </span>
                   )}
-                  {secondPlayedResult && (
+                  {hasSecondBlock && secondPlayedResult && (
                     <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
                       {label2}: {secondPlayedResult}
                     </span>
@@ -1517,10 +1552,10 @@ export default function AskLipuvkaWeb() {
 
         <div className="space-y-4">
           {upcomingMatches.length > 0 ? (
-            upcomingMatches.map((m) => renderMatchCard(m, Boolean(m.result1 || m.result2)))
+            upcomingMatches.map((m) => renderMatchCard(m, false))
           ) : (
             <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
-              V následujících 14 dnech nejsou pro tuto kategorii naplánované žádné zápasy.
+              Pro tuto kategorii nejsou žádné plánované zápasy.
             </div>
           )}
         </div>
@@ -2407,8 +2442,11 @@ export default function AskLipuvkaWeb() {
                     fullScheduleMatches.map((m) => {
                       const isToday = isSameDay(parseMatchDate(m.date), todayStart);
                       const categoryStyle = getCategoryStyle(m.category);
+                      const matchStatus = getMatchStatus(m);
+                      const isPlayed = matchStatus === 'played';
                       const label1 = m.matchLabel1?.trim() || '1. blok';
                       const label2 = m.matchLabel2?.trim() || '2. blok';
+                      const hasSecondBlock = hasSecondMatchBlock(m);
 
                       return (
                         <button
@@ -2443,6 +2481,16 @@ export default function AskLipuvkaWeb() {
                                     DNES
                                   </span>
                                 )}
+
+                                <span
+                                  className={`rounded-full px-3 py-1 text-xs font-bold ${
+                                    isPlayed
+                                      ? 'bg-gray-900 text-white'
+                                      : 'bg-yellow-100 text-yellow-800'
+                                  }`}
+                                >
+                                  {isPlayed ? 'ODEHRÁNO' : 'PLÁNOVÁNO'}
+                                </span>
                               </div>
 
                               <div className="mt-1 text-sm text-gray-500">{m.date} • {m.time}</div>
@@ -2479,14 +2527,14 @@ export default function AskLipuvkaWeb() {
                                 {m.home ? 'Domácí' : 'Venkovní'}
                               </span>
 
-                              {m.result1 || m.result2 ? (
+                              {isPlayed && (m.result1 || m.result2) ? (
                                 <div className="flex flex-col gap-2 text-right">
                                   {m.result1 && (
                                     <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
                                       {label1}: {m.result1}
                                     </span>
                                   )}
-                                  {m.result2 && (
+                                  {hasSecondBlock && m.result2 && (
                                     <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
                                       {label2}: {m.result2}
                                     </span>
