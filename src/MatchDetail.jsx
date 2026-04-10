@@ -398,199 +398,193 @@ export default function MatchDetail() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-10">
-        <div className="grid gap-10 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-10">
-            <div className={`rounded-3xl border p-6 shadow-sm ${categoryStyle.soft}`}>
-              <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>Výsledek</h2>
+      <section className="mx-auto max-w-6xl px-6 py-10 space-y-10">
+        <div className={`rounded-3xl border p-6 shadow-sm ${categoryStyle.soft}`}>
+          <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>Výsledek</h2>
 
-              {hasResults ? (
-                <div className="space-y-5">
-                  {score1 && (
-                    <div className="rounded-2xl bg-white p-5 shadow-sm">
-                      <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
-                        {match.matchLabel1?.trim() || '1. blok'}
-                      </div>
+          {hasResults ? (
+            <div className="space-y-5">
+              {score1 && (
+                <div className="rounded-2xl bg-white p-5 shadow-sm">
+                  <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
+                    {match.matchLabel1?.trim() || '1. blok'}
+                  </div>
 
-                      <div className="text-4xl font-black leading-tight text-gray-900 md:text-5xl">
-                        {score1}
-                      </div>
+                  <div className="text-4xl font-black leading-tight text-gray-900 md:text-5xl">
+                    {score1}
+                  </div>
 
-                      <div className="mt-4 text-sm text-gray-700">
-                        {scorers1.length > 0 ? (
-                          <>
-                            <span className="font-semibold">⚽ Střelci:</span>{' '}
-                            {scorers1.join(', ')}
-                          </>
-                        ) : (
-                          <span className="text-gray-500">Střelci nebyli uvedeni.</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {score2 && (
-                    <div className="rounded-2xl bg-white p-5 shadow-sm">
-                      <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
-                        {match.matchLabel2?.trim() || '2. blok'}
-                      </div>
-
-                      <div className="text-4xl font-black leading-tight text-gray-900 md:text-5xl">
-                        {score2}
-                      </div>
-
-                      <div className="mt-4 text-sm text-gray-700">
-                        {scorers2.length > 0 ? (
-                          <>
-                            <span className="font-semibold">⚽ Střelci:</span>{' '}
-                            {scorers2.join(', ')}
-                          </>
-                        ) : (
-                          <span className="text-gray-500">Střelci nebyli uvedeni.</span>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                  <div className="mt-4 text-sm text-gray-700">
+                    {scorers1.length > 0 ? (
+                      <>
+                        <span className="font-semibold">⚽ Střelci:</span>{' '}
+                        {scorers1.join(', ')}
+                      </>
+                    ) : (
+                      <span className="text-gray-500">Střelci nebyli uvedeni.</span>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
-                  Tento zápas ještě nebyl odehrán. Výsledek doplníme po utkání.
+              )}
+
+              {score2 && (
+                <div className="rounded-2xl bg-white p-5 shadow-sm">
+                  <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
+                    {match.matchLabel2?.trim() || '2. blok'}
+                  </div>
+
+                  <div className="text-4xl font-black leading-tight text-gray-900 md:text-5xl">
+                    {score2}
+                  </div>
+
+                  <div className="mt-4 text-sm text-gray-700">
+                    {scorers2.length > 0 ? (
+                      <>
+                        <span className="font-semibold">⚽ Střelci:</span>{' '}
+                        {scorers2.join(', ')}
+                      </>
+                    ) : (
+                      <span className="text-gray-500">Střelci nebyli uvedeni.</span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
+          ) : (
+            <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
+              Tento zápas ještě nebyl odehrán. Výsledek doplníme po utkání.
+            </div>
+          )}
+        </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>
-                  {isPlayed ? 'Report' : 'Info k zápasu'}
-                </h2>
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>
+              {isPlayed ? 'Report' : 'Info k zápasu'}
+            </h2>
 
-                <div className="rounded-2xl bg-gray-50 p-5">
-                  {match.articleTitle?.trim() && (
-                    <div className="mb-3 text-xl font-bold text-gray-900">
-                      {match.articleTitle}
-                    </div>
-                  )}
-
-                  <p className="leading-7 text-gray-700">
-                    {match.article ||
-                      (isPlayed
-                        ? 'Komentář zápasu bude doplněn.'
-                        : 'Podrobnější informace k zápasu budou doplněny.')}
-                  </p>
+            <div className="rounded-2xl bg-gray-50 p-5">
+              {match.articleTitle?.trim() && (
+                <div className="mb-3 text-xl font-bold text-gray-900">
+                  {match.articleTitle}
                 </div>
-              </div>
+              )}
 
-              <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>Fotky</h2>
-
-                {cleanPhotos.length > 0 ? (
-                  <>
-                    <div className="grid grid-cols-2 gap-3">
-                      {cleanPhotos.slice(0, 2).map((photo, index) =>
-                        isVideoFile(photo) ? (
-                          <button
-                            type="button"
-                            key={`${photo}-${index}`}
-                            onClick={() => openInlinePhotoGallery(index)}
-                            className="overflow-hidden rounded-2xl bg-black"
-                          >
-                            <video
-                              src={photo}
-                              className="h-40 w-full rounded-2xl object-cover"
-                              muted
-                              playsInline
-                              preload="metadata"
-                            />
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            key={`${photo}-${index}`}
-                            onClick={() => openInlinePhotoGallery(index)}
-                            className="overflow-hidden rounded-2xl"
-                          >
-                            <img
-                              src={photo}
-                              alt={`Fotka k zápasu ${index + 1}`}
-                              className="h-40 w-full rounded-2xl object-cover transition hover:scale-[1.02]"
-                            />
-                          </button>
-                        )
-                      )}
-                    </div>
-
-                    {(cleanPhotos.length > 2 || linkedAlbum) && (
-                      <div className="mt-4">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (linkedAlbum) {
-                              openAlbum();
-                            } else {
-                              openInlinePhotoGallery(0);
-                            }
-                          }}
-                          className="text-sm font-semibold text-green-600 transition hover:text-green-700"
-                        >
-                          Zobrazit všechny fotky →
-                        </button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">
-                    Zatím nejsou přidané žádné fotky přímo k zápasu.
-                  </div>
-                )}
-              </div>
+              <p className="leading-7 text-gray-700">
+                {match.article ||
+                  (isPlayed
+                    ? 'Komentář zápasu bude doplněn.'
+                    : 'Podrobnější informace k zápasu budou doplněny.')}
+              </p>
             </div>
           </div>
 
-          <div className="space-y-10">
-            {linkedAlbum && (
-              <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
-                <div className="relative">
-                  {!isVideoFile(linkedAlbum.cover || linkedAlbum.photos?.[0]) ? (
-                    <img
-                      src={linkedAlbum.cover || linkedAlbum.photos?.[0]}
-                      alt={linkedAlbum.title}
-                      className="h-52 w-full object-cover"
-                    />
-                  ) : (
-                    <video
-                      src={linkedAlbum.cover || linkedAlbum.photos?.[0]}
-                      className="h-52 w-full object-cover"
-                      muted
-                      playsInline
-                      preload="metadata"
-                    />
+          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>Fotky</h2>
+
+            {cleanPhotos.length > 0 ? (
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  {cleanPhotos.slice(0, 2).map((photo, index) =>
+                    isVideoFile(photo) ? (
+                      <button
+                        type="button"
+                        key={`${photo}-${index}`}
+                        onClick={() => openInlinePhotoGallery(index)}
+                        className="overflow-hidden rounded-2xl bg-black"
+                      >
+                        <video
+                          src={photo}
+                          className="h-40 w-full rounded-2xl object-cover"
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        key={`${photo}-${index}`}
+                        onClick={() => openInlinePhotoGallery(index)}
+                        className="overflow-hidden rounded-2xl"
+                      >
+                        <img
+                          src={photo}
+                          alt={`Fotka k zápasu ${index + 1}`}
+                          className="h-40 w-full rounded-2xl object-cover transition hover:scale-[1.02]"
+                        />
+                      </button>
+                    )
                   )}
+                </div>
 
-                  <div className="absolute inset-0 bg-black/35" />
-
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <div className="text-sm font-semibold text-white/90">Napojené album</div>
-                    <div className="mt-1 text-2xl font-black text-white">{linkedAlbum.title}</div>
-                    <div className="mt-1 text-sm text-white/85">
-                      {linkedAlbum.photos?.length || 0} položek
-                    </div>
+                {(cleanPhotos.length > 2 || linkedAlbum) && (
+                  <div className="mt-4">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (linkedAlbum) {
+                          openAlbum();
+                        } else {
+                          openInlinePhotoGallery(0);
+                        }
+                      }}
+                      className="text-sm font-semibold text-green-600 transition hover:text-green-700"
+                    >
+                      Zobrazit všechny fotky →
+                    </button>
                   </div>
-                </div>
-
-                <div className="p-5">
-                  <button
-                    type="button"
-                    onClick={openAlbum}
-                    className={`w-full rounded-2xl px-5 py-3 text-base font-bold transition hover:scale-[1.01] ${categoryStyle.button}`}
-                  >
-                    Fotky ze zápasu
-                  </button>
-                </div>
+                )}
+              </>
+            ) : (
+              <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">
+                Zatím nejsou přidané žádné fotky přímo k zápasu.
               </div>
             )}
           </div>
         </div>
+
+        {linkedAlbum && (
+          <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+            <div className="relative">
+              {!isVideoFile(linkedAlbum.cover || linkedAlbum.photos?.[0]) ? (
+                <img
+                  src={linkedAlbum.cover || linkedAlbum.photos?.[0]}
+                  alt={linkedAlbum.title}
+                  className="h-56 w-full object-cover"
+                />
+              ) : (
+                <video
+                  src={linkedAlbum.cover || linkedAlbum.photos?.[0]}
+                  className="h-56 w-full object-cover"
+                  muted
+                  playsInline
+                  preload="metadata"
+                />
+              )}
+
+              <div className="absolute inset-0 bg-black/35" />
+
+              <div className="absolute bottom-4 left-4 right-4">
+                <div className="text-sm font-semibold text-white/90">Napojené album</div>
+                <div className="mt-1 text-2xl font-black text-white">{linkedAlbum.title}</div>
+                <div className="mt-1 text-sm text-white/85">
+                  {linkedAlbum.photos?.length || 0} položek
+                </div>
+              </div>
+            </div>
+
+            <div className="p-5">
+              <button
+                type="button"
+                onClick={openAlbum}
+                className={`w-full rounded-2xl px-5 py-3 text-base font-bold transition hover:scale-[1.01] ${categoryStyle.button}`}
+              >
+                Fotky ze zápasu
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       {selectedAlbum && selectedPhotoIndex === null && (
