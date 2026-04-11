@@ -1012,111 +1012,117 @@ export default function AskLipuvkaWeb() {
 
     return (
       <div className="mb-8 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-lg">
-        <div className="relative">
-          <img
-            src={coverImage}
-            alt={match.home ? `ASK Lipůvka vs. ${match.opponent}` : `${match.opponent} vs. ASK Lipůvka`}
-            className="h-[260px] w-full object-cover md:h-[340px]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+        <button
+          type="button"
+          onClick={() => match.id && navigate(`/zapas/${match.id}`)}
+          className="block w-full text-left transition hover:bg-gray-50/40"
+        >
+          <div className="relative">
+            <img
+              src={coverImage}
+              alt={match.home ? `ASK Lipůvka vs. ${match.opponent}` : `${match.opponent} vs. ASK Lipůvka`}
+              className="h-[260px] w-full object-cover md:h-[340px]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
 
-          <div className="absolute left-0 top-0 p-5 md:p-6">
-            <span className="rounded-full bg-white/90 px-4 py-2 text-xs font-black uppercase tracking-wide text-gray-900 shadow-sm">
-              Poslední odehraný zápas
-            </span>
-          </div>
-
-          <div className="absolute bottom-0 left-0 w-full p-5 text-white md:p-7">
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <span className={`rounded-full px-3 py-1 text-xs font-bold ${categoryStyle.badge}`}>
-                {getCategoryShortLabel(match.category)}
-              </span>
-              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-                {match.date}
-              </span>
-              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-                {match.home ? 'Domácí' : 'Venkovní'}
+            <div className="absolute left-0 top-0 p-5 md:p-6">
+              <span className="rounded-full bg-white/90 px-4 py-2 text-xs font-black uppercase tracking-wide text-gray-900 shadow-sm">
+                Poslední odehraný zápas
               </span>
             </div>
 
-            <h3 className="max-w-4xl text-2xl font-black leading-tight drop-shadow md:text-4xl">
-              {match.home
-                ? `ASK Lipůvka vs. ${match.opponent}`
-                : `${match.opponent} vs. ASK Lipůvka`}
-            </h3>
-
-            <div className="mt-2 text-sm text-white/90 md:text-base">
-              {match.time} • {match.home ? 'Lipůvka' : match.venue || 'bude doplněno'}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-5 md:p-7">
-          <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-            <div>
-              {(score1 || score2) ? (
-                <div className="space-y-3">
-                  {score1 && (
-                    <div className="rounded-2xl bg-gray-50 p-4">
-                      <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
-                        {label1}
-                      </div>
-                      <div className="text-3xl font-black text-gray-900 md:text-4xl">
-                        {score1}
-                      </div>
-                    </div>
-                  )}
-
-                  {score2 && (
-                    <div className="rounded-2xl bg-gray-50 p-4">
-                      <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
-                        {label2}
-                      </div>
-                      <div className="text-3xl font-black text-gray-900 md:text-4xl">
-                        {score2}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="rounded-2xl bg-gray-50 p-4 text-gray-600">
-                  Výsledek bude doplněn v detailu zápasu.
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col justify-between">
-              <div>
-                <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
-                  Krátce k zápasu
-                </div>
-                <p className="text-sm leading-7 text-gray-700 md:text-base">
-                  {articlePreview}
-                </p>
+            <div className="absolute bottom-0 left-0 w-full p-5 text-white md:p-7">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${categoryStyle.badge}`}>
+                  {getCategoryShortLabel(match.category)}
+                </span>
+                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+                  {match.date}
+                </span>
+                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+                  {match.home ? 'Domácí' : 'Venkovní'}
+                </span>
               </div>
 
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => match.id && navigate(`/zapas/${match.id}`)}
-                  className={`rounded-xl px-5 py-3 text-sm font-bold transition hover:scale-[1.02] ${categoryStyle.button}`}
-                >
-                  Detail zápasu
-                </button>
+              <h3 className="max-w-4xl text-2xl font-black leading-tight drop-shadow md:text-4xl">
+                {match.home
+                  ? `ASK Lipůvka vs. ${match.opponent}`
+                  : `${match.opponent} vs. ASK Lipůvka`}
+              </h3>
 
-                {hasPhotoReport && (
-                  <button
-                    type="button"
-                    onClick={() => openMatchPhotoReport(match)}
-                    className={`rounded-xl border px-5 py-3 text-sm font-bold transition hover:scale-[1.02] ${categoryStyle.buttonOutline}`}
-                  >
-                    Fotky ze zápasu
-                  </button>
+              <div className="mt-2 text-sm text-white/90 md:text-base">
+                {match.time} • {match.home ? 'Lipůvka' : match.venue || 'bude doplněno'}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5 md:p-7">
+            <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+              <div>
+                {(score1 || score2) ? (
+                  <div className="space-y-3">
+                    {score1 && (
+                      <div className="rounded-2xl bg-gray-50 p-4">
+                        <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                          {label1}
+                        </div>
+                        <div className="text-3xl font-black text-gray-900 md:text-4xl">
+                          {score1}
+                        </div>
+                      </div>
+                    )}
+
+                    {score2 && (
+                      <div className="rounded-2xl bg-gray-50 p-4">
+                        <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                          {label2}
+                        </div>
+                        <div className="text-3xl font-black text-gray-900 md:text-4xl">
+                          {score2}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-gray-50 p-4 text-gray-600">
+                    Výsledek bude doplněn v detailu zápasu.
+                  </div>
                 )}
               </div>
+
+              <div className="flex flex-col justify-between">
+                <div>
+                  <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
+                    Krátce k zápasu
+                  </div>
+                  <p className="text-sm leading-7 text-gray-700 md:text-base">
+                    {articlePreview}
+                  </p>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <span
+                    className={`rounded-xl px-5 py-3 text-sm font-bold ${categoryStyle.button}`}
+                  >
+                    Detail zápasu
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </button>
+
+        {hasPhotoReport && (
+          <div className="border-t border-gray-100 bg-white px-5 pb-5 pt-4 md:px-7 md:pb-7">
+            <button
+              type="button"
+              onClick={() => openMatchPhotoReport(match)}
+              className={`rounded-xl border px-5 py-3 text-sm font-bold transition hover:scale-[1.02] ${categoryStyle.buttonOutline}`}
+            >
+              Fotky ze zápasu
+            </button>
+          </div>
+        )}
       </div>
     );
   };
