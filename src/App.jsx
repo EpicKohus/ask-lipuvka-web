@@ -1,14 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { db } from './firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
 export default function AskLipuvkaWeb() {
-  const navigate = useNavigate();
-
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isTrainersOpen, setIsTrainersOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState(null);
 
   const [isClubDropdownOpen, setIsClubDropdownOpen] = useState(false);
   const [isTeamsDropdownOpen, setIsTeamsDropdownOpen] = useState(false);
@@ -437,6 +435,15 @@ export default function AskLipuvkaWeb() {
     return /\.(mp4|webm|ogg)$/i.test(filePath);
   };
 
+  const formatScorers = (scorers) => {
+    if (!scorers || typeof scorers !== 'string') return '';
+    return scorers
+      .split('\n')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .join(', ');
+  };
+
   const availableNews = useMemo(() => {
     return firebaseNews.length > 0 ? firebaseNews : newsItems;
   }, [firebaseNews]);
@@ -451,7 +458,9 @@ export default function AskLipuvkaWeb() {
 
   const getAlbumMatchDate = (albumId) => {
     const linkedMatch = availableMatches.find((match) => match.galleryAlbumId === albumId);
+
     if (!linkedMatch?.date) return new Date(0);
+
     return parseMatchDate(linkedMatch.date);
   };
 
@@ -492,6 +501,9 @@ export default function AskLipuvkaWeb() {
   const playedMatches = filteredMatches
     .filter((m) => parseMatchDate(m.date) < todayStart)
     .sort((a, b) => parseMatchDate(b.date) - parseMatchDate(a.date));
+
+  const latestPlayedMatch = playedMatches.length > 0 ? playedMatches[0] : null;
+  const otherPlayedMatches = playedMatches.length > 1 ? playedMatches.slice(1) : [];
 
   const fullScheduleMatches = [...filteredMatches].sort(
     (a, b) => parseMatchDate(a.date) - parseMatchDate(b.date)
@@ -568,6 +580,7 @@ export default function AskLipuvkaWeb() {
       return;
     }
 
+    setSelectedMatch(null);
     setGallerySource(album.type === 'team' ? 'team' : 'global');
     setSelectedAlbum(album);
     setSelectedPhotoIndex(null);
@@ -728,6 +741,7 @@ export default function AskLipuvkaWeb() {
       setIsRegistrationOpen(false);
       setIsTrainersOpen(false);
       setIsMobileMenuOpen(false);
+      setSelectedMatch(null);
       setClubPopupContent(null);
       setIsClubDropdownOpen(false);
       setIsTeamsDropdownOpen(false);
@@ -770,6 +784,7 @@ export default function AskLipuvkaWeb() {
       isRegistrationOpen ||
       isTrainersOpen ||
       isMobileMenuOpen ||
+      selectedMatch ||
       clubPopupContent ||
       isGalleryOpen ||
       selectedPhoto ||
@@ -785,6 +800,7 @@ export default function AskLipuvkaWeb() {
     isRegistrationOpen,
     isTrainersOpen,
     isMobileMenuOpen,
+    selectedMatch,
     clubPopupContent,
     isGalleryOpen,
     selectedPhoto,
@@ -896,7 +912,7 @@ export default function AskLipuvkaWeb() {
 
     return (
       <div
-        key={m.id || `${m.date}-${m.opponent}`}
+        key={`${m.date}-${m.opponent}`}
         className={`rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
           isToday
             ? 'border-green-500 bg-green-50 ring-2 ring-green-300 shadow-lg'
@@ -905,7 +921,7 @@ export default function AskLipuvkaWeb() {
       >
         <button
           type="button"
-          onClick={() => m.id && navigate(`/zapas/${m.id}`)}
+          onClick={() => setSelectedMatch(m)}
           className="w-full text-left"
         >
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -968,6 +984,142 @@ export default function AskLipuvkaWeb() {
               className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition hover:scale-105 hover:shadow-md ${categoryStyle.button}`}
             >
               Fotky
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderLatestPlayedHighlight = (match) => {
+    if (!match) return null;
+
+    const categoryStyle = getCategoryStyle(match.category);
+    const album = getMatchAlbum(match);
+    const coverImage = album?.cover || album?.photos?.[0] || '/field.png';
+
+    const label1 = match.matchLabel1?.trim() || '1. blok';
+    const label2 = match.matchLabel2?.trim() || '2. blok';
+    const score1 = match.result1?.trim();
+    const score2 = match.result2?.trim();
+
+    const articleText = match.article?.trim() || '';
+    const articlePreview = articleText
+      ? `${articleText.slice(0, 180)}${articleText.length > 180 ? '…' : ''}`
+      : 'Klikni na detail zápasu a zobraz si výsledek, report i fotky.';
+
+    const hasPhotoReport = Boolean(album);
+
+    return (
+      <div className="mb-8 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-lg">
+        <button
+          type="button"
+          onClick={() => match.id && navigate(`/zapas/${match.id}`)}
+          className="block w-full text-left transition hover:bg-gray-50/40"
+        >
+          <div className="relative">
+            <img
+              src={coverImage}
+              alt={match.home ? `ASK Lipůvka vs. ${match.opponent}` : `${match.opponent} vs. ASK Lipůvka`}
+              className="h-[260px] w-full object-cover md:h-[340px]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/25 to-transparent" />
+
+            <div className="absolute left-0 top-0 p-5 md:p-6">
+              <span className="rounded-full bg-white/90 px-4 py-2 text-xs font-black uppercase tracking-wide text-gray-900 shadow-sm">
+                Poslední odehraný zápas
+              </span>
+            </div>
+
+            <div className="absolute bottom-0 left-0 w-full p-5 text-white md:p-7">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${categoryStyle.badge}`}>
+                  {getCategoryShortLabel(match.category)}
+                </span>
+                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+                  {match.date}
+                </span>
+                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+                  {match.home ? 'Domácí' : 'Venkovní'}
+                </span>
+              </div>
+
+              <h3 className="max-w-4xl text-2xl font-black leading-tight drop-shadow md:text-4xl">
+                {match.home
+                  ? `ASK Lipůvka vs. ${match.opponent}`
+                  : `${match.opponent} vs. ASK Lipůvka`}
+              </h3>
+
+              <div className="mt-2 text-sm text-white/90 md:text-base">
+                {match.time} • {match.home ? 'Lipůvka' : match.venue || 'bude doplněno'}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5 md:p-7">
+            <div className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
+              <div>
+                {(score1 || score2) ? (
+                  <div className="space-y-3">
+                    {score1 && (
+                      <div className="rounded-2xl bg-gray-50 p-4">
+                        <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                          {label1}
+                        </div>
+                        <div className="text-3xl font-black text-gray-900 md:text-4xl">
+                          {score1}
+                        </div>
+                      </div>
+                    )}
+
+                    {score2 && (
+                      <div className="rounded-2xl bg-gray-50 p-4">
+                        <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                          {label2}
+                        </div>
+                        <div className="text-3xl font-black text-gray-900 md:text-4xl">
+                          {score2}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rounded-2xl bg-gray-50 p-4 text-gray-600">
+                    Výsledek bude doplněn v detailu zápasu.
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col justify-between">
+                <div>
+                  <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
+                    Krátce k zápasu
+                  </div>
+                  <p className="text-sm leading-7 text-gray-700 md:text-base">
+                    {articlePreview}
+                  </p>
+                </div>
+
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <span
+                    className={`rounded-xl px-5 py-3 text-sm font-bold ${categoryStyle.button}`}
+                  >
+                    Detail zápasu
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </button>
+
+        {hasPhotoReport && (
+          <div className="border-t border-gray-100 bg-white px-5 pb-5 pt-4 md:px-7 md:pb-7">
+            <button
+              type="button"
+              onClick={() => openMatchPhotoReport(match)}
+              className={`rounded-xl border px-5 py-3 text-sm font-bold transition hover:scale-[1.02] ${categoryStyle.buttonOutline}`}
+            >
+              Fotky ze zápasu
             </button>
           </div>
         )}
@@ -1538,9 +1690,17 @@ export default function AskLipuvkaWeb() {
 
         <h2 className={`mb-6 text-3xl font-bold ${activeCategoryStyle.text}`}>Odehrané zápasy</h2>
 
+        {latestPlayedMatch ? renderLatestPlayedHighlight(latestPlayedMatch) : null}
+
         <div className="space-y-4">
           {playedMatches.length > 0 ? (
-            playedMatches.map((m) => renderMatchCard(m, true))
+            otherPlayedMatches.length > 0 ? (
+              otherPlayedMatches.map((m) => renderMatchCard(m, true))
+            ) : (
+              <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+                Zatím je odehraný pouze jeden zápas, který vidíš nahoře jako hlavní tahák.
+              </div>
+            )
           ) : (
             <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
               Pro tuto kategorii zatím nejsou žádné odehrané zápasy.
@@ -2406,6 +2566,7 @@ export default function AskLipuvkaWeb() {
                   {fullScheduleMatches.length > 0 ? (
                     fullScheduleMatches.map((m) => {
                       const isToday = isSameDay(parseMatchDate(m.date), todayStart);
+                      const isPlayed = parseMatchDate(m.date) < todayStart;
                       const categoryStyle = getCategoryStyle(m.category);
                       const label1 = m.matchLabel1?.trim() || '1. blok';
                       const label2 = m.matchLabel2?.trim() || '2. blok';
@@ -2413,10 +2574,10 @@ export default function AskLipuvkaWeb() {
                       return (
                         <button
                           type="button"
-                          key={m.id || `schedule-${m.date}-${m.opponent}`}
+                          key={`schedule-${m.date}-${m.opponent}`}
                           onClick={() => {
                             setIsScheduleOpen(false);
-                            if (m.id) navigate(`/zapas/${m.id}`);
+                            setSelectedMatch(m);
                           }}
                           className={`group w-full rounded-2xl border p-5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
                             isToday
@@ -2479,7 +2640,7 @@ export default function AskLipuvkaWeb() {
                                 {m.home ? 'Domácí' : 'Venkovní'}
                               </span>
 
-                              {m.result1 || m.result2 ? (
+                              {isPlayed || m.result1 || m.result2 ? (
                                 <div className="flex flex-col gap-2 text-right">
                                   {m.result1 && (
                                     <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
@@ -2751,6 +2912,166 @@ export default function AskLipuvkaWeb() {
                 })}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {selectedMatch && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 animate-[fadeIn_0.2s_ease-out]"
+          onClick={() => setSelectedMatch(null)}
+        >
+          <div
+            className="relative max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setSelectedMatch(null)}
+              className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-black"
+            >
+              ×
+            </button>
+
+            {(() => {
+              const hasMatchResult = Boolean(selectedMatch.result1 || selectedMatch.result2);
+
+              return (
+                <>
+                  <div className="mb-6 border-b border-gray-200 pb-4 pr-10">
+                    <div className="mb-2 flex flex-wrap items-center gap-3">
+                      <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
+                        Detail zápasu • {activeCategoryLabel}
+                      </div>
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
+                        {activeCategoryShortLabel}
+                      </span>
+                    </div>
+
+                    <h2 className="mt-2 text-3xl font-bold text-gray-900">
+                      {selectedMatch.home
+                        ? `ASK Lipůvka vs. ${selectedMatch.opponent}`
+                        : `${selectedMatch.opponent} vs. ASK Lipůvka`}
+                    </h2>
+
+                    <div className="mt-2 text-gray-600">
+                      {selectedMatch.date} • {selectedMatch.time} • {selectedMatch.home ? 'Domácí zápas' : 'Venkovní zápas'}
+                    </div>
+
+                    {!selectedMatch.home && selectedMatch.venue && (
+                      <div className="mt-2 text-sm font-medium text-gray-700">
+                        Hraje se: {selectedMatch.venue}
+                      </div>
+                    )}
+
+                    {hasMatchResult && (
+                      <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        {selectedMatch.result1 && (
+                          <div className="rounded-2xl bg-gray-50 p-4">
+                            <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
+                              {selectedMatch.matchLabel1?.trim() || '1. blok'}
+                            </div>
+                            <div className="text-base font-semibold text-gray-900">
+                              Výsledek: {selectedMatch.result1}
+                            </div>
+                            {formatScorers(selectedMatch.scorers1) && (
+                              <div className="mt-2 text-sm text-gray-700">
+                                <span className="font-semibold">⚽ Střelci:</span>{' '}
+                                {formatScorers(selectedMatch.scorers1)}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {selectedMatch.result2 && (
+                          <div className="rounded-2xl bg-gray-50 p-4">
+                            <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
+                              {selectedMatch.matchLabel2?.trim() || '2. blok'}
+                            </div>
+                            <div className="text-base font-semibold text-gray-900">
+                              Výsledek: {selectedMatch.result2}
+                            </div>
+                            {formatScorers(selectedMatch.scorers2) && (
+                              <div className="mt-2 text-sm text-gray-700">
+                                <span className="font-semibold">⚽ Střelci:</span>{' '}
+                                {formatScorers(selectedMatch.scorers2)}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {hasMatchResult && getMatchAlbum(selectedMatch) && (
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={() => openMatchPhotoReport(selectedMatch)}
+                          className={`flex items-center gap-2 rounded-xl px-5 py-3 font-semibold transition hover:scale-105 hover:shadow-md ${activeCategoryStyle.button}`}
+                        >
+                          <span>📸</span>
+                          Fotky ze zápasu ({getMatchAlbum(selectedMatch)?.photos?.length || 0})
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="grid gap-8 xl:grid-cols-2">
+                    <div>
+                      <h3 className={`mb-3 text-xl font-bold ${activeCategoryStyle.text}`}>Fotky</h3>
+
+                      {selectedMatch.photos.filter((photo) => photo !== '/field.png').length > 0 ? (
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          {selectedMatch.photos
+                            .filter((photo) => photo !== '/field.png')
+                            .map((photo, index) => (
+                              <img
+                                key={`${photo}-${index}`}
+                                src={photo}
+                                alt={`Fotka k zápasu ${index + 1}`}
+                                className="h-64 w-full rounded-2xl object-cover shadow-sm transition hover:scale-105"
+                              />
+                            ))}
+                        </div>
+                      ) : (
+                        <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">
+                          Fotky k zápasu budou doplněny.
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <h3 className={`mb-3 text-xl font-bold ${activeCategoryStyle.text}`}>
+                        {hasMatchResult ? 'Report ze zápasu' : 'Článek k zápasu'}
+                      </h3>
+
+                      <div className="rounded-2xl bg-gray-50 p-5">
+                        {hasMatchResult ? (
+                          selectedMatch.articleTitle?.trim() || selectedMatch.article?.trim() ? (
+                            <>
+                              {selectedMatch.articleTitle?.trim() && (
+                                <div className="mb-2 text-lg font-semibold text-gray-900">
+                                  {selectedMatch.articleTitle}
+                                </div>
+                              )}
+                              {selectedMatch.article?.trim() ? (
+                                <p className="leading-7 text-gray-700">{selectedMatch.article}</p>
+                              ) : (
+                                <div className="text-gray-500">Komentář zápasu bude doplněn.</div>
+                              )}
+                            </>
+                          ) : (
+                            <div className="text-gray-500">Komentář zápasu bude doplněn.</div>
+                          )
+                        ) : (
+                          <div className="text-gray-500">Komentář zápasu bude doplněn.</div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       )}
