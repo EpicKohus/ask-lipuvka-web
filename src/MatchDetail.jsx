@@ -271,6 +271,26 @@ export default function MatchDetail() {
     );
   };
 
+  const renderScorers = (scorers) => {
+    if (!scorers.length) {
+      return <span className="text-gray-500">Střelci nebyli uvedeni.</span>;
+    }
+
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="font-semibold text-gray-700">⚽ Střelci:</span>
+        {scorers.map((player, index) => (
+          <span
+            key={`${player}-${index}`}
+            className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-800"
+          >
+            {player}
+          </span>
+        ))}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white px-6 py-14 text-gray-900">
@@ -400,7 +420,7 @@ export default function MatchDetail() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6 py-10 space-y-10">
+      <section className="mx-auto max-w-6xl space-y-10 px-6 py-10">
         <div className={`rounded-3xl border p-6 shadow-sm ${categoryStyle.soft}`}>
           <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>Výsledek</h2>
 
@@ -416,16 +436,7 @@ export default function MatchDetail() {
                     {score1}
                   </div>
 
-                  <div className="mt-4 text-sm text-gray-700">
-                    {scorers1.length > 0 ? (
-                      <>
-                        <span className="font-semibold">⚽ Střelci:</span>{' '}
-                        {scorers1.join(', ')}
-                      </>
-                    ) : (
-                      <span className="text-gray-500">Střelci nebyli uvedeni.</span>
-                    )}
-                  </div>
+                  <div className="mt-4 text-sm text-gray-700">{renderScorers(scorers1)}</div>
                 </div>
               )}
 
@@ -439,16 +450,7 @@ export default function MatchDetail() {
                     {score2}
                   </div>
 
-                  <div className="mt-4 text-sm text-gray-700">
-                    {scorers2.length > 0 ? (
-                      <>
-                        <span className="font-semibold">⚽ Střelci:</span>{' '}
-                        {scorers2.join(', ')}
-                      </>
-                    ) : (
-                      <span className="text-gray-500">Střelci nebyli uvedeni.</span>
-                    )}
-                  </div>
+                  <div className="mt-4 text-sm text-gray-700">{renderScorers(scorers2)}</div>
                 </div>
               )}
             </div>
@@ -494,15 +496,20 @@ export default function MatchDetail() {
                           type="button"
                           key={`${photo}-${index}`}
                           onClick={() => openInlinePhotoGallery(index)}
-                          className="overflow-hidden rounded-2xl bg-black"
+                          className="relative overflow-hidden rounded-2xl bg-black"
                         >
                           <video
                             src={photo}
-                            className="h-40 w-full rounded-2xl object-cover"
+                            className="h-44 w-full object-cover"
                             muted
                             playsInline
                             preload="metadata"
                           />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                            <div className="rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-gray-900">
+                              ▶ Přehrát
+                            </div>
+                          </div>
                         </button>
                       ) : (
                         <button
@@ -513,8 +520,8 @@ export default function MatchDetail() {
                         >
                           <img
                             src={photo}
-                            alt={`Fotka k zápasu ${index + 1}`}
-                            className="h-40 w-full rounded-2xl object-cover transition hover:scale-[1.02]"
+                            alt={`Fotka ze zápasu ${index + 1}`}
+                            className="h-44 w-full object-cover transition hover:scale-105"
                           />
                         </button>
                       )
@@ -522,20 +529,18 @@ export default function MatchDetail() {
                   </div>
 
                   {cleanPhotos.length > 2 && (
-                    <div className="mt-4">
-                      <button
-                        type="button"
-                        onClick={() => openInlinePhotoGallery(0)}
-                        className="text-sm font-semibold text-green-600 transition hover:text-green-700"
-                      >
-                        Zobrazit všechny fotky →
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openInlinePhotoGallery(0)}
+                      className={`mt-4 w-full rounded-2xl px-5 py-3 font-bold transition ${categoryStyle.button}`}
+                    >
+                      Zobrazit všechny fotky
+                    </button>
                   )}
                 </>
               ) : (
-                <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">
-                  Zatím nejsou přidané žádné fotky k zápasu.
+                <div className="rounded-2xl bg-gray-50 p-5 text-gray-600">
+                  Fotky ze zápasu zatím nejsou doplněné.
                 </div>
               )}
             </div>
@@ -543,51 +548,47 @@ export default function MatchDetail() {
         </div>
 
         {hasAlbum && (
-          <div className="mx-auto w-full max-w-4xl overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
-            <div className="relative">
-              {!isVideoFile(linkedAlbum.cover || linkedAlbum.photos?.[0]) ? (
-                <img
-                  src={linkedAlbum.cover || linkedAlbum.photos?.[0]}
-                  alt={linkedAlbum.title}
-                  className="h-64 w-full object-cover object-center md:h-80"
-                />
-              ) : (
-                <video
-                  src={linkedAlbum.cover || linkedAlbum.photos?.[0]}
-                  className="h-64 w-full object-cover object-center md:h-80"
-                  muted
-                  playsInline
-                  preload="metadata"
-                />
-              )}
+          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+            <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>Napojené album</h2>
 
-              <div className="absolute inset-0 bg-black/35" />
+            <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+              <div className="relative">
+                {!isVideoFile(linkedAlbum.cover || linkedAlbum.photos?.[0]) ? (
+                  <img
+                    src={linkedAlbum.cover || linkedAlbum.photos?.[0] || '/field.png'}
+                    alt={linkedAlbum.title}
+                    className="h-[280px] w-full object-cover"
+                  />
+                ) : (
+                  <video
+                    src={linkedAlbum.cover || linkedAlbum.photos?.[0]}
+                    className="h-[280px] w-full object-cover"
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
+                )}
 
-              <div className="absolute bottom-4 left-4 right-4">
-                <div className="text-sm font-semibold text-white/90">Napojené album</div>
-                <div className="mt-1 text-2xl font-black text-white">{linkedAlbum.title}</div>
-                <div className="mt-1 text-sm text-white/85">
-                  {linkedAlbum.photos?.length || 0} položek
+                <div className="absolute inset-0 bg-black/30" />
+
+                <div className="absolute bottom-0 left-0 p-5 text-white">
+                  <div className="text-sm font-semibold text-white/90">Napojené album</div>
+                  <div className="text-2xl font-black">{linkedAlbum.title}</div>
+                  <div className="mt-1 text-sm text-white/90">
+                    {linkedAlbum.photos?.length || 0} položek
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="p-5">
-              <button
-                type="button"
-                onClick={openAlbum}
-                className={`w-full rounded-2xl px-5 py-3 text-base font-bold transition hover:scale-[1.01] ${categoryStyle.button}`}
-              >
-                Fotky ze zápasu
-              </button>
-            </div>
-          </div>
-        )}
-
-        {!hasAlbum && !hasInlinePhotos && (
-          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">
-              K tomuto zápasu zatím nejsou přidané žádné fotky ani album.
+              <div className="p-5">
+                <button
+                  type="button"
+                  onClick={openAlbum}
+                  className={`w-full rounded-2xl px-5 py-3 font-bold transition ${categoryStyle.button}`}
+                >
+                  Fotky ze zápasu
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -595,12 +596,14 @@ export default function MatchDetail() {
 
       {selectedAlbum && selectedPhotoIndex === null && (
         <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6"
+          style={{ animation: 'fadeIn 0.2s ease-out' }}
           onClick={() => setSelectedAlbum(null)}
         >
           <div className="flex min-h-full items-start justify-center">
             <div
-              className="relative my-4 w-full max-w-6xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              className="relative my-4 w-full max-w-6xl rounded-2xl bg-white p-6 shadow-2xl"
+              style={{ animation: 'scaleIn 0.2s ease-out' }}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-4 flex items-center justify-between gap-4 pr-10">
@@ -609,7 +612,7 @@ export default function MatchDetail() {
                   onClick={() => setSelectedAlbum(null)}
                   className="rounded-xl border border-gray-300 px-4 py-2 font-semibold text-gray-700 hover:bg-gray-100"
                 >
-                  ← Zpět na detail
+                  ← Zpět
                 </button>
 
                 <button
@@ -621,10 +624,7 @@ export default function MatchDetail() {
                 </button>
               </div>
 
-              <h2 className="mb-2 text-3xl font-bold text-green-600">{selectedAlbum.title}</h2>
-              <div className="mb-6 text-sm text-gray-500">
-                {selectedAlbum.photos?.length || 0} položek
-              </div>
+              <h2 className="mb-6 text-3xl font-bold text-green-600">{selectedAlbum.title}</h2>
 
               <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
                 {selectedAlbum.photos?.map((photo, index) =>
@@ -638,7 +638,8 @@ export default function MatchDetail() {
 
       {selectedPhoto && (
         <div
-          className="fixed inset-0 z-[60] bg-black/90 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          className="fixed inset-0 z-[60] bg-black/90 px-4 py-6"
+          style={{ animation: 'fadeIn 0.2s ease-out' }}
           onClick={() => setSelectedPhotoIndex(null)}
         >
           <div className="flex h-full w-full items-center justify-center">
@@ -669,13 +670,13 @@ export default function MatchDetail() {
                   src={selectedPhoto}
                   controls
                   autoPlay
-                  className="max-h-[85vh] max-w-[92vw] rounded-2xl object-contain"
+                  className="max-h-[85vh] max-w-full rounded-2xl"
                 />
               ) : (
                 <img
                   src={selectedPhoto}
                   alt="Zvětšená fotka"
-                  className="max-h-[85vh] max-w-[92vw] rounded-2xl object-contain"
+                  className="max-h-[85vh] max-w-full rounded-2xl object-contain"
                 />
               )}
 
@@ -686,10 +687,6 @@ export default function MatchDetail() {
               >
                 ›
               </button>
-
-              <div className="absolute bottom-[-42px] left-1/2 -translate-x-1/2 text-sm text-white/80">
-                {selectedPhotoIndex + 1} / {selectedAlbum?.photos?.length}
-              </div>
             </div>
           </div>
         </div>
