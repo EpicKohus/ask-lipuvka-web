@@ -1450,14 +1450,10 @@ export default function AskLipuvkaWeb() {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div
-            className={`ml-auto flex h-full w-[88%] max-w-sm flex-col overflow-y-auto rounded-l-[2rem] shadow-2xl ${
-              theme === 'dark'
-                ? 'border-l border-white/20 bg-gradient-to-b from-[#0f1a17] via-[#0c1513] to-[#08110f]'
-                : 'border-l border-[#efe7da] bg-gradient-to-b from-[#fcfaf6] via-[#f7f2e9] to-[#f2eadf]'
-            }`}
+            className="mobile-drawer-shell ml-auto flex h-full w-[88%] max-w-sm flex-col overflow-y-auto rounded-l-[2rem] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="border-b border-[#e7dccb] bg-white px-5 pb-5 pt-6">
+            <div className="mobile-drawer-header px-5 pb-5 pt-6">
               <div className="mb-2 flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <img src="/logo.png" alt="logo" className="h-11 w-11 rounded-full ring-2 ring-green-100" />
@@ -1474,7 +1470,7 @@ export default function AskLipuvkaWeb() {
                 <button
                   type="button"
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 bg-white text-2xl text-gray-600 shadow-sm transition hover:bg-gray-50"
+                  className="mobile-drawer-close flex h-11 w-11 items-center justify-center rounded-2xl text-2xl shadow-sm transition"
                   aria-label="Zavřít menu"
                 >
                   ×
@@ -1514,7 +1510,7 @@ export default function AskLipuvkaWeb() {
               </button>
 
               {isMobileTeamsDropdownOpen && (
-                <div className={`mx-2 mb-2 flex flex-col rounded-2xl p-2 ${theme === 'dark' ? 'border border-emerald-900/40 bg-white/5' : 'border border-[#e8dece] bg-white/80 shadow-sm'}`}>
+                <div className="mobile-drawer-submenu mx-2 mb-2 flex flex-col rounded-2xl p-2">
                   <button
                     type="button"
                     onClick={() => selectTeam('predpripravka')}
@@ -1562,7 +1558,7 @@ export default function AskLipuvkaWeb() {
               </button>
 
               {isMobileClubDropdownOpen && (
-                <div className={`mx-2 mb-2 flex flex-col rounded-2xl p-2 ${theme === 'dark' ? 'border border-emerald-900/40 bg-white/5' : 'border border-[#e8dece] bg-white/80 shadow-sm'}`}>
+                <div className="mobile-drawer-submenu mx-2 mb-2 flex flex-col rounded-2xl p-2">
                   <button
                     type="button"
                     onClick={() => openClubPopup('filozofie')}
@@ -1638,16 +1634,8 @@ export default function AskLipuvkaWeb() {
               </button>
 
               <div className="mt-auto px-2 pt-4">
-                <div
-                  className={`rounded-3xl p-4 shadow-sm ${
-                    theme === 'dark'
-                      ? 'border border-emerald-900/40 bg-gradient-to-br from-[#101816] to-[#0b1311]'
-                      : 'border border-[#e8dece] bg-white/85'
-                  }`}
-                >
-                  <div className={`mb-3 text-xs font-bold uppercase tracking-[0.18em] ${
-                    theme === 'dark' ? 'text-emerald-200/65' : 'text-gray-500'
-                  }`}>
+                <div className="mobile-drawer-footer rounded-3xl p-4 shadow-sm">
+                  <div className="mobile-drawer-footer-label mb-3 text-xs font-bold uppercase tracking-[0.18em]">
                     Zobrazení webu
                   </div>
                   <button
@@ -2207,14 +2195,8 @@ export default function AskLipuvkaWeb() {
                     Tady najdete odpovědi na to, co rodiče nejčastěji zajímá.
                   </p>
 
-                  <div className={`mb-8 overflow-hidden rounded-3xl p-1 shadow-sm ${
-                    theme === 'dark' ? 'bg-[#0d1715] ring-1 ring-emerald-900/50' : 'bg-white/60'
-                  }`}>
-                    <div className={`flex h-[130px] items-center justify-center rounded-[22px] ${
-                      theme === 'dark'
-                        ? 'bg-gradient-to-br from-[#10211d] via-[#122a25] to-[#0c1715]'
-                        : 'bg-gradient-to-br from-[#f2eadc] to-[#e8dcc6]'
-                    }`}>
+                  <div className="faq-hero-shell mb-8 overflow-hidden rounded-3xl p-1 shadow-sm">
+                    <div className="faq-hero-surface flex h-[130px] items-center justify-center rounded-[22px]">
                       <div className="flex flex-wrap items-center justify-center gap-4 text-4xl md:text-5xl">
                         <span>❓</span>
                         <span>❔</span>
@@ -2232,40 +2214,22 @@ export default function AskLipuvkaWeb() {
                       return (
                         <div
                           key={item.question}
-                          className={`overflow-hidden rounded-2xl border shadow-sm transition ${
-                            theme === 'dark'
-                              ? isOpen
-                                ? 'border-emerald-700/50 bg-[#10201c] shadow-[0_16px_40px_rgba(0,0,0,0.26)]'
-                                : 'border-emerald-950/60 bg-[#091310]'
-                              : 'border-[#e6dccd] bg-white'
-                          }`}
+                          className={`faq-card overflow-hidden rounded-2xl border shadow-sm transition ${isOpen ? 'faq-card-open' : ''}`}
                         >
                           <button
                             type="button"
                             onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                            className={`flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition ${
-                              theme === 'dark'
-                                ? isOpen
-                                  ? 'bg-[#122722] text-white'
-                                  : 'text-white hover:bg-[#0f1d1a]'
-                                : isOpen
-                                  ? 'bg-[#faf7f2] text-gray-900'
-                                  : 'text-gray-900 hover:bg-[#faf7f2]'
-                            }`}
+                            className={`faq-button flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition ${isOpen ? 'faq-button-open' : ''}`}
                           >
                             <div className="flex items-start gap-3">
-                              <span className={`mt-0.5 text-lg ${theme === 'dark' ? 'drop-shadow-[0_0_10px_rgba(248,113,113,0.25)]' : ''}`}>❓</span>
-                              <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{item.question}</span>
+                              <span className="faq-question-mark mt-0.5 text-lg">❓</span>
+                              <span className="faq-question-text font-semibold">{item.question}</span>
                             </div>
-                            <span className={`text-xl ${theme === 'dark' ? 'text-emerald-300' : 'text-green-700'}`}>{isOpen ? '−' : '+'}</span>
+                            <span className="faq-symbol text-xl">{isOpen ? '−' : '+'}</span>
                           </button>
 
                           {isOpen && (
-                            <div className={`px-5 py-4 ${
-                              theme === 'dark'
-                                ? 'border-t border-emerald-800/40 bg-[#0b1714] text-slate-200'
-                                : 'border-t border-[#efe6d8] text-gray-700'
-                            }`}>
+                            <div className="faq-answer px-5 py-4">
                               {item.answer}
                             </div>
                           )}
@@ -2274,11 +2238,7 @@ export default function AskLipuvkaWeb() {
                     })}
                   </div>
 
-                  <div className={`mt-10 rounded-2xl p-6 text-center shadow-sm ${
-                    theme === 'dark'
-                      ? 'border border-emerald-900/40 bg-[#0d1715]'
-                      : 'bg-white/70'
-                  }`}>
+                  <div className="faq-contact mt-10 rounded-2xl p-6 text-center shadow-sm">
                     <p className="text-gray-700">Nenašli jste odpověď?</p>
 
                     <p className="mt-2 text-sm text-gray-600">
