@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { db } from './firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
-const ACTIVE_SEASON = '2025-2026';
-
 export default function AskLipuvkaWeb() {
   const navigate = useNavigate();
 
@@ -36,6 +34,11 @@ export default function AskLipuvkaWeb() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'light';
+    return localStorage.getItem('ask-lipuvka-theme') || 'light';
+  });
+
 
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
@@ -99,21 +102,18 @@ export default function AskLipuvkaWeb() {
   const newsItems = [
     {
       category: 'mladsi-pripravka',
-      season: '2025-2026',
       title: 'Otevření nové hospody na Zelený čtvrtek',
       text: 'Na Zelený čtvrtek, tedy 2. 4., bude na areálu otevřena nová hospoda. Na otvíračku bude připravené i zelené pivo.',
       date: '2. 4. 2026',
     },
     {
       category: 'predpripravka',
-      season: '2025-2026',
       title: 'Předpřípravka je připravena na další ročník',
       text: 'Kategorie je na webu nachystaná. Jakmile bude známý program a další informace, snadno doplníme novinky i zápasy.',
       date: '1. 4. 2026',
     },
     {
       category: 'starsi-pripravka',
-      season: '2025-2026',
       title: 'Starší přípravka je připravena do budoucna',
       text: 'Kategorie je založená dopředu, aby bylo možné snadno doplnit zápasy, trenéry i další novinky pro příští sezonu.',
       date: '1. 4. 2026',
@@ -209,8 +209,6 @@ export default function AskLipuvkaWeb() {
   const matches = [
     {
       category: 'mladsi-pripravka',
-      season: '2025-2026',
-      status: 'played',
       date: '15. 3. 2026',
       opponent: 'Halový turnaj Blansko',
       time: '---',
@@ -230,8 +228,6 @@ export default function AskLipuvkaWeb() {
     },
     {
       category: 'mladsi-pripravka',
-      season: '2025-2026',
-      status: 'planned',
       date: '2. 4. 2026',
       opponent: 'RDR RJY/RJ',
       time: '17:00 / 18:00',
@@ -250,8 +246,6 @@ export default function AskLipuvkaWeb() {
     },
     {
       category: 'mladsi-pripravka',
-      season: '2025-2026',
-      status: 'planned',
       date: '9. 4. 2026',
       opponent: 'RDR DX/D',
       time: '17:00 / 18:00',
@@ -270,8 +264,6 @@ export default function AskLipuvkaWeb() {
     },
     {
       category: 'mladsi-pripravka',
-      season: '2025-2026',
-      status: 'planned',
       date: '14. 4. 2026',
       opponent: 'Olomučany/Babice',
       time: '17:00 / 18:00',
@@ -290,8 +282,6 @@ export default function AskLipuvkaWeb() {
     },
     {
       category: 'mladsi-pripravka',
-      season: '2025-2026',
-      status: 'planned',
       date: '23. 4. 2026',
       opponent: 'Ostrov/Lipovec',
       time: '17:00 / 18:00',
@@ -310,8 +300,6 @@ export default function AskLipuvkaWeb() {
     },
     {
       category: 'mladsi-pripravka',
-      season: '2025-2026',
-      status: 'planned',
       date: '30. 4. 2026',
       opponent: 'Blansko C + (pozveme 1 tým)',
       time: '17:00 / 18:00',
@@ -330,8 +318,6 @@ export default function AskLipuvkaWeb() {
     },
     {
       category: 'mladsi-pripravka',
-      season: '2025-2026',
-      status: 'planned',
       date: '12. 5. 2026',
       opponent: 'Kras',
       time: '17:00 / 18:00',
@@ -350,8 +336,6 @@ export default function AskLipuvkaWeb() {
     },
     {
       category: 'mladsi-pripravka',
-      season: '2025-2026',
-      status: 'planned',
       date: '14. 5. 2026',
       opponent: 'Blansko A a B',
       time: '17:00 / 18:00',
@@ -370,8 +354,6 @@ export default function AskLipuvkaWeb() {
     },
     {
       category: 'mladsi-pripravka',
-      season: '2025-2026',
-      status: 'planned',
       date: '24. 5. 2026',
       opponent: 'Knínice',
       time: '10:15',
@@ -390,8 +372,6 @@ export default function AskLipuvkaWeb() {
     },
     {
       category: 'mladsi-pripravka',
-      season: '2025-2026',
-      status: 'planned',
       date: '28. 5. 2026',
       opponent: 'Boskovice',
       time: '17:00 / 18:00',
@@ -410,8 +390,6 @@ export default function AskLipuvkaWeb() {
     },
     {
       category: 'mladsi-pripravka',
-      season: '2025-2026',
-      status: 'planned',
       date: '4. 6. 2026',
       opponent: 'Letovice',
       time: '16:30 / 17:30',
@@ -430,8 +408,6 @@ export default function AskLipuvkaWeb() {
     },
     {
       category: 'mladsi-pripravka',
-      season: '2025-2026',
-      status: 'planned',
       date: '14. 6. 2026',
       opponent: 'RDR/RY + závěrečná',
       time: '14:00 / 15:00',
@@ -467,22 +443,16 @@ export default function AskLipuvkaWeb() {
   };
 
   const availableNews = useMemo(() => {
-    const source = firebaseNews.length > 0 ? firebaseNews : newsItems;
-    return source.filter((item) => (item.season || '2025-2026') === ACTIVE_SEASON);
+    return firebaseNews.length > 0 ? firebaseNews : newsItems;
   }, [firebaseNews]);
 
   const availableMatches = useMemo(() => {
-    const source = firebaseMatches.length > 0 ? firebaseMatches : matches;
-    return source.filter((match) => (match.season || '2025-2026') === ACTIVE_SEASON);
+    return firebaseMatches.length > 0 ? firebaseMatches : matches;
   }, [firebaseMatches]);
 
-  const availableGallery = useMemo(() => {
-    return firebaseGallery.filter((album) => (album.season || '2025-2026') === ACTIVE_SEASON);
-  }, [firebaseGallery]);
-
   const globalGalleryAlbums = useMemo(() => {
-    return availableGallery.filter((album) => album.type === 'global');
-  }, [availableGallery]);
+    return firebaseGallery.filter((album) => album.type === 'global');
+  }, [firebaseGallery]);
 
   const getAlbumMatchDate = (albumId) => {
     const linkedMatch = availableMatches.find((match) => match.galleryAlbumId === albumId);
@@ -495,10 +465,10 @@ export default function AskLipuvkaWeb() {
   };
 
   const teamGalleryAlbums = useMemo(() => {
-    return availableGallery
+    return firebaseGallery
       .filter((album) => album.type === 'team' && album.category === activeCategory)
       .sort((a, b) => getAlbumMatchDate(b.id) - getAlbumMatchDate(a.id));
-  }, [availableGallery, activeCategory, availableMatches]);
+  }, [firebaseGallery, activeCategory, availableMatches]);
 
   const visibleTeamGalleryAlbums = useMemo(() => {
     return showAllTeamAlbums ? teamGalleryAlbums : teamGalleryAlbums.slice(0, 3);
@@ -520,16 +490,12 @@ export default function AskLipuvkaWeb() {
     .filter((m) => {
       const matchDate = parseMatchDate(m.date);
       const diffDays = (matchDate - todayStart) / (1000 * 60 * 60 * 24);
-      const isPlayed = m.status === 'played';
-      return !isPlayed && diffDays >= 0 && diffDays <= 14;
+      return diffDays >= 0 && diffDays <= 14;
     })
     .sort((a, b) => parseMatchDate(a.date) - parseMatchDate(b.date));
 
   const playedMatches = filteredMatches
-    .filter((m) => {
-      const matchDate = parseMatchDate(m.date);
-      return m.status === 'played' || matchDate < todayStart;
-    })
+    .filter((m) => parseMatchDate(m.date) < todayStart)
     .sort((a, b) => parseMatchDate(b.date) - parseMatchDate(a.date));
 
   const latestPlayedMatch = playedMatches.length > 0 ? playedMatches[0] : null;
@@ -595,11 +561,15 @@ export default function AskLipuvkaWeb() {
     }
   };
 
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
   const activeCategoryStyle = getCategoryStyle(activeCategory);
 
   const getMatchAlbum = (match) => {
     if (!match?.galleryAlbumId) return null;
-    return availableGallery.find((album) => album.id === match.galleryAlbumId) || null;
+    return firebaseGallery.find((album) => album.id === match.galleryAlbumId) || null;
   };
 
   const openMatchPhotoReport = (match) => {
@@ -834,6 +804,16 @@ export default function AskLipuvkaWeb() {
     isScheduleOpen,
   ]);
 
+  useEffect(() => {
+    document.documentElement.classList.toggle('theme-dark', theme === 'dark');
+    document.documentElement.style.colorScheme = theme;
+    localStorage.setItem('ask-lipuvka-theme', theme);
+
+    return () => {
+      document.documentElement.style.colorScheme = '';
+    };
+  }, [theme]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -927,7 +907,7 @@ export default function AskLipuvkaWeb() {
 
   const renderMatchCard = (m, showResult = true) => {
     const isToday = isSameDay(parseMatchDate(m.date), todayStart);
-    const isPlayed = m.status === 'played' || parseMatchDate(m.date) < todayStart;
+    const isPlayed = parseMatchDate(m.date) < todayStart;
     const categoryStyle = getCategoryStyle(m.category);
     const hasPhotoReport = isPlayed && Boolean(getMatchAlbum(m));
 
@@ -1016,6 +996,7 @@ export default function AskLipuvkaWeb() {
       </div>
     );
   };
+
 
   const renderLatestPlayedHighlight = (m) => {
     if (!m) return null;
@@ -1253,6 +1234,17 @@ export default function AskLipuvkaWeb() {
             </div>
           </a>
 
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="theme-toggle-button hidden md:inline-flex"
+              aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
+            >
+              <span>{theme === 'light' ? '🌙' : '☀️'}</span>
+              <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
+            </button>
+
           <nav className="hidden gap-6 text-sm md:flex">
             <a href="#novinky" className="hover:text-green-600">Novinky</a>
             <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
@@ -1381,6 +1373,16 @@ export default function AskLipuvkaWeb() {
               Kde nás najdete
             </button>
           </nav>
+          </div>
+
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="theme-toggle-button md:hidden"
+            aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
+          >
+            <span>{theme === 'light' ? '🌙' : '☀️'}</span>
+          </button>
 
           <button
             type="button"
@@ -1590,13 +1592,9 @@ export default function AskLipuvkaWeb() {
             ASK Lipůvka
           </h1>
 
-          <p className="mb-2 text-sm text-white/80 md:text-base">
+          <p className="mb-6 text-sm text-white/80 md:text-base">
             Oficiální klubový web mládeže ASK Lipůvka
           </p>
-
-          <div className="mb-6 inline-flex rounded-full bg-white/15 px-4 py-2 text-xs font-bold uppercase tracking-wide text-white backdrop-blur">
-            Sezóna {ACTIVE_SEASON}
-          </div>
 
           <div className="flex flex-wrap justify-center gap-3">
             {categories.map((category) => {
@@ -1655,9 +1653,6 @@ export default function AskLipuvkaWeb() {
             <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
               {activeCategoryShortLabel}
             </span>
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-700">
-              {ACTIVE_SEASON}
-            </span>
           </div>
 
           <h2 className={`mb-4 text-3xl font-bold ${activeCategoryStyle.text}`}>Novinky</h2>
@@ -1690,9 +1685,6 @@ export default function AskLipuvkaWeb() {
           <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
             {activeCategoryShortLabel}
           </span>
-          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
-            {ACTIVE_SEASON}
-          </span>
         </div>
 
         <div className="mb-6">
@@ -1703,7 +1695,7 @@ export default function AskLipuvkaWeb() {
             onClick={() => setIsScheduleOpen(true)}
             className={`mt-4 rounded-xl px-6 py-3 font-semibold transition hover:scale-[1.02] ${activeCategoryStyle.button}`}
           >
-            Rozpis zápasů – aktivní sezóna
+            Rozpis zápasů – Jaro 2026
           </button>
         </div>
 
@@ -1725,9 +1717,6 @@ export default function AskLipuvkaWeb() {
           </div>
           <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
             {activeCategoryShortLabel}
-          </span>
-          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
-            {ACTIVE_SEASON}
           </span>
         </div>
 
@@ -1796,9 +1785,6 @@ export default function AskLipuvkaWeb() {
             </div>
             <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
               {activeCategoryShortLabel}
-            </span>
-            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-700">
-              {ACTIVE_SEASON}
             </span>
           </div>
 
@@ -1869,10 +1855,6 @@ export default function AskLipuvkaWeb() {
               >
                 ×
               </button>
-
-              <div className="mb-2 inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
-                Sezóna {ACTIVE_SEASON}
-              </div>
 
               <h2 className="mb-6 text-3xl font-bold text-green-600">Galerie ASK Lipůvka</h2>
 
@@ -2598,7 +2580,7 @@ export default function AskLipuvkaWeb() {
                     {activeCategoryLabel}
                   </div>
                   <h2 className="text-3xl font-black md:text-4xl">Rozpis zápasů</h2>
-                  <p className="mt-2 text-lg text-white/90">Sezóna {ACTIVE_SEASON}</p>
+                  <p className="mt-2 text-lg text-white/90">Jaro 2026</p>
                 </div>
               </div>
 

@@ -15,6 +15,11 @@ export default function MatchDetail() {
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(null);
 
   const touchStartX = useRef(null);
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'light';
+    return localStorage.getItem('ask-lipuvka-theme') || 'light';
+  });
+
   const touchEndX = useRef(null);
 
   const categories = [
@@ -154,6 +159,20 @@ export default function MatchDetail() {
       document.body.style.overflow = '';
     };
   }, [selectedAlbum, selectedPhotoIndex]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  };
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('theme-dark', theme === 'dark');
+    document.documentElement.style.colorScheme = theme;
+    localStorage.setItem('ask-lipuvka-theme', theme);
+
+    return () => {
+      document.documentElement.style.colorScheme = '';
+    };
+  }, [theme]);
 
   const linkedAlbum = useMemo(() => {
     if (!match?.galleryAlbumId) return null;
@@ -356,13 +375,25 @@ export default function MatchDetail() {
             </div>
           </Link>
 
-          <button
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="theme-toggle-button"
+              aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
+            >
+              <span>{theme === 'light' ? '🌙' : '☀️'}</span>
+              <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
+            </button>
+
+            <button
             type="button"
             onClick={() => navigate('/')}
             className="inline-flex items-center justify-center rounded-2xl bg-green-600 px-6 py-3 text-base font-bold text-white transition hover:bg-green-700"
           >
             ← Zpět na hlavní stránku
           </button>
+          </div>
         </div>
       </div>
 
