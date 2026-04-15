@@ -1375,7 +1375,7 @@ export default function AskLipuvkaWeb() {
           </nav>
           </div>
 
-          <button
+<button
             type="button"
             onClick={() => setIsMobileMenuOpen(true)}
             className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-300 md:hidden"
@@ -1565,11 +1565,11 @@ export default function AskLipuvkaWeb() {
                 Trenéři
               </button>
 
-              <div className="mt-auto border-t px-5 py-4">
+              <div className="mt-auto border-t px-5 py-5">
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="flex w-full items-center justify-between rounded-2xl border border-gray-300 bg-white px-4 py-3 text-left font-semibold text-gray-800"
+                  className="flex w-full items-center justify-between rounded-2xl border border-gray-300 bg-white px-4 py-4 text-left text-base font-semibold text-gray-800 shadow-sm"
                   aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
                 >
                   <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
@@ -2146,17 +2146,13 @@ export default function AskLipuvkaWeb() {
                           <button
                             type="button"
                             onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                            className={`flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition ${
-                              theme === 'dark'
-                                ? 'bg-[#101816] text-gray-100 hover:bg-[#17221f]'
-                                : 'text-gray-900 hover:bg-[#faf7f2]'
-                            }`}
+                            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-gray-900 transition hover:bg-[#faf7f2] hover:text-gray-900"
                           >
                             <div className="flex items-start gap-3">
                               <span className="mt-0.5 text-lg">❓</span>
-                              <span className={theme === 'dark' ? 'font-semibold text-gray-100' : 'font-semibold text-gray-900'}>{item.question}</span>
+                              <span className="font-semibold text-gray-900">{item.question}</span>
                             </div>
-                            <span className={theme === 'dark' ? 'text-xl text-green-300' : 'text-xl text-green-700'}>{isOpen ? '−' : '+'}</span>
+                            <span className="text-xl text-green-700">{isOpen ? '−' : '+'}</span>
                           </button>
 
                           {isOpen && (
