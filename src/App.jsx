@@ -1234,11 +1234,11 @@ export default function AskLipuvkaWeb() {
             </div>
           </a>
 
-          <div className="flex items-center gap-3">
+          <div className="hidden items-center gap-3 md:flex">
             <button
               type="button"
               onClick={toggleTheme}
-              className="theme-toggle-button hidden md:inline-flex"
+              className="theme-toggle-button"
               aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
             >
               <span>{theme === 'light' ? '🌙' : '☀️'}</span>
@@ -1375,7 +1375,7 @@ export default function AskLipuvkaWeb() {
           </nav>
           </div>
 
-<button
+          <button
             type="button"
             onClick={() => setIsMobileMenuOpen(true)}
             className="flex h-11 w-11 items-center justify-center rounded-xl border border-gray-300 md:hidden"
@@ -1569,11 +1569,11 @@ export default function AskLipuvkaWeb() {
                 <button
                   type="button"
                   onClick={toggleTheme}
-                  className="flex w-full items-center justify-between rounded-2xl border border-gray-300 bg-white px-4 py-4 text-left text-base font-semibold text-gray-800 shadow-sm"
+                  className="theme-toggle-button w-full justify-center"
                   aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
                 >
+                  <span>{theme === 'light' ? '🌙' : '☀️'}</span>
                   <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
-                  <span className="text-xl">{theme === 'light' ? '🌙' : '☀️'}</span>
                 </button>
               </div>
             </div>
@@ -2146,7 +2146,7 @@ export default function AskLipuvkaWeb() {
                           <button
                             type="button"
                             onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-gray-900 transition hover:bg-[#faf7f2] hover:text-gray-900"
+                            className={`flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-gray-900 transition ${isOpen ? 'bg-[#faf7f2] text-gray-900' : 'hover:bg-[#faf7f2]'} `}
                           >
                             <div className="flex items-start gap-3">
                               <span className="mt-0.5 text-lg">❓</span>
