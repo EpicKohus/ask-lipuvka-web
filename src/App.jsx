@@ -1404,7 +1404,7 @@ export default function AskLipuvkaWeb() {
             className="ml-auto flex h-full w-[88%] max-w-sm flex-col overflow-y-auto rounded-l-[2rem] border-l border-white/20 bg-gradient-to-b from-[#0f1a17] via-[#0c1513] to-[#08110f] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="border-b border-gray-200/80 bg-white px-5 pb-5 pt-6">
+            <div className="border-b border-[#e7dccb] bg-white px-5 pb-5 pt-6">
               <div className="mb-2 flex items-start justify-between gap-3">
                 <div className="flex items-center gap-3">
                   <img src="/logo.png" alt="logo" className="h-11 w-11 rounded-full ring-2 ring-green-100" />
@@ -1455,25 +1455,25 @@ export default function AskLipuvkaWeb() {
               </button>
 
               {isMobileTeamsDropdownOpen && (
-                <div className="mx-2 mb-2 flex flex-col rounded-2xl border border-gray-200 bg-gray-50/90 p-2">
+                <div className="mx-2 mb-2 flex flex-col rounded-2xl border border-[#e8dece] bg-white/80 p-2 shadow-sm">
                   <button
                     type="button"
                     onClick={() => selectTeam('predpripravka')}
-                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-white"
+                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-[#f8f4ed]"
                   >
                     U7 – Předpřípravka
                   </button>
                   <button
                     type="button"
                     onClick={() => selectTeam('mladsi-pripravka')}
-                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-white"
+                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-[#f8f4ed]"
                   >
                     U9 – Mladší přípravka
                   </button>
                   <button
                     type="button"
                     onClick={() => selectTeam('starsi-pripravka')}
-                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-white"
+                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-[#f8f4ed]"
                   >
                     U11 – Starší přípravka
                   </button>
@@ -1497,11 +1497,11 @@ export default function AskLipuvkaWeb() {
               </button>
 
               {isMobileClubDropdownOpen && (
-                <div className="mx-2 mb-2 flex flex-col rounded-2xl border border-gray-200 bg-gray-50/90 p-2">
+                <div className="mx-2 mb-2 flex flex-col rounded-2xl border border-[#e8dece] bg-white/80 p-2 shadow-sm">
                   <button
                     type="button"
                     onClick={() => openClubPopup('filozofie')}
-                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-white"
+                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-[#f8f4ed]"
                   >
                     Filozofie
                   </button>
@@ -1509,7 +1509,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={() => openClubPopup('rodice')}
-                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-white"
+                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-[#f8f4ed]"
                   >
                     Pro rodiče
                   </button>
@@ -1517,7 +1517,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={() => openClubPopup('faq')}
-                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-white"
+                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-[#f8f4ed]"
                   >
                     FAQ
                   </button>
@@ -1525,7 +1525,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={() => openClubPopup('nabor')}
-                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-white"
+                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-[#f8f4ed]"
                   >
                     Nábor hráčů
                   </button>
@@ -1533,7 +1533,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={openRegistration}
-                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-white"
+                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-[#f8f4ed]"
                   >
                     Registrace hráče
                   </button>
@@ -1541,7 +1541,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={() => openClubPopup('podnety')}
-                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-white"
+                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-[#f8f4ed]"
                   >
                     Kniha podnětů
                   </button>
