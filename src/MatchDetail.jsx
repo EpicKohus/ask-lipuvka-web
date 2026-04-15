@@ -19,7 +19,6 @@ export default function MatchDetail() {
     if (typeof window === 'undefined') return 'light';
     return localStorage.getItem('ask-lipuvka-theme') || 'light';
   });
-
   const touchEndX = useRef(null);
 
   const categories = [
@@ -64,6 +63,7 @@ export default function MatchDetail() {
           text: 'text-green-600',
           button: 'bg-green-600 text-white hover:bg-green-700',
           soft: 'bg-green-50 border-green-200',
+          ring: 'ring-green-200',
         };
       case 'starsi-pripravka':
         return {
@@ -71,6 +71,7 @@ export default function MatchDetail() {
           text: 'text-orange-600',
           button: 'bg-orange-500 text-white hover:bg-orange-600',
           soft: 'bg-orange-50 border-orange-200',
+          ring: 'ring-orange-200',
         };
       default:
         return {
@@ -78,6 +79,7 @@ export default function MatchDetail() {
           text: 'text-blue-600',
           button: 'bg-blue-600 text-white hover:bg-blue-700',
           soft: 'bg-blue-50 border-blue-200',
+          ring: 'ring-blue-200',
         };
     }
   };
@@ -344,6 +346,21 @@ export default function MatchDetail() {
   const score1 = match.result1?.trim();
   const score2 = match.result2?.trim();
   const hasResults = Boolean(score1 || score2);
+  const block1Label = match.matchLabel1?.trim() || '1. blok';
+  const block2Label = match.matchLabel2?.trim() || '2. blok';
+
+  const matchName = match.home
+    ? `ASK Lipůvka vs. ${match.opponent}`
+    : `${match.opponent} vs. ASK Lipůvka`;
+
+  const infoChips = [
+    { label: getCategoryLabel(match.category) },
+    { label: match.date },
+    { label: match.time },
+    { label: match.home ? 'Domácí zápas' : 'Venkovní zápas' },
+    { label: match.home ? 'Lipůvka' : match.venue || 'bude doplněno' },
+    { label: isPlayed ? 'Odehráno' : 'Zápas před námi' },
+  ];
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -384,114 +401,122 @@ export default function MatchDetail() {
       </div>
 
       <section className="mx-auto max-w-6xl px-6 pt-6">
-        <div className="relative overflow-hidden rounded-3xl shadow-xl">
+        <div className="relative overflow-hidden rounded-[2rem] shadow-xl ring-1 ring-black/5">
           {!isVideoFile(heroImage) ? (
             <img
               src={heroImage}
               alt="Zápas ASK Lipůvka"
-              className="h-[320px] w-full object-cover md:h-[380px]"
+              className="h-[340px] w-full object-cover md:h-[420px]"
             />
           ) : (
             <video
               src={heroImage}
-              className="h-[320px] w-full object-cover md:h-[380px]"
+              className="h-[340px] w-full object-cover md:h-[420px]"
               muted
               playsInline
               preload="metadata"
             />
           )}
 
-          <div className="absolute inset-0 bg-black/45" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/15" />
 
           <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
             <div className="mb-4 flex flex-wrap gap-2">
               <span className={`rounded-full px-3 py-1 text-xs font-bold ${categoryStyle.badge}`}>
                 {getCategoryShortLabel(match.category)}
               </span>
-
               <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-                {getCategoryLabel(match.category)}
-              </span>
-
-              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-                {isPlayed ? 'Odehráno' : 'Zápas před námi'}
+                Detail zápasu
               </span>
             </div>
 
-            <h1 className="max-w-4xl text-3xl font-black text-white drop-shadow md:text-5xl">
-              {match.home
-                ? `ASK Lipůvka vs. ${match.opponent}`
-                : `${match.opponent} vs. ASK Lipůvka`}
+            <h1 className="max-w-4xl text-3xl font-black leading-tight text-white drop-shadow md:text-5xl">
+              {matchName}
             </h1>
 
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-white/90 md:text-base">
-              <span>{match.date}</span>
-              <span>•</span>
-              <span>{match.time}</span>
-              <span>•</span>
-              <span>{match.home ? 'Domácí zápas' : 'Venkovní zápas'}</span>
-              <span>•</span>
-              <span>{match.home ? 'Lipůvka' : match.venue || 'bude doplněno'}</span>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {infoChips.map((chip) => (
+                <span
+                  key={chip.label}
+                  className="rounded-full bg-white/12 px-3 py-2 text-xs font-semibold text-white/95 backdrop-blur md:text-sm"
+                >
+                  {chip.label}
+                </span>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl space-y-10 px-6 py-10">
-        <div className={`rounded-3xl border p-6 shadow-sm ${categoryStyle.soft}`}>
-          <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>Výsledek</h2>
-
-          {hasResults ? (
-            <div className="space-y-5">
-              {score1 && (
-                <div className="rounded-2xl bg-white p-5 shadow-sm">
-                  <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
-                    {match.matchLabel1?.trim() || '1. blok'}
-                  </div>
-
-                  <div className="text-4xl font-black leading-tight text-gray-900 md:text-5xl">
-                    {score1}
-                  </div>
-
-                  <div className="mt-4 text-sm text-gray-700">{renderScorers(scorers1)}</div>
-                </div>
-              )}
-
-              {score2 && (
-                <div className="rounded-2xl bg-white p-5 shadow-sm">
-                  <div className="mb-2 text-sm font-bold uppercase tracking-wide text-gray-500">
-                    {match.matchLabel2?.trim() || '2. blok'}
-                  </div>
-
-                  <div className="text-4xl font-black leading-tight text-gray-900 md:text-5xl">
-                    {score2}
-                  </div>
-
-                  <div className="mt-4 text-sm text-gray-700">{renderScorers(scorers2)}</div>
-                </div>
-              )}
+      <section className="mx-auto max-w-6xl space-y-8 px-6 py-10">
+        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+          <div className={`rounded-3xl border p-6 shadow-sm ${categoryStyle.soft}`}>
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h2 className={`text-2xl font-bold ${categoryStyle.text}`}>Výsledek zápasu</h2>
+              <span className="rounded-full bg-white/80 px-3 py-1 text-xs font-bold uppercase tracking-wide text-gray-600">
+                {isPlayed ? 'Po zápase' : 'Před zápasem'}
+              </span>
             </div>
-          ) : (
-            <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
-              Tento zápas ještě nebyl odehrán. Výsledek doplníme po utkání.
-            </div>
-          )}
-        </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+            {hasResults ? (
+              <div className="space-y-4">
+                {score1 && (
+                  <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <div className="text-sm font-bold uppercase tracking-wide text-gray-500">
+                        {block1Label}
+                      </div>
+                    </div>
+
+                    <div className="text-2xl font-black leading-tight text-gray-900 md:text-3xl">
+                      {score1}
+                    </div>
+
+                    <div className="mt-4 text-sm text-gray-700">{renderScorers(scorers1)}</div>
+                  </div>
+                )}
+
+                {score2 && (
+                  <div className="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-black/5">
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <div className="text-sm font-bold uppercase tracking-wide text-gray-500">
+                        {block2Label}
+                      </div>
+                    </div>
+
+                    <div className="text-2xl font-black leading-tight text-gray-900 md:text-3xl">
+                      {score2}
+                    </div>
+
+                    <div className="mt-4 text-sm text-gray-700">{renderScorers(scorers2)}</div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm ring-1 ring-black/5">
+                Tento zápas ještě nebyl odehrán. Výsledek doplníme po utkání.
+              </div>
+            )}
+          </div>
+
           <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>
-              {isPlayed ? 'Report' : 'Info k zápasu'}
-            </h2>
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h2 className={`text-2xl font-bold ${categoryStyle.text}`}>
+                {isPlayed ? 'Match report' : 'Info k zápasu'}
+              </h2>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${categoryStyle.badge}`}>
+                {getCategoryShortLabel(match.category)}
+              </span>
+            </div>
 
-            <div className="rounded-2xl bg-gray-50 p-5">
+            <div className="rounded-2xl bg-gray-50 p-5 ring-1 ring-black/5">
               {match.articleTitle?.trim() && (
                 <div className="mb-3 text-xl font-bold text-gray-900">
                   {match.articleTitle}
                 </div>
               )}
 
-              <p className="leading-7 text-gray-700">
+              <p className="leading-8 text-gray-700">
                 {match.article ||
                   (isPlayed
                     ? 'Komentář zápasu bude doplněn.'
@@ -499,25 +524,56 @@ export default function MatchDetail() {
               </p>
             </div>
           </div>
+        </div>
 
-          {!hasAlbum && (
-            <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-              <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>Fotky</h2>
+        {!hasAlbum && (
+          <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h2 className={`text-2xl font-bold ${categoryStyle.text}`}>Fotky ze zápasu</h2>
+              {hasInlinePhotos && (
+                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
+                  {cleanPhotos.length} fotek
+                </span>
+              )}
+            </div>
 
-              {hasInlinePhotos ? (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
-                    {cleanPhotos.slice(0, 2).map((photo, index) =>
+            {hasInlinePhotos ? (
+              <>
+                <div className="grid gap-4 md:grid-cols-[1.25fr_0.75fr]">
+                  <button
+                    type="button"
+                    onClick={() => openInlinePhotoGallery(0)}
+                    className="overflow-hidden rounded-3xl"
+                  >
+                    {isVideoFile(cleanPhotos[0]) ? (
+                      <video
+                        src={cleanPhotos[0]}
+                        className="h-[320px] w-full object-cover transition hover:scale-[1.02]"
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                    ) : (
+                      <img
+                        src={cleanPhotos[0]}
+                        alt="Hlavní fotka zápasu"
+                        className="h-[320px] w-full object-cover transition hover:scale-[1.02]"
+                      />
+                    )}
+                  </button>
+
+                  <div className="grid grid-cols-2 gap-4 md:grid-cols-1">
+                    {cleanPhotos.slice(1, 3).map((photo, index) =>
                       isVideoFile(photo) ? (
                         <button
                           type="button"
                           key={`${photo}-${index}`}
-                          onClick={() => openInlinePhotoGallery(index)}
+                          onClick={() => openInlinePhotoGallery(index + 1)}
                           className="relative overflow-hidden rounded-2xl bg-black"
                         >
                           <video
                             src={photo}
-                            className="h-44 w-full object-cover"
+                            className="h-[152px] w-full object-cover transition hover:scale-105"
                             muted
                             playsInline
                             preload="metadata"
@@ -532,41 +588,46 @@ export default function MatchDetail() {
                         <button
                           type="button"
                           key={`${photo}-${index}`}
-                          onClick={() => openInlinePhotoGallery(index)}
+                          onClick={() => openInlinePhotoGallery(index + 1)}
                           className="overflow-hidden rounded-2xl"
                         >
                           <img
                             src={photo}
-                            alt={`Fotka ze zápasu ${index + 1}`}
-                            className="h-44 w-full object-cover transition hover:scale-105"
+                            alt={`Fotka ze zápasu ${index + 2}`}
+                            className="h-[152px] w-full object-cover transition hover:scale-105"
                           />
                         </button>
                       )
                     )}
                   </div>
-
-                  {cleanPhotos.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => openInlinePhotoGallery(0)}
-                      className={`mt-4 w-full rounded-2xl px-5 py-3 font-bold transition ${categoryStyle.button}`}
-                    >
-                      Zobrazit všechny fotky
-                    </button>
-                  )}
-                </>
-              ) : (
-                <div className="rounded-2xl bg-gray-50 p-5 text-gray-600">
-                  Fotky ze zápasu zatím nejsou doplněné.
                 </div>
-              )}
-            </div>
-          )}
-        </div>
+
+                <div className="mt-5">
+                  <button
+                    type="button"
+                    onClick={() => openInlinePhotoGallery(0)}
+                    className={`rounded-2xl px-5 py-3 font-bold transition ${categoryStyle.button}`}
+                  >
+                    Zobrazit všechny fotky
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="rounded-2xl bg-gray-50 p-5 text-gray-600">
+                Fotky ze zápasu zatím nejsou doplněné.
+              </div>
+            )}
+          </div>
+        )}
 
         {hasAlbum && (
           <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-            <h2 className={`mb-5 text-2xl font-bold ${categoryStyle.text}`}>Napojené album</h2>
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h2 className={`text-2xl font-bold ${categoryStyle.text}`}>Fotoreport</h2>
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
+                {linkedAlbum.photos?.length || 0} položek
+              </span>
+            </div>
 
             <div className="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
               <div className="relative">
@@ -574,36 +635,37 @@ export default function MatchDetail() {
                   <img
                     src={linkedAlbum.cover || linkedAlbum.photos?.[0] || '/field.png'}
                     alt={linkedAlbum.title}
-                    className="h-[280px] w-full object-cover"
+                    className="h-[300px] w-full object-cover"
                   />
                 ) : (
                   <video
                     src={linkedAlbum.cover || linkedAlbum.photos?.[0]}
-                    className="h-[280px] w-full object-cover"
+                    className="h-[300px] w-full object-cover"
                     muted
                     playsInline
                     preload="metadata"
                   />
                 )}
 
-                <div className="absolute inset-0 bg-black/30" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
                 <div className="absolute bottom-0 left-0 p-5 text-white">
                   <div className="text-sm font-semibold text-white/90">Napojené album</div>
                   <div className="text-2xl font-black">{linkedAlbum.title}</div>
-                  <div className="mt-1 text-sm text-white/90">
-                    {linkedAlbum.photos?.length || 0} položek
-                  </div>
                 </div>
               </div>
 
-              <div className="p-5">
+              <div className="flex flex-col gap-4 p-5 md:flex-row md:items-center md:justify-between">
+                <p className="text-sm leading-7 text-gray-600">
+                  Otevři si kompletní fotoreport ze zápasu včetně všech napojených fotek nebo videí.
+                </p>
+
                 <button
                   type="button"
                   onClick={openAlbum}
-                  className={`w-full rounded-2xl px-5 py-3 font-bold transition ${categoryStyle.button}`}
+                  className={`rounded-2xl px-5 py-3 font-bold transition ${categoryStyle.button}`}
                 >
-                  Fotky ze zápasu
+                  Otevřít fotoreport
                 </button>
               </div>
             </div>
