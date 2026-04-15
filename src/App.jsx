@@ -1223,16 +1223,6 @@ export default function AskLipuvkaWeb() {
           0%, 100% { transform: translateY(0); opacity: 0.85; }
           50% { transform: translateY(6px); opacity: 1; }
         }
-
-        @keyframes mobileMenuSlideIn {
-          from { opacity: 0; transform: translateX(28px) scale(0.985); }
-          to { opacity: 1; transform: translateX(0) scale(1); }
-        }
-
-        @keyframes mobileMenuFadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
       `}</style>
 
       <header className="sticky top-0 z-20 border-b bg-white/90 backdrop-blur">
@@ -1244,11 +1234,11 @@ export default function AskLipuvkaWeb() {
             </div>
           </a>
 
-          <div className="flex items-center gap-3">
+          <div className="hidden items-center gap-3 md:flex">
             <button
               type="button"
               onClick={toggleTheme}
-              className="theme-toggle-button hidden md:inline-flex"
+              className="theme-toggle-button"
               aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
             >
               <span>{theme === 'light' ? '🌙' : '☀️'}</span>
@@ -1407,11 +1397,11 @@ export default function AskLipuvkaWeb() {
 
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 md:hidden" style={{ animation: 'mobileMenuFadeIn 0.18s ease-out' }}
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div
-            className="ml-auto flex h-full w-[88%] max-w-sm flex-col overflow-y-auto rounded-l-[2rem] border-l border-white/20 bg-gradient-to-b from-[#0f1a17] via-[#0c1513] to-[#08110f] shadow-2xl" style={{ animation: 'mobileMenuSlideIn 0.22s ease-out' }}
+            className="ml-auto flex h-full w-[88%] max-w-sm flex-col overflow-y-auto rounded-l-[2rem] border-l border-white/20 bg-gradient-to-b from-[#0f1a17] via-[#0c1513] to-[#08110f] shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="border-b border-gray-200/80 bg-white px-5 pb-5 pt-6">
@@ -1437,43 +1427,32 @@ export default function AskLipuvkaWeb() {
                   ×
                 </button>
               </div>
-
-              
-                <div className="mt-1 text-sm text-gray-600">
-                  Vyber si sekci webu nebo tým, který tě zajímá.
-                </div>
-              </div>
+            </div>
             </div>
 
             <div className="flex flex-1 flex-col px-3 pb-4 pt-3">
               <a
                 href="#novinky"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="mx-2 flex items-center gap-3 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
+                className="mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
               >
-                <span className="text-xl">📰</span>
-                <span>Novinky</span>
+                Novinky
               </a>
 
               <a
                 href="#zapasy"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className="mx-2 flex items-center gap-3 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
+                className="mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
               >
-                <span className="text-xl">⚽</span>
-                <span>Zápasy</span>
+                Zápasy
               </a>
 
               <button
                 type="button"
                 onClick={() => setIsMobileTeamsDropdownOpen((prev) => !prev)}
-                className="mx-2 flex items-center justify-between gap-3 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
+                className="mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
               >
-                <span className="flex items-center gap-3">
-                  <span className="text-xl">👥</span>
-                  <span>Týmy</span>
-                </span>
-                <span>{isMobileTeamsDropdownOpen ? '▲' : '▼'}</span>
+                Týmy {isMobileTeamsDropdownOpen ? '▲' : '▼'}
               </button>
 
               {isMobileTeamsDropdownOpen && (
@@ -1481,44 +1460,23 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={() => selectTeam('predpripravka')}
-                    className={`rounded-xl px-4 py-3 text-left transition hover:bg-white ${
-                      activeCategory === 'predpripravka'
-                        ? 'bg-white font-semibold text-blue-700 shadow-sm'
-                        : 'text-gray-700'
-                    }`}
+                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-white"
                   >
-                    <span className="flex items-center justify-between gap-3">
-                      <span>U7 – Předpřípravka</span>
-                      {activeCategory === 'predpripravka' && <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700">aktivní</span>}
-                    </span>
+                    U7 – Předpřípravka
                   </button>
                   <button
                     type="button"
                     onClick={() => selectTeam('mladsi-pripravka')}
-                    className={`rounded-xl px-4 py-3 text-left transition hover:bg-white ${
-                      activeCategory === 'mladsi-pripravka'
-                        ? 'bg-white font-semibold text-green-700 shadow-sm'
-                        : 'text-gray-700'
-                    }`}
+                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-white"
                   >
-                    <span className="flex items-center justify-between gap-3">
-                      <span>U9 – Mladší přípravka</span>
-                      {activeCategory === 'mladsi-pripravka' && <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-bold text-green-700">aktivní</span>}
-                    </span>
+                    U9 – Mladší přípravka
                   </button>
                   <button
                     type="button"
                     onClick={() => selectTeam('starsi-pripravka')}
-                    className={`rounded-xl px-4 py-3 text-left transition hover:bg-white ${
-                      activeCategory === 'starsi-pripravka'
-                        ? 'bg-white font-semibold text-orange-700 shadow-sm'
-                        : 'text-gray-700'
-                    }`}
+                    className="rounded-xl px-4 py-3 text-left text-gray-700 transition hover:bg-white"
                   >
-                    <span className="flex items-center justify-between gap-3">
-                      <span>U11 – Starší přípravka</span>
-                      {activeCategory === 'starsi-pripravka' && <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs font-bold text-orange-700">aktivní</span>}
-                    </span>
+                    U11 – Starší přípravka
                   </button>
                 </div>
               )}
@@ -1526,22 +1484,17 @@ export default function AskLipuvkaWeb() {
               <button
                 type="button"
                 onClick={openGallery}
-                className="mx-2 flex items-center gap-3 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
+                className="mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
               >
-                <span className="text-xl">📸</span>
-                <span>Galerie</span>
+                Galerie
               </button>
 
               <button
                 type="button"
                 onClick={() => setIsMobileClubDropdownOpen((prev) => !prev)}
-                className="mx-2 flex items-center justify-between gap-3 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
+                className="mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
               >
-                <span className="flex items-center gap-3">
-                  <span className="text-xl">🏟️</span>
-                  <span>Klub</span>
-                </span>
-                <span>{isMobileClubDropdownOpen ? '▲' : '▼'}</span>
+                Klub {isMobileClubDropdownOpen ? '▲' : '▼'}
               </button>
 
               {isMobileClubDropdownOpen && (
@@ -1599,28 +1552,25 @@ export default function AskLipuvkaWeb() {
               <button
                 type="button"
                 onClick={() => openClubPopup('kde-nas-najdete')}
-                className="mx-2 flex items-center gap-3 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
+                className="mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
               >
-                <span className="text-xl">📍</span>
-                <span>Kde nás najdete</span>
+                Kde nás najdete
               </button>
 
               <button
                 type="button"
                 onClick={() => openClubPopup('partneri')}
-                className="mx-2 flex items-center gap-3 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
+                className="mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
               >
-                <span className="text-xl">🤝</span>
-                <span>Partneři</span>
+                Partneři
               </button>
 
               <button
                 type="button"
                 onClick={openTrainers}
-                className="mx-2 flex items-center gap-3 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
+                className="mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold text-gray-800 transition hover:bg-gray-100 hover:shadow-md"
               >
-                <span className="text-xl">🧑‍🏫</span>
-                <span>Trenéři</span>
+                Trenéři
               </button>
 
               <div className="mt-auto px-2 pt-4">
