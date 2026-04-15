@@ -160,10 +160,6 @@ export default function MatchDetail() {
     };
   }, [selectedAlbum, selectedPhotoIndex]);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
-
   useEffect(() => {
     document.documentElement.classList.toggle('theme-dark', theme === 'dark');
     document.documentElement.style.colorScheme = theme;
@@ -378,21 +374,11 @@ export default function MatchDetail() {
           <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={toggleTheme}
-              className="theme-toggle-button"
-              aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
+              onClick={() => navigate('/')}
+              className="inline-flex items-center justify-center rounded-2xl bg-green-600 px-6 py-3 text-base font-bold text-white transition hover:bg-green-700"
             >
-              <span>{theme === 'light' ? '🌙' : '☀️'}</span>
-              <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
+              ← Zpět na hlavní stránku
             </button>
-
-            <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="inline-flex items-center justify-center rounded-2xl bg-green-600 px-6 py-3 text-base font-bold text-white transition hover:bg-green-700"
-          >
-            ← Zpět na hlavní stránku
-          </button>
           </div>
         </div>
       </div>

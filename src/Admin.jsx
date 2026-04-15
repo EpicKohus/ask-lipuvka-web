@@ -653,10 +653,6 @@ export default function Admin() {
       .join(', ');
   };
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
-
   const currentAlbum = matchForm.galleryAlbumId
     ? galleryAlbums.find((album) => album.id === matchForm.galleryAlbumId)
     : null;
@@ -679,22 +675,12 @@ export default function Admin() {
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="theme-toggle-button"
-                aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
-              >
-                <span>{theme === 'light' ? '🌙' : '☀️'}</span>
-                <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
-              </button>
-
               <a
-              href="/"
-              className="inline-flex items-center justify-center rounded-xl border border-green-200 bg-green-50 px-5 py-3 font-semibold text-green-700 transition hover:bg-green-100"
-            >
-              ← Zpět na web
-            </a>
+                href="/"
+                className="inline-flex items-center justify-center rounded-xl border border-green-200 bg-green-50 px-5 py-3 font-semibold text-green-700 transition hover:bg-green-100"
+              >
+                ← Zpět na web
+              </a>
             </div>
           </div>
         </div>
