@@ -1401,7 +1401,7 @@ export default function AskLipuvkaWeb() {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div
-            className="ml-auto flex h-full w-[85%] max-w-sm flex-col overflow-hidden bg-white shadow-2xl"
+            className="ml-auto flex h-full w-[85%] max-w-sm flex-col overflow-y-auto bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b px-5 py-4">
@@ -1422,8 +1422,7 @@ export default function AskLipuvkaWeb() {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto">
-              <div className="flex flex-col">
+            <div className="flex flex-col">
               <a
                 href="#novinky"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -1439,15 +1438,6 @@ export default function AskLipuvkaWeb() {
               >
                 Zápasy
               </a>
-
-              <button
-                type="button"
-                onClick={toggleTheme}
-                className="flex w-full items-center justify-between border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
-              >
-                <span>Režim</span>
-                <span className="text-xl">{theme === 'light' ? '🌙' : '☀️'}</span>
-              </button>
 
               <button
                 type="button"
@@ -1574,6 +1564,17 @@ export default function AskLipuvkaWeb() {
               >
                 Trenéři
               </button>
+
+              <div className="mt-auto border-t px-5 py-5">
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="flex w-full items-center justify-between rounded-2xl border border-gray-300 bg-gray-50 px-4 py-4 text-left font-semibold text-gray-800 transition hover:bg-gray-100"
+                  aria-label="Přepnout režim"
+                >
+                  <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
+                  <span className="text-xl">{theme === 'light' ? '🌙' : '☀️'}</span>
+                </button>
               </div>
             </div>
           </div>
@@ -2145,7 +2146,7 @@ export default function AskLipuvkaWeb() {
                           <button
                             type="button"
                             onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-gray-900 transition hover:bg-[#faf7f2] hover:text-gray-900"
+                            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left text-gray-900 transition hover:bg-[#faf7f2]"
                           >
                             <div className="flex items-start gap-3">
                               <span className="mt-0.5 text-lg">❓</span>
