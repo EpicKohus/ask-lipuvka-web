@@ -1401,7 +1401,7 @@ export default function AskLipuvkaWeb() {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div
-            className="ml-auto flex h-full w-[88%] max-w-sm flex-col overflow-y-auto rounded-l-[2rem] border-l border-white/20 bg-gradient-to-b from-[#0f1a17] via-[#0c1513] to-[#08110f] shadow-2xl"
+            className="ml-auto flex h-full w-[88%] max-w-sm flex-col overflow-y-auto rounded-l-[2rem] border-l border-white/20 {theme === "dark" ? "bg-gradient-to-b from-[#0f1a17] via-[#0c1513] to-[#08110f]" : "bg-gradient-to-b from-[#fcfaf6] via-[#f7f2e9] to-[#f2eadf]"} shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="border-b border-[#e7dccb] bg-white px-5 pb-5 pt-6">
