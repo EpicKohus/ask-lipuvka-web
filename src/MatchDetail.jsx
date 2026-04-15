@@ -502,7 +502,7 @@ export default function MatchDetail() {
           <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="mb-5 flex items-center justify-between gap-3">
               <h2 className={`text-2xl font-bold ${categoryStyle.text}`}>
-                {isPlayed ? 'Match report' : 'Info k zápasu'}
+                {isPlayed ? 'Zhodnocení zápasu' : 'Info k zápasu'}
               </h2>
               <span className={`rounded-full px-3 py-1 text-xs font-bold ${categoryStyle.badge}`}>
                 {getCategoryShortLabel(match.category)}
@@ -516,7 +516,7 @@ export default function MatchDetail() {
                 </div>
               )}
 
-              <p className="leading-8 text-gray-700">
+              <p className="whitespace-pre-line leading-8 text-gray-700">
                 {match.article ||
                   (isPlayed
                     ? 'Komentář zápasu bude doplněn.'
@@ -623,7 +623,7 @@ export default function MatchDetail() {
         {hasAlbum && (
           <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
             <div className="mb-5 flex items-center justify-between gap-3">
-              <h2 className={`text-2xl font-bold ${categoryStyle.text}`}>Fotoreport</h2>
+              <h2 className={`text-2xl font-bold ${categoryStyle.text}`}>Fotky</h2>
               <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
                 {linkedAlbum.photos?.length || 0} položek
               </span>
@@ -665,7 +665,7 @@ export default function MatchDetail() {
                   onClick={openAlbum}
                   className={`rounded-2xl px-5 py-3 font-bold transition ${categoryStyle.button}`}
                 >
-                  Otevřít fotoreport
+                  Fotky ze zápasu
                 </button>
               </div>
             </div>
