@@ -16,6 +16,8 @@ export default function Admin() {
     { id: 'starsi-pripravka', label: 'Starší přípravka (U11)', shortLabel: 'U11' },
   ];
 
+  const seasons = ['2025-2026', '2026-2027'];
+
   const [activeSection, setActiveSection] = useState('news');
 
   const [newsItems, setNewsItems] = useState([]);
@@ -27,9 +29,11 @@ export default function Admin() {
 
   const [matchListCategoryFilter, setMatchListCategoryFilter] = useState('all');
   const [matchListStatusFilter, setMatchListStatusFilter] = useState('all');
+  const [matchListSeasonFilter, setMatchListSeasonFilter] = useState('all');
 
   const [newsForm, setNewsForm] = useState({
     category: 'mladsi-pripravka',
+    season: '2025-2026',
     title: '',
     text: '',
     date: '',
@@ -38,6 +42,7 @@ export default function Admin() {
   const [editingMatchId, setEditingMatchId] = useState(null);
   const [matchForm, setMatchForm] = useState({
     category: 'mladsi-pripravka',
+    season: '2025-2026',
     date: '',
     dateISO: '',
     opponent: '',
@@ -61,6 +66,7 @@ export default function Admin() {
   const [galleryForm, setGalleryForm] = useState({
     type: 'global',
     category: 'mladsi-pripravka',
+    season: '2025-2026',
     title: '',
     cover: '',
     photosText: '',
@@ -203,6 +209,7 @@ export default function Admin() {
     setEditingMatchId(null);
     setMatchForm({
       category: 'mladsi-pripravka',
+      season: '2025-2026',
       date: '',
       dateISO: '',
       opponent: '',
@@ -228,6 +235,7 @@ export default function Admin() {
     setGalleryForm({
       type: 'global',
       category: 'mladsi-pripravka',
+      season: '2025-2026',
       title: '',
       cover: '',
       photosText: '',
@@ -235,6 +243,16 @@ export default function Admin() {
       fromNumber: '1',
       toNumber: '',
       coverNumber: '1',
+    });
+  };
+
+  const resetNewsForm = () => {
+    setNewsForm({
+      category: 'mladsi-pripravka',
+      season: '2025-2026',
+      title: '',
+      text: '',
+      date: '',
     });
   };
 
@@ -278,9 +296,14 @@ export default function Admin() {
   const newsByCategory = useMemo(() => {
     return categories.map((category) => ({
       ...category,
-      item: newsItems.find((news) => news.category === category.id) || null,
+      item:
+        newsItems.find(
+          (news) =>
+            news.category === category.id &&
+            (news.season || '2025-2026') === newsForm.season
+        ) || null,
     }));
-  }, [newsItems]);
+  }, [newsItems, newsForm.season]);
 
   const sortedMatches = useMemo(() => {
     return [...matches].sort((a, b) => parseMatchDate(a) - parseMatchDate(b));
@@ -295,12 +318,25 @@ export default function Admin() {
       const statusOk =
         matchListStatusFilter === 'all' || status === matchListStatusFilter;
 
-      return categoryOk && statusOk;
+      const season = match.season || '2025-2026';
+      const seasonOk =
+        matchListSeasonFilter === 'all' || season === matchListSeasonFilter;
+
+      return categoryOk && statusOk && seasonOk;
     });
-  }, [sortedMatches, matchListCategoryFilter, matchListStatusFilter]);
+  }, [sortedMatches, matchListCategoryFilter, matchListStatusFilter, matchListSeasonFilter]);
 
   const sortedGallery = useMemo(() => {
-    return [...galleryAlbums].sort((a, b) => a.title.localeCompare(b.title, 'cs'));
+    return [...galleryAlbums].sort((a, b) => {
+      const seasonA = a.season || '2025-2026';
+      const seasonB = b.season || '2025-2026';
+
+      if (seasonA !== seasonB) {
+        return seasonB.localeCompare(seasonA, 'cs');
+      }
+
+      return a.title.localeCompare(b.title, 'cs');
+    });
   }, [galleryAlbums]);
 
   const handleNewsChange = (field, value) => {
@@ -388,10 +424,15 @@ export default function Admin() {
     try {
       setSaving(true);
 
-      const existingNews = newsItems.find((item) => item.category === newsForm.category);
+      const existingNews = newsItems.find(
+        (item) =>
+          item.category === newsForm.category &&
+          (item.season || '2025-2026') === newsForm.season
+      );
 
       const payload = {
         category: newsForm.category,
+        season: newsForm.season,
         title: newsForm.title.trim(),
         text: newsForm.text.trim(),
         date: newsForm.date.trim(),
@@ -416,6 +457,7 @@ export default function Admin() {
   const handleEditNews = (item) => {
     setNewsForm({
       category: item.category || 'mladsi-pripravka',
+      season: item.season || '2025-2026',
       title: item.title || '',
       text: item.text || '',
       date: item.date || '',
@@ -451,6 +493,7 @@ export default function Admin() {
 
       const payload = {
         category: matchForm.category,
+        season: matchForm.season,
         date: matchForm.date.trim(),
         dateISO: matchForm.dateISO || formatDateToISO(matchForm.date),
         opponent: matchForm.opponent.trim(),
@@ -495,6 +538,7 @@ export default function Admin() {
     setEditingMatchId(match.id);
     setMatchForm({
       category: match.category || 'mladsi-pripravka',
+      season: match.season || '2025-2026',
       date: match.date || '',
       dateISO: match.dateISO || formatDateToISO(match.date || ''),
       opponent: match.opponent || '',
@@ -562,6 +606,7 @@ export default function Admin() {
       const payload = {
         type: galleryForm.type,
         category: galleryForm.type === 'team' ? galleryForm.category : '',
+        season: galleryForm.season,
         title: galleryForm.title.trim(),
         cover: galleryForm.cover.trim(),
         photos: parsedPhotos,
@@ -589,6 +634,7 @@ export default function Admin() {
     setGalleryForm({
       type: album.type || 'global',
       category: album.category || 'mladsi-pripravka',
+      season: album.season || '2025-2026',
       title: album.title || '',
       cover: album.cover || '',
       photosText: formatPhotosText(album.photos || []),
@@ -705,10 +751,14 @@ export default function Admin() {
                 <div className={cardSoftClass}>
                   <div className="mb-6">
                     <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
-                      Jedna novinka pro každý tým
+                      Jedna novinka pro každý tým a sezónu
                     </div>
                     <h2 className="text-2xl font-bold text-green-700">
-                      {newsItems.find((item) => item.category === newsForm.category)
+                      {newsItems.find(
+                        (item) =>
+                          item.category === newsForm.category &&
+                          (item.season || '2025-2026') === newsForm.season
+                      )
                         ? 'Upravit novinku'
                         : 'Přidat novinku'}
                     </h2>
@@ -725,6 +775,21 @@ export default function Admin() {
                         {categories.map((category) => (
                           <option key={category.id} value={category.id}>
                             {category.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Sezóna</label>
+                      <select
+                        value={newsForm.season}
+                        onChange={(e) => handleNewsChange('season', e.target.value)}
+                        className={inputClass}
+                      >
+                        {seasons.map((season) => (
+                          <option key={season} value={season}>
+                            {season}
                           </option>
                         ))}
                       </select>
@@ -763,30 +828,54 @@ export default function Admin() {
                       />
                     </div>
 
-                    <button type="submit" disabled={saving} className={greenButtonClass}>
-                      {saving ? 'Ukládám…' : 'Uložit novinku'}
-                    </button>
+                    <div className="flex flex-wrap gap-3">
+                      <button type="submit" disabled={saving} className={greenButtonClass}>
+                        {saving ? 'Ukládám…' : 'Uložit novinku'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={resetNewsForm}
+                        className={outlineButtonClass}
+                      >
+                        Vyčistit formulář
+                      </button>
+                    </div>
                   </form>
                 </div>
 
                 <div className="space-y-5">
+                  <div className="rounded-2xl border border-green-100 bg-white p-4 shadow-sm">
+                    <div className="text-sm font-semibold text-gray-700">Zobrazená sezóna</div>
+                    <div className="mt-1 text-lg font-bold text-green-700">{newsForm.season}</div>
+                  </div>
+
                   {newsByCategory.map((category) => (
                     <div key={category.id} className={cardClass}>
                       <div className="mb-3 flex items-center justify-between gap-3">
                         <div>
                           <div className="text-lg font-bold text-gray-900">{category.label}</div>
-                          <div className="text-sm text-gray-500">Aktuální novinka</div>
+                          <div className="text-sm text-gray-500">
+                            Aktuální novinka pro sezónu {newsForm.season}
+                          </div>
                         </div>
                       </div>
 
                       {category.item ? (
                         <>
-                          <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
-                            {category.item.date}
+                          <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                              {category.item.season || '2025-2026'}
+                            </span>
+                            <span className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                              {category.item.date}
+                            </span>
                           </div>
+
                           <div className="mb-2 text-lg font-bold text-gray-900">
                             {category.item.title}
                           </div>
+
                           <p className="mb-4 text-sm leading-7 text-gray-700">
                             {category.item.text}
                           </p>
@@ -860,6 +949,21 @@ export default function Admin() {
                               {categories.map((category) => (
                                 <option key={category.id} value={category.id}>
                                   {category.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className={labelClass}>Sezóna</label>
+                            <select
+                              value={matchForm.season}
+                              onChange={(e) => handleMatchChange('season', e.target.value)}
+                              className={inputClass}
+                            >
+                              {seasons.map((season) => (
+                                <option key={season} value={season}>
+                                  {season}
                                 </option>
                               ))}
                             </select>
@@ -1102,12 +1206,13 @@ Večeřa 1x`}
                               <option value="">Bez fotoreportu</option>
                               {sortedGallery.map((album) => (
                                 <option key={album.id} value={album.id}>
-                                  {album.title}
+                                  [{album.season || '2025-2026'}] {album.title}
                                 </option>
                               ))}
                             </select>
                             <div className="mt-2 text-sm text-gray-500">
-                              K zápasu už se nepřidávají ruční fotky. Vybereš album z galerie a to se použije na detailu zápasu.
+                              K zápasu už se nepřidávají ruční fotky. Vybereš album z galerie a to
+                              se použije na detailu zápasu.
                             </div>
                           </div>
 
@@ -1118,6 +1223,9 @@ Večeřa 1x`}
                               </div>
                               <div className="mt-2 text-base font-bold text-gray-900">
                                 {currentAlbum.title}
+                              </div>
+                              <div className="mt-1 text-sm text-gray-500">
+                                Sezóna: {currentAlbum.season || '2025-2026'}
                               </div>
                               <div className="mt-1 text-sm text-gray-500">
                                 Počet fotek: {currentAlbum.photos?.length || 0}
@@ -1131,8 +1239,8 @@ Večeřa 1x`}
                         {saving
                           ? 'Ukládám…'
                           : editingMatchId
-                          ? 'Uložit úpravy zápasu'
-                          : 'Přidat zápas'}
+                            ? 'Uložit úpravy zápasu'
+                            : 'Přidat zápas'}
                       </button>
                     </form>
                   </div>
@@ -1144,7 +1252,7 @@ Večeřa 1x`}
                       <div>
                         <div className="text-lg font-bold text-gray-900">Přehled zápasů</div>
                         <div className="text-sm text-gray-500">
-                          Filtruj si zápasy podle kategorie a stavu.
+                          Filtruj si zápasy podle kategorie, stavu a sezóny.
                         </div>
                       </div>
 
@@ -1177,11 +1285,28 @@ Večeřa 1x`}
                             <option value="played">Odehráno</option>
                           </select>
                         </div>
+
+                        <div className="md:col-span-2 xl:col-span-1 2xl:col-span-2">
+                          <label className={labelClass}>Sezóna</label>
+                          <select
+                            value={matchListSeasonFilter}
+                            onChange={(e) => setMatchListSeasonFilter(e.target.value)}
+                            className={inputClass}
+                          >
+                            <option value="all">Všechny sezóny</option>
+                            {seasons.map((season) => (
+                              <option key={season} value={season}>
+                                {season}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
 
                     <div className="rounded-2xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
-                      Zobrazeno zápasů: <span className="font-bold text-gray-900">{filteredMatches.length}</span>
+                      Zobrazeno zápasů:{' '}
+                      <span className="font-bold text-gray-900">{filteredMatches.length}</span>
                     </div>
                   </div>
 
@@ -1200,7 +1325,10 @@ Večeřa 1x`}
                       );
 
                       return (
-                        <div key={match.id} className="rounded-2xl border border-green-100 bg-white p-5 shadow-sm">
+                        <div
+                          key={match.id}
+                          className="rounded-2xl border border-green-100 bg-white p-5 shadow-sm"
+                        >
                           <div className="mb-4 flex flex-wrap items-center gap-2">
                             <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
                               {shortLabel}
@@ -1208,6 +1336,10 @@ Večeřa 1x`}
 
                             <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
                               {categoryLabel}
+                            </span>
+
+                            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
+                              {match.season || '2025-2026'}
                             </span>
 
                             <span
@@ -1242,7 +1374,9 @@ Večeřa 1x`}
                           </div>
 
                           <div className="mb-4 text-sm text-gray-500">
-                            {match.home ? 'Místo: Lipůvka' : `Místo: ${match.venue || 'bude doplněno'}`}
+                            {match.home
+                              ? 'Místo: Lipůvka'
+                              : `Místo: ${match.venue || 'bude doplněno'}`}
                           </div>
 
                           <div className="space-y-3 rounded-2xl bg-gray-50 p-4">
@@ -1360,6 +1494,21 @@ Večeřa 1x`}
                         </select>
                       </div>
                     )}
+
+                    <div>
+                      <label className={labelClass}>Sezóna</label>
+                      <select
+                        value={galleryForm.season}
+                        onChange={(e) => handleGalleryChange('season', e.target.value)}
+                        className={inputClass}
+                      >
+                        {seasons.map((season) => (
+                          <option key={season} value={season}>
+                            {season}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
                     <div>
                       <label className={labelClass}>Název alba</label>
@@ -1507,7 +1656,8 @@ Večeřa 1x`}
                         className={inputClass}
                       />
                       <div className="mt-2 text-sm text-gray-500">
-                        Jedna cesta k fotce na řádek. Můžeš vyplnit ručně, nebo použít generátor nahoře.
+                        Jedna cesta k fotce na řádek. Můžeš vyplnit ručně, nebo použít generátor
+                        nahoře.
                       </div>
                     </div>
 
@@ -1515,8 +1665,8 @@ Večeřa 1x`}
                       {saving
                         ? 'Ukládám…'
                         : editingGalleryId
-                        ? 'Uložit úpravy alba'
-                        : 'Přidat album'}
+                          ? 'Uložit úpravy alba'
+                          : 'Přidat album'}
                     </button>
                   </form>
                 </div>
@@ -1535,6 +1685,10 @@ Večeřa 1x`}
                               {getCategoryLabel(album.category)}
                             </span>
                           )}
+
+                          <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
+                            {album.season || '2025-2026'}
+                          </span>
                         </div>
 
                         <div className="mb-2 text-lg font-bold text-gray-900">{album.title}</div>
