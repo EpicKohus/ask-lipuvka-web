@@ -1234,7 +1234,7 @@ export default function AskLipuvkaWeb() {
             </div>
           </a>
 
-          <div className="hidden items-center gap-3 md:flex">
+          <div className="hidden items-center gap-3 lg:flex">
             <button
               type="button"
               onClick={toggleTheme}
@@ -1428,7 +1428,6 @@ export default function AskLipuvkaWeb() {
                 </button>
               </div>
             </div>
-            </div>
 
             <div className="flex flex-1 flex-col px-3 pb-4 pt-3">
               <a
@@ -1574,8 +1573,8 @@ export default function AskLipuvkaWeb() {
               </button>
 
               <div className="mt-auto px-2 pt-4">
-                <div className="rounded-3xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-4 shadow-sm">
-                  <div className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-gray-500">
+                <div className="rounded-3xl border border-emerald-900/40 bg-gradient-to-br from-[#101816] to-[#0b1311] p-4 shadow-sm">
+                  <div className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-emerald-200/65">
                     Zobrazení webu
                   </div>
                   <button
