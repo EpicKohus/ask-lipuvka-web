@@ -1256,6 +1256,21 @@ export default function AskLipuvkaWeb() {
           to { opacity: 1; transform: scale(1); }
         }
 
+        @keyframes slideInRight {
+          from { opacity: 0; transform: translateX(24px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes softReveal {
+          from { opacity: 0; transform: translateY(-6px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes faqContentIn {
+          from { opacity: 0; transform: translateY(-8px); max-height: 0; }
+          to { opacity: 1; transform: translateY(0); max-height: 420px; }
+        }
+
         @keyframes hintBounce {
           0%, 100% { transform: translateY(0); opacity: 0.85; }
           50% { transform: translateY(6px); opacity: 1; }
@@ -1446,7 +1461,7 @@ export default function AskLipuvkaWeb() {
 
       {isMobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          className="fixed inset-0 z-40 bg-black/40 md:hidden animate-[fadeIn_0.22s_ease-out]"
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div
@@ -1928,12 +1943,12 @@ export default function AskLipuvkaWeb() {
 
       {isGalleryOpen && !selectedAlbum && (
         <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.22s_ease-out]"
           onClick={closeGallery}
         >
           <div className="flex min-h-full items-start justify-center">
             <div
-              className="relative my-4 w-full max-w-5xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              className="relative my-4 w-full max-w-5xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.24s_ease-out]"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -1981,12 +1996,12 @@ export default function AskLipuvkaWeb() {
 
       {isGalleryOpen && selectedAlbum && selectedPhotoIndex === null && (
         <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.22s_ease-out]"
           onClick={backFromAlbum}
         >
           <div className="flex min-h-full items-start justify-center">
             <div
-              className="relative my-4 w-full max-w-6xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              className="relative my-4 w-full max-w-6xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.24s_ease-out]"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="mb-4 flex items-center justify-between gap-4 pr-10">
@@ -2021,7 +2036,7 @@ export default function AskLipuvkaWeb() {
 
       {selectedPhoto && (
         <div
-          className="fixed inset-0 z-[60] bg-black/90 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          className="fixed inset-0 z-[60] bg-black/90 px-4 py-6 animate-[fadeIn_0.22s_ease-out]"
           onClick={() => setSelectedPhotoIndex(null)}
         >
           <div className="flex h-full w-full items-center justify-center">
@@ -2080,12 +2095,12 @@ export default function AskLipuvkaWeb() {
 
       {clubPopupContent && (
         <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.22s_ease-out]"
           onClick={() => setClubPopupContent(null)}
         >
           <div className="flex min-h-full items-start justify-center">
             <div
-              className={`relative my-4 w-full max-w-4xl rounded-2xl p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out] ${
+              className={`relative my-4 w-full max-w-4xl rounded-2xl p-6 shadow-2xl animate-[scaleIn_0.24s_ease-out] ${
                 clubPopupContent === 'partneri' ||
                 clubPopupContent === 'partner-nabidka' ||
                 clubPopupContent === 'faq'
@@ -2257,15 +2272,17 @@ export default function AskLipuvkaWeb() {
                               <span className={`mt-0.5 text-lg ${theme === 'dark' ? 'drop-shadow-[0_0_10px_rgba(248,113,113,0.25)]' : ''}`}>❓</span>
                               <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{item.question}</span>
                             </div>
-                            <span className={`text-xl ${theme === 'dark' ? 'text-emerald-300' : 'text-green-700'}`}>{isOpen ? '−' : '+'}</span>
+                            <span className={`text-xl transition duration-200 ${theme === 'dark' ? 'text-emerald-300' : 'text-green-700'} ${isOpen ? 'scale-110' : 'scale-100'}`}>{isOpen ? '−' : '+'}</span>
                           </button>
 
                           {isOpen && (
-                            <div className={`px-5 py-4 ${
-                              theme === 'dark'
-                                ? 'border-t border-emerald-800/40 bg-[#0b1714] text-slate-200'
-                                : 'border-t border-[#efe6d8] text-gray-700'
-                            }`}>
+                            <div
+                              className={`px-5 py-4 overflow-hidden animate-[faqContentIn_0.24s_ease-out] ${
+                                theme === 'dark'
+                                  ? 'border-t border-emerald-800/40 bg-[#0b1714] text-slate-200'
+                                  : 'border-t border-[#efe6d8] text-gray-700'
+                              }`}
+                            >
                               {item.answer}
                             </div>
                           )}
@@ -2573,12 +2590,12 @@ export default function AskLipuvkaWeb() {
 
       {isTermsOpen && (
         <div
-          className="fixed inset-0 z-[70] overflow-y-auto bg-black/60 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          className="fixed inset-0 z-[70] overflow-y-auto bg-black/60 px-4 py-6 animate-[fadeIn_0.22s_ease-out]"
           onClick={() => setIsTermsOpen(false)}
         >
           <div className="flex min-h-full items-start justify-center">
             <div
-              className="relative my-4 w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              className="relative my-4 w-full max-w-3xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.24s_ease-out]"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -2668,12 +2685,12 @@ export default function AskLipuvkaWeb() {
 
       {isScheduleOpen && (
         <div
-          className="fixed inset-0 z-[70] overflow-y-auto bg-black/60 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          className="fixed inset-0 z-[70] overflow-y-auto bg-black/60 px-4 py-6 animate-[fadeIn_0.22s_ease-out]"
           onClick={() => setIsScheduleOpen(false)}
         >
           <div className="flex min-h-full items-start justify-center">
             <div
-              className="relative my-4 w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              className="relative my-4 w-full max-w-5xl overflow-hidden rounded-2xl bg-white shadow-2xl animate-[scaleIn_0.24s_ease-out]"
               onClick={(e) => e.stopPropagation()}
             >
               <button
@@ -2822,11 +2839,11 @@ export default function AskLipuvkaWeb() {
 
       {isRegistrationOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 animate-[fadeIn_0.2s_ease-out]"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 animate-[fadeIn_0.22s_ease-out]"
           onClick={() => setIsRegistrationOpen(false)}
         >
           <div
-            className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+            className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.24s_ease-out]"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -2942,12 +2959,12 @@ export default function AskLipuvkaWeb() {
 
       {isTrainersOpen && (
         <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.22s_ease-out]"
           onClick={() => setIsTrainersOpen(false)}
         >
           <div className="flex min-h-full items-start justify-center">
             <div
-              className="relative my-4 w-full max-w-5xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
+              className="relative my-4 w-full max-w-5xl rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.24s_ease-out]"
               onClick={(e) => e.stopPropagation()}
             >
               <button
