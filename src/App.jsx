@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from './firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, doc, getDocs, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 
 export default function AskLipuvkaWeb() {
   const navigate = useNavigate();
@@ -657,24 +657,61 @@ export default function AskLipuvkaWeb() {
   useEffect(() => {
     const loadVisits = async () => {
       try {
-        const alreadyCounted = sessionStorage.getItem('ask-lipuvka-visit-counted');
+        const visitStorageKey = 'ask-lipuvka-visit-counted';
+        const visitsDocRef = doc(db, 'siteStats', 'visits');
+        const alreadyCounted = sessionStorage.getItem(visitStorageKey);
 
-        const response = await fetch('/api/visits', {
-          method: alreadyCounted ? 'GET' : 'POST',
+        if (alreadyCounted) {
+          const snapshot = await getDoc(visitsDocRef);
+
+          if (!snapshot.exists()) {
+            await runTransaction(db, async (transaction) => {
+              const currentSnapshot = await transaction.get(visitsDocRef);
+
+              if (!currentSnapshot.exists()) {
+                transaction.set(visitsDocRef, {
+                  count: 478,
+                  createdAt: serverTimestamp(),
+                  updatedAt: serverTimestamp(),
+                });
+              }
+            });
+
+            setVisitCount(478);
+            return;
+          }
+
+          setVisitCount(Number(snapshot.data()?.count) || 478);
+          return;
+        }
+
+        const nextCount = await runTransaction(db, async (transaction) => {
+          const snapshot = await transaction.get(visitsDocRef);
+
+          if (!snapshot.exists()) {
+            transaction.set(visitsDocRef, {
+              count: 479,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            });
+            return 479;
+          }
+
+          const currentCount = Number(snapshot.data()?.count) || 478;
+          const updatedCount = currentCount + 1;
+
+          transaction.update(visitsDocRef, {
+            count: updatedCount,
+            updatedAt: serverTimestamp(),
+          });
+
+          return updatedCount;
         });
 
-        if (!response.ok) {
-          throw new Error('Nepodařilo se načíst návštěvnost');
-        }
-
-        const data = await response.json();
-        setVisitCount(data.count);
-
-        if (!alreadyCounted) {
-          sessionStorage.setItem('ask-lipuvka-visit-counted', 'true');
-        }
+        setVisitCount(nextCount);
+        sessionStorage.setItem(visitStorageKey, 'true');
       } catch (error) {
-        console.error(error);
+        console.error('Chyba při načítání návštěvnosti:', error);
       }
     };
 
