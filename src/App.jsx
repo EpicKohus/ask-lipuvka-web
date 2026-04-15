@@ -1289,7 +1289,13 @@ export default function AskLipuvkaWeb() {
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
-                onClick={() => setIsTeamsDropdownOpen((prev) => !prev)}
+                onClick={() => {
+                  setIsTeamsDropdownOpen((prev) => {
+                    const next = !prev;
+                    if (next) setIsClubDropdownOpen(false);
+                    return next;
+                  });
+                }}
                 className="hover:text-green-600"
               >
                 Týmy ▼
@@ -1331,7 +1337,13 @@ export default function AskLipuvkaWeb() {
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
-                onClick={() => setIsClubDropdownOpen((prev) => !prev)}
+                onClick={() => {
+                  setIsClubDropdownOpen((prev) => {
+                    const next = !prev;
+                    if (next) setIsTeamsDropdownOpen(false);
+                    return next;
+                  });
+                }}
                 className="hover:text-green-600"
               >
                 Klub ▼
@@ -1489,7 +1501,13 @@ export default function AskLipuvkaWeb() {
 
               <button
                 type="button"
-                onClick={() => setIsMobileTeamsDropdownOpen((prev) => !prev)}
+                onClick={() => {
+                  setIsMobileTeamsDropdownOpen((prev) => {
+                    const next = !prev;
+                    if (next) setIsMobileClubDropdownOpen(false);
+                    return next;
+                  });
+                }}
                 className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
               >
                 Týmy {isMobileTeamsDropdownOpen ? '▲' : '▼'}
@@ -1531,7 +1549,13 @@ export default function AskLipuvkaWeb() {
 
               <button
                 type="button"
-                onClick={() => setIsMobileClubDropdownOpen((prev) => !prev)}
+                onClick={() => {
+                  setIsMobileClubDropdownOpen((prev) => {
+                    const next = !prev;
+                    if (next) setIsMobileTeamsDropdownOpen(false);
+                    return next;
+                  });
+                }}
                 className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
               >
                 Klub {isMobileClubDropdownOpen ? '▲' : '▼'}
