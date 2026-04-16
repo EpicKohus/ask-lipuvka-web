@@ -657,61 +657,87 @@ export default function AskLipuvkaWeb() {
   useEffect(() => {
     const loadVisits = async () => {
       try {
-        const visitStorageKey = 'ask-lipuvka-visit-counted';
         const visitsDocRef = doc(db, 'siteStats', 'visits');
-        const alreadyCounted = sessionStorage.getItem(visitStorageKey);
 
-        if (alreadyCounted) {
-          const snapshot = await getDoc(visitsDocRef);
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const dayKey = `${yyyy}-${mm}-${dd}`;
 
-          if (!snapshot.exists()) {
-            await runTransaction(db, async (transaction) => {
-              const currentSnapshot = await transaction.get(visitsDocRef);
-
-              if (!currentSnapshot.exists()) {
-                transaction.set(visitsDocRef, {
-                  count: 478,
-                  createdAt: serverTimestamp(),
-                  updatedAt: serverTimestamp(),
-                });
-              }
-            });
-
-            setVisitCount(478);
-            return;
-          }
-
-          setVisitCount(Number(snapshot.data()?.count) || 478);
-          return;
-        }
+        const dailyDocRef = doc(db, 'siteStatsDaily', dayKey);
+        const uniqueStorageKey = `ask-lipuvka-unique-visit-${dayKey}`;
+        const alreadyCountedUniqueToday = localStorage.getItem(uniqueStorageKey) === 'true';
 
         const nextCount = await runTransaction(db, async (transaction) => {
-          const snapshot = await transaction.get(visitsDocRef);
+          const totalSnapshot = await transaction.get(visitsDocRef);
+          const dailySnapshot = await transaction.get(dailyDocRef);
 
-          if (!snapshot.exists()) {
+          let totalCount = 478;
+          let createdAtValue = serverTimestamp();
+
+          if (!totalSnapshot.exists()) {
+            totalCount = 479;
             transaction.set(visitsDocRef, {
-              count: 479,
-              createdAt: serverTimestamp(),
+              count: totalCount,
+              createdAt: createdAtValue,
               updatedAt: serverTimestamp(),
             });
-            return 479;
+          } else {
+            const currentCount = Number(totalSnapshot.data()?.count) || 478;
+            totalCount = currentCount + 1;
+            transaction.update(visitsDocRef, {
+              count: totalCount,
+              updatedAt: serverTimestamp(),
+            });
+            createdAtValue = totalSnapshot.data()?.createdAt || serverTimestamp();
           }
 
-          const currentCount = Number(snapshot.data()?.count) || 478;
-          const updatedCount = currentCount + 1;
+          const currentDailyTotal = dailySnapshot.exists()
+            ? Number(dailySnapshot.data()?.totalVisits) || 0
+            : 0;
 
-          transaction.update(visitsDocRef, {
-            count: updatedCount,
+          const currentDailyUnique = dailySnapshot.exists()
+            ? Number(dailySnapshot.data()?.uniqueVisits) || 0
+            : 0;
+
+          const dailyPayload = {
+            date: dayKey,
+            totalVisits: currentDailyTotal + 1,
+            uniqueVisits: alreadyCountedUniqueToday
+              ? currentDailyUnique
+              : currentDailyUnique + 1,
             updatedAt: serverTimestamp(),
-          });
+          };
 
-          return updatedCount;
+          if (dailySnapshot.exists()) {
+            transaction.update(dailyDocRef, dailyPayload);
+          } else {
+            transaction.set(dailyDocRef, {
+              ...dailyPayload,
+              createdAt: serverTimestamp(),
+            });
+          }
+
+          return totalCount;
         });
 
         setVisitCount(nextCount);
-        sessionStorage.setItem(visitStorageKey, 'true');
+
+        if (!alreadyCountedUniqueToday) {
+          localStorage.setItem(uniqueStorageKey, 'true');
+        }
       } catch (error) {
         console.error('Chyba při načítání návštěvnosti:', error);
+
+        try {
+          const snapshot = await getDoc(doc(db, 'siteStats', 'visits'));
+          if (snapshot.exists()) {
+            setVisitCount(Number(snapshot.data()?.count) || 478);
+          }
+        } catch (fallbackError) {
+          console.error('Chyba při záložním načtení návštěvnosti:', fallbackError);
+        }
       }
     };
 
