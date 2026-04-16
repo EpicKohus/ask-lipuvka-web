@@ -5,6 +5,7 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   updateDoc,
 } from 'firebase/firestore';
@@ -16,6 +17,8 @@ export default function Admin() {
     { id: 'starsi-pripravka', label: 'Starší přípravka (U11)', shortLabel: 'U11' },
   ];
 
+  const seasons = ['2025-2026', '2026-2027'];
+
   const [activeSection, setActiveSection] = useState('news');
 
   const [newsItems, setNewsItems] = useState([]);
@@ -24,17 +27,14 @@ export default function Admin() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === 'undefined') return 'light';
-    return localStorage.getItem('ask-lipuvka-theme') || 'light';
-  });
-
 
   const [matchListCategoryFilter, setMatchListCategoryFilter] = useState('all');
   const [matchListStatusFilter, setMatchListStatusFilter] = useState('all');
+  const [matchListSeasonFilter, setMatchListSeasonFilter] = useState('all');
 
   const [newsForm, setNewsForm] = useState({
     category: 'mladsi-pripravka',
+    season: '2025-2026',
     title: '',
     text: '',
     date: '',
@@ -43,6 +43,7 @@ export default function Admin() {
   const [editingMatchId, setEditingMatchId] = useState(null);
   const [matchForm, setMatchForm] = useState({
     category: 'mladsi-pripravka',
+    season: '2025-2026',
     date: '',
     dateISO: '',
     opponent: '',
@@ -66,6 +67,7 @@ export default function Admin() {
   const [galleryForm, setGalleryForm] = useState({
     type: 'global',
     category: 'mladsi-pripravka',
+    season: '2025-2026',
     title: '',
     cover: '',
     photosText: '',
@@ -208,6 +210,7 @@ export default function Admin() {
     setEditingMatchId(null);
     setMatchForm({
       category: 'mladsi-pripravka',
+      season: '2025-2026',
       date: '',
       dateISO: '',
       opponent: '',
@@ -228,11 +231,57 @@ export default function Admin() {
     });
   };
 
+
+  const readTimestampDate = (value) => {
+    if (!value) return null;
+    if (typeof value?.toDate === 'function') return value.toDate();
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+  };
+
+  const formatDateTime = (value) => {
+    const date = readTimestampDate(value);
+    if (!date) return '—';
+    return new Intl.DateTimeFormat('cs-CZ', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  };
+
+  const loadVisitStats = async () => {
+    try {
+      setStatsRefreshing(true);
+      const visitDocRef = doc(db, 'siteStats', 'visits');
+      const snapshot = await getDoc(visitDocRef);
+
+      if (!snapshot.exists()) {
+        setVisitStats({
+          total: 0,
+          createdAt: null,
+          updatedAt: null,
+        });
+        return;
+      }
+
+      const data = snapshot.data() || {};
+      setVisitStats({
+        total: Number(data.count) || 0,
+        createdAt: data.createdAt || null,
+        updatedAt: data.updatedAt || null,
+      });
+    } catch (error) {
+      console.error('Chyba při načítání statistik návštěvnosti:', error);
+    } finally {
+      setStatsRefreshing(false);
+    }
+  };
+
   const resetGalleryForm = () => {
     setEditingGalleryId(null);
     setGalleryForm({
       type: 'global',
       category: 'mladsi-pripravka',
+      season: '2025-2026',
       title: '',
       cover: '',
       photosText: '',
@@ -240,6 +289,16 @@ export default function Admin() {
       fromNumber: '1',
       toNumber: '',
       coverNumber: '1',
+    });
+  };
+
+  const resetNewsForm = () => {
+    setNewsForm({
+      category: 'mladsi-pripravka',
+      season: '2025-2026',
+      title: '',
+      text: '',
+      date: '',
     });
   };
 
@@ -268,6 +327,7 @@ export default function Admin() {
       setNewsItems(loadedNews);
       setMatches(loadedMatches);
       setGalleryAlbums(loadedGallery);
+      await loadVisitStats();
     } catch (error) {
       console.error('Chyba při načítání admin dat:', error);
       alert('Nepodařilo se načíst data z Firebase.');
@@ -280,22 +340,17 @@ export default function Admin() {
     loadAllData();
   }, []);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle('theme-dark', theme === 'dark');
-    document.documentElement.style.colorScheme = theme;
-    localStorage.setItem('ask-lipuvka-theme', theme);
-
-    return () => {
-      document.documentElement.style.colorScheme = '';
-    };
-  }, [theme]);
-
   const newsByCategory = useMemo(() => {
     return categories.map((category) => ({
       ...category,
-      item: newsItems.find((news) => news.category === category.id) || null,
+      item:
+        newsItems.find(
+          (news) =>
+            news.category === category.id &&
+            (news.season || '2025-2026') === newsForm.season
+        ) || null,
     }));
-  }, [newsItems]);
+  }, [newsItems, newsForm.season]);
 
   const sortedMatches = useMemo(() => {
     return [...matches].sort((a, b) => parseMatchDate(a) - parseMatchDate(b));
@@ -310,12 +365,25 @@ export default function Admin() {
       const statusOk =
         matchListStatusFilter === 'all' || status === matchListStatusFilter;
 
-      return categoryOk && statusOk;
+      const season = match.season || '2025-2026';
+      const seasonOk =
+        matchListSeasonFilter === 'all' || season === matchListSeasonFilter;
+
+      return categoryOk && statusOk && seasonOk;
     });
-  }, [sortedMatches, matchListCategoryFilter, matchListStatusFilter]);
+  }, [sortedMatches, matchListCategoryFilter, matchListStatusFilter, matchListSeasonFilter]);
 
   const sortedGallery = useMemo(() => {
-    return [...galleryAlbums].sort((a, b) => a.title.localeCompare(b.title, 'cs'));
+    return [...galleryAlbums].sort((a, b) => {
+      const seasonA = a.season || '2025-2026';
+      const seasonB = b.season || '2025-2026';
+
+      if (seasonA !== seasonB) {
+        return seasonB.localeCompare(seasonA, 'cs');
+      }
+
+      return a.title.localeCompare(b.title, 'cs');
+    });
   }, [galleryAlbums]);
 
   const handleNewsChange = (field, value) => {
@@ -403,10 +471,15 @@ export default function Admin() {
     try {
       setSaving(true);
 
-      const existingNews = newsItems.find((item) => item.category === newsForm.category);
+      const existingNews = newsItems.find(
+        (item) =>
+          item.category === newsForm.category &&
+          (item.season || '2025-2026') === newsForm.season
+      );
 
       const payload = {
         category: newsForm.category,
+        season: newsForm.season,
         title: newsForm.title.trim(),
         text: newsForm.text.trim(),
         date: newsForm.date.trim(),
@@ -431,6 +504,7 @@ export default function Admin() {
   const handleEditNews = (item) => {
     setNewsForm({
       category: item.category || 'mladsi-pripravka',
+      season: item.season || '2025-2026',
       title: item.title || '',
       text: item.text || '',
       date: item.date || '',
@@ -466,6 +540,7 @@ export default function Admin() {
 
       const payload = {
         category: matchForm.category,
+        season: matchForm.season,
         date: matchForm.date.trim(),
         dateISO: matchForm.dateISO || formatDateToISO(matchForm.date),
         opponent: matchForm.opponent.trim(),
@@ -510,6 +585,7 @@ export default function Admin() {
     setEditingMatchId(match.id);
     setMatchForm({
       category: match.category || 'mladsi-pripravka',
+      season: match.season || '2025-2026',
       date: match.date || '',
       dateISO: match.dateISO || formatDateToISO(match.date || ''),
       opponent: match.opponent || '',
@@ -577,6 +653,7 @@ export default function Admin() {
       const payload = {
         type: galleryForm.type,
         category: galleryForm.type === 'team' ? galleryForm.category : '',
+        season: galleryForm.season,
         title: galleryForm.title.trim(),
         cover: galleryForm.cover.trim(),
         photos: parsedPhotos,
@@ -604,6 +681,7 @@ export default function Admin() {
     setGalleryForm({
       type: album.type || 'global',
       category: album.category || 'mladsi-pripravka',
+      season: album.season || '2025-2026',
       title: album.title || '',
       cover: album.cover || '',
       photosText: formatPhotosText(album.photos || []),
@@ -653,6 +731,60 @@ export default function Admin() {
       .join(', ');
   };
 
+
+  const contentStats = useMemo(() => {
+    const totalNews = newsItems.length;
+    const totalMatches = matches.length;
+    const totalGalleryAlbums = galleryAlbums.length;
+    const teamAlbums = galleryAlbums.filter((album) => album.type === 'team').length;
+    const globalAlbums = galleryAlbums.filter((album) => album.type === 'global').length;
+    const linkedMatches = matches.filter((match) => Boolean(match.galleryAlbumId)).length;
+    const playedMatches = matches.filter((match) => (match.status || 'planned') === 'played').length;
+    const plannedMatches = matches.filter((match) => (match.status || 'planned') !== 'played').length;
+
+    return {
+      totalNews,
+      totalMatches,
+      totalGalleryAlbums,
+      teamAlbums,
+      globalAlbums,
+      linkedMatches,
+      playedMatches,
+      plannedMatches,
+    };
+  }, [newsItems, matches, galleryAlbums]);
+
+  const matchCategoryStats = useMemo(() => {
+    return categories.map((category) => {
+      const categoryMatches = matches.filter((match) => match.category === category.id);
+      const played = categoryMatches.filter((match) => (match.status || 'planned') === 'played').length;
+      const planned = categoryMatches.length - played;
+
+      return {
+        ...category,
+        total: categoryMatches.length,
+        played,
+        planned,
+      };
+    });
+  }, [matches]);
+
+  const newsCategoryStats = useMemo(() => {
+    return categories.map((category) => ({
+      ...category,
+      total: newsItems.filter((item) => item.category === category.id).length,
+    }));
+  }, [newsItems]);
+
+  const galleryCategoryStats = useMemo(() => {
+    return categories.map((category) => ({
+      ...category,
+      total: galleryAlbums.filter(
+        (album) => album.type === 'team' && album.category === category.id
+      ).length,
+    }));
+  }, [galleryAlbums]);
+
   const currentAlbum = matchForm.galleryAlbumId
     ? galleryAlbums.find((album) => album.id === matchForm.galleryAlbumId)
     : null;
@@ -674,14 +806,12 @@ export default function Admin() {
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-3">
-              <a
-                href="/"
-                className="inline-flex items-center justify-center rounded-xl border border-green-200 bg-green-50 px-5 py-3 font-semibold text-green-700 transition hover:bg-green-100"
-              >
-                ← Zpět na web
-              </a>
-            </div>
+            <a
+              href="/"
+              className="inline-flex items-center justify-center rounded-xl border border-green-200 bg-green-50 px-5 py-3 font-semibold text-green-700 transition hover:bg-green-100"
+            >
+              ← Zpět na web
+            </a>
           </div>
         </div>
 
@@ -709,6 +839,14 @@ export default function Admin() {
           >
             Galerie
           </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('stats')}
+            className={sectionButtonClass(activeSection === 'stats')}
+          >
+            Statistiky
+          </button>
         </div>
 
         {loading ? (
@@ -717,15 +855,253 @@ export default function Admin() {
           </div>
         ) : (
           <>
+
+            {activeSection === 'stats' && (
+              <div className="space-y-8">
+                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
+                    <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                      Celkem návštěv
+                    </div>
+                    <div className="mt-3 text-4xl font-black text-gray-900">
+                      {visitStats.total !== null ? visitStats.total.toLocaleString('cs-CZ') : '—'}
+                    </div>
+                    <div className="mt-3 text-sm text-gray-500">
+                      Trvalý counter z Firebase
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
+                    <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                      Poslední změna
+                    </div>
+                    <div className="mt-3 text-lg font-bold text-gray-900">
+                      {formatDateTime(visitStats.updatedAt)}
+                    </div>
+                    <div className="mt-3 text-sm text-gray-500">
+                      Kdy se návštěvnost naposledy upravila
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
+                    <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                      Založení počítadla
+                    </div>
+                    <div className="mt-3 text-lg font-bold text-gray-900">
+                      {formatDateTime(visitStats.createdAt)}
+                    </div>
+                    <div className="mt-3 text-sm text-gray-500">
+                      Od kdy se návštěvnost ukládá natrvalo
+                    </div>
+                  </div>
+
+                  <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
+                    <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                      Rychlá akce
+                    </div>
+                    <button
+                      type="button"
+                      onClick={loadVisitStats}
+                      disabled={statsRefreshing}
+                      className="mt-3 rounded-xl bg-green-600 px-5 py-3 font-semibold text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                    >
+                      {statsRefreshing ? 'Obnovuji…' : 'Obnovit návštěvnost'}
+                    </button>
+                    <div className="mt-3 text-sm text-gray-500">
+                      Aktualizuje data z Firestore bez reloadu adminu
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+                  <div className="space-y-8">
+                    <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
+                      <div className="mb-6">
+                        <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                          Přehled obsahu
+                        </div>
+                        <h2 className="mt-2 text-2xl font-bold text-gray-900">
+                          Co je aktuálně na webu
+                        </h2>
+                      </div>
+
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="rounded-2xl bg-gray-50 p-5">
+                          <div className="text-sm text-gray-500">Novinky</div>
+                          <div className="mt-2 text-3xl font-black text-gray-900">
+                            {contentStats.totalNews}
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl bg-gray-50 p-5">
+                          <div className="text-sm text-gray-500">Všechny zápasy</div>
+                          <div className="mt-2 text-3xl font-black text-gray-900">
+                            {contentStats.totalMatches}
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl bg-gray-50 p-5">
+                          <div className="text-sm text-gray-500">Všechna alba</div>
+                          <div className="mt-2 text-3xl font-black text-gray-900">
+                            {contentStats.totalGalleryAlbums}
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl bg-gray-50 p-5">
+                          <div className="text-sm text-gray-500">Napojené fotoreporty</div>
+                          <div className="mt-2 text-3xl font-black text-gray-900">
+                            {contentStats.linkedMatches}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
+                      <div className="mb-6">
+                        <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                          Zápasy podle kategorií
+                        </div>
+                        <h2 className="mt-2 text-2xl font-bold text-gray-900">
+                          Rozložení týmů
+                        </h2>
+                      </div>
+
+                      <div className="space-y-4">
+                        {matchCategoryStats.map((item) => {
+                          const maxTotal = Math.max(...matchCategoryStats.map((x) => x.total), 1);
+                          const width = item.total > 0 ? Math.max((item.total / maxTotal) * 100, 10) : 0;
+
+                          return (
+                            <div key={item.id} className="rounded-2xl bg-gray-50 p-5">
+                              <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                  <div className="text-lg font-bold text-gray-900">{item.label}</div>
+                                  <div className="text-sm text-gray-500">
+                                    Odehráno: {item.played} • Plánováno: {item.planned}
+                                  </div>
+                                </div>
+                                <div className="text-2xl font-black text-green-700">{item.total}</div>
+                              </div>
+
+                              <div className="h-3 overflow-hidden rounded-full bg-white">
+                                <div
+                                  className="h-full rounded-full bg-green-600"
+                                  style={{ width: `${width}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-8">
+                    <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
+                      <div className="mb-6">
+                        <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                          Stav zápasů
+                        </div>
+                        <h2 className="mt-2 text-2xl font-bold text-gray-900">
+                          Hlavní poměr
+                        </h2>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="rounded-2xl bg-green-50 p-5">
+                          <div className="text-sm text-green-700">Odehrané zápasy</div>
+                          <div className="mt-2 text-3xl font-black text-gray-900">
+                            {contentStats.playedMatches}
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl bg-yellow-50 p-5">
+                          <div className="text-sm text-yellow-800">Plánované zápasy</div>
+                          <div className="mt-2 text-3xl font-black text-gray-900">
+                            {contentStats.plannedMatches}
+                          </div>
+                        </div>
+
+                        <div className="rounded-2xl bg-gray-50 p-5">
+                          <div className="mb-3 text-sm font-semibold text-gray-700">
+                            Přehled obsahu podle sekcí
+                          </div>
+
+                          <div className="space-y-3 text-sm text-gray-700">
+                            <div className="flex items-center justify-between">
+                              <span>Novinky</span>
+                              <span className="font-bold">{contentStats.totalNews}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>Fotky týmu</span>
+                              <span className="font-bold">{contentStats.teamAlbums}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>Společná alba</span>
+                              <span className="font-bold">{contentStats.globalAlbums}</span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span>Napojené galerie k zápasu</span>
+                              <span className="font-bold">{contentStats.linkedMatches}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
+                      <div className="mb-6">
+                        <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                          Obsah podle kategorií
+                        </div>
+                        <h2 className="mt-2 text-2xl font-bold text-gray-900">
+                          Novinky a galerie
+                        </h2>
+                      </div>
+
+                      <div className="space-y-4">
+                        {categories.map((category) => {
+                          const newsTotal = newsCategoryStats.find((item) => item.id === category.id)?.total || 0;
+                          const galleryTotal = galleryCategoryStats.find((item) => item.id === category.id)?.total || 0;
+
+                          return (
+                            <div key={category.id} className="rounded-2xl bg-gray-50 p-5">
+                              <div className="mb-2 text-lg font-bold text-gray-900">
+                                {category.label}
+                              </div>
+                              <div className="space-y-2 text-sm text-gray-700">
+                                <div className="flex items-center justify-between">
+                                  <span>Novinky</span>
+                                  <span className="font-bold">{newsTotal}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <span>Alba týmu</span>
+                                  <span className="font-bold">{galleryTotal}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {activeSection === 'news' && (
               <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
                 <div className={cardSoftClass}>
                   <div className="mb-6">
                     <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
-                      Jedna novinka pro každý tým
+                      Jedna novinka pro každý tým a sezónu
                     </div>
                     <h2 className="text-2xl font-bold text-green-700">
-                      {newsItems.find((item) => item.category === newsForm.category)
+                      {newsItems.find(
+                        (item) =>
+                          item.category === newsForm.category &&
+                          (item.season || '2025-2026') === newsForm.season
+                      )
                         ? 'Upravit novinku'
                         : 'Přidat novinku'}
                     </h2>
@@ -742,6 +1118,21 @@ export default function Admin() {
                         {categories.map((category) => (
                           <option key={category.id} value={category.id}>
                             {category.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Sezóna</label>
+                      <select
+                        value={newsForm.season}
+                        onChange={(e) => handleNewsChange('season', e.target.value)}
+                        className={inputClass}
+                      >
+                        {seasons.map((season) => (
+                          <option key={season} value={season}>
+                            {season}
                           </option>
                         ))}
                       </select>
@@ -780,30 +1171,54 @@ export default function Admin() {
                       />
                     </div>
 
-                    <button type="submit" disabled={saving} className={greenButtonClass}>
-                      {saving ? 'Ukládám…' : 'Uložit novinku'}
-                    </button>
+                    <div className="flex flex-wrap gap-3">
+                      <button type="submit" disabled={saving} className={greenButtonClass}>
+                        {saving ? 'Ukládám…' : 'Uložit novinku'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={resetNewsForm}
+                        className={outlineButtonClass}
+                      >
+                        Vyčistit formulář
+                      </button>
+                    </div>
                   </form>
                 </div>
 
                 <div className="space-y-5">
+                  <div className="rounded-2xl border border-green-100 bg-white p-4 shadow-sm">
+                    <div className="text-sm font-semibold text-gray-700">Zobrazená sezóna</div>
+                    <div className="mt-1 text-lg font-bold text-green-700">{newsForm.season}</div>
+                  </div>
+
                   {newsByCategory.map((category) => (
                     <div key={category.id} className={cardClass}>
                       <div className="mb-3 flex items-center justify-between gap-3">
                         <div>
                           <div className="text-lg font-bold text-gray-900">{category.label}</div>
-                          <div className="text-sm text-gray-500">Aktuální novinka</div>
+                          <div className="text-sm text-gray-500">
+                            Aktuální novinka pro sezónu {newsForm.season}
+                          </div>
                         </div>
                       </div>
 
                       {category.item ? (
                         <>
-                          <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
-                            {category.item.date}
+                          <div className="mb-2 flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                              {category.item.season || '2025-2026'}
+                            </span>
+                            <span className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                              {category.item.date}
+                            </span>
                           </div>
+
                           <div className="mb-2 text-lg font-bold text-gray-900">
                             {category.item.title}
                           </div>
+
                           <p className="mb-4 text-sm leading-7 text-gray-700">
                             {category.item.text}
                           </p>
@@ -877,6 +1292,21 @@ export default function Admin() {
                               {categories.map((category) => (
                                 <option key={category.id} value={category.id}>
                                   {category.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className={labelClass}>Sezóna</label>
+                            <select
+                              value={matchForm.season}
+                              onChange={(e) => handleMatchChange('season', e.target.value)}
+                              className={inputClass}
+                            >
+                              {seasons.map((season) => (
+                                <option key={season} value={season}>
+                                  {season}
                                 </option>
                               ))}
                             </select>
@@ -1119,12 +1549,13 @@ Večeřa 1x`}
                               <option value="">Bez fotoreportu</option>
                               {sortedGallery.map((album) => (
                                 <option key={album.id} value={album.id}>
-                                  {album.title}
+                                  [{album.season || '2025-2026'}] {album.title}
                                 </option>
                               ))}
                             </select>
                             <div className="mt-2 text-sm text-gray-500">
-                              K zápasu už se nepřidávají ruční fotky. Vybereš album z galerie a to se použije na detailu zápasu.
+                              K zápasu už se nepřidávají ruční fotky. Vybereš album z galerie a to
+                              se použije na detailu zápasu.
                             </div>
                           </div>
 
@@ -1135,6 +1566,9 @@ Večeřa 1x`}
                               </div>
                               <div className="mt-2 text-base font-bold text-gray-900">
                                 {currentAlbum.title}
+                              </div>
+                              <div className="mt-1 text-sm text-gray-500">
+                                Sezóna: {currentAlbum.season || '2025-2026'}
                               </div>
                               <div className="mt-1 text-sm text-gray-500">
                                 Počet fotek: {currentAlbum.photos?.length || 0}
@@ -1148,8 +1582,8 @@ Večeřa 1x`}
                         {saving
                           ? 'Ukládám…'
                           : editingMatchId
-                          ? 'Uložit úpravy zápasu'
-                          : 'Přidat zápas'}
+                            ? 'Uložit úpravy zápasu'
+                            : 'Přidat zápas'}
                       </button>
                     </form>
                   </div>
@@ -1161,7 +1595,7 @@ Večeřa 1x`}
                       <div>
                         <div className="text-lg font-bold text-gray-900">Přehled zápasů</div>
                         <div className="text-sm text-gray-500">
-                          Filtruj si zápasy podle kategorie a stavu.
+                          Filtruj si zápasy podle kategorie, stavu a sezóny.
                         </div>
                       </div>
 
@@ -1194,11 +1628,28 @@ Večeřa 1x`}
                             <option value="played">Odehráno</option>
                           </select>
                         </div>
+
+                        <div className="md:col-span-2 xl:col-span-1 2xl:col-span-2">
+                          <label className={labelClass}>Sezóna</label>
+                          <select
+                            value={matchListSeasonFilter}
+                            onChange={(e) => setMatchListSeasonFilter(e.target.value)}
+                            className={inputClass}
+                          >
+                            <option value="all">Všechny sezóny</option>
+                            {seasons.map((season) => (
+                              <option key={season} value={season}>
+                                {season}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
                     </div>
 
                     <div className="rounded-2xl bg-gray-50 px-4 py-3 text-sm text-gray-600">
-                      Zobrazeno zápasů: <span className="font-bold text-gray-900">{filteredMatches.length}</span>
+                      Zobrazeno zápasů:{' '}
+                      <span className="font-bold text-gray-900">{filteredMatches.length}</span>
                     </div>
                   </div>
 
@@ -1217,7 +1668,10 @@ Večeřa 1x`}
                       );
 
                       return (
-                        <div key={match.id} className="rounded-2xl border border-green-100 bg-white p-5 shadow-sm">
+                        <div
+                          key={match.id}
+                          className="rounded-2xl border border-green-100 bg-white p-5 shadow-sm"
+                        >
                           <div className="mb-4 flex flex-wrap items-center gap-2">
                             <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
                               {shortLabel}
@@ -1225,6 +1679,10 @@ Večeřa 1x`}
 
                             <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
                               {categoryLabel}
+                            </span>
+
+                            <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
+                              {match.season || '2025-2026'}
                             </span>
 
                             <span
@@ -1259,7 +1717,9 @@ Večeřa 1x`}
                           </div>
 
                           <div className="mb-4 text-sm text-gray-500">
-                            {match.home ? 'Místo: Lipůvka' : `Místo: ${match.venue || 'bude doplněno'}`}
+                            {match.home
+                              ? 'Místo: Lipůvka'
+                              : `Místo: ${match.venue || 'bude doplněno'}`}
                           </div>
 
                           <div className="space-y-3 rounded-2xl bg-gray-50 p-4">
@@ -1377,6 +1837,21 @@ Večeřa 1x`}
                         </select>
                       </div>
                     )}
+
+                    <div>
+                      <label className={labelClass}>Sezóna</label>
+                      <select
+                        value={galleryForm.season}
+                        onChange={(e) => handleGalleryChange('season', e.target.value)}
+                        className={inputClass}
+                      >
+                        {seasons.map((season) => (
+                          <option key={season} value={season}>
+                            {season}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
                     <div>
                       <label className={labelClass}>Název alba</label>
@@ -1524,7 +1999,8 @@ Večeřa 1x`}
                         className={inputClass}
                       />
                       <div className="mt-2 text-sm text-gray-500">
-                        Jedna cesta k fotce na řádek. Můžeš vyplnit ručně, nebo použít generátor nahoře.
+                        Jedna cesta k fotce na řádek. Můžeš vyplnit ručně, nebo použít generátor
+                        nahoře.
                       </div>
                     </div>
 
@@ -1532,8 +2008,8 @@ Večeřa 1x`}
                       {saving
                         ? 'Ukládám…'
                         : editingGalleryId
-                        ? 'Uložit úpravy alba'
-                        : 'Přidat album'}
+                          ? 'Uložit úpravy alba'
+                          : 'Přidat album'}
                     </button>
                   </form>
                 </div>
@@ -1552,6 +2028,10 @@ Večeřa 1x`}
                               {getCategoryLabel(album.category)}
                             </span>
                           )}
+
+                          <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
+                            {album.season || '2025-2026'}
+                          </span>
                         </div>
 
                         <div className="mb-2 text-lg font-bold text-gray-900">{album.title}</div>
