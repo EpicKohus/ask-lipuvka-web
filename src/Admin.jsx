@@ -5,7 +5,6 @@ import {
   collection,
   deleteDoc,
   doc,
-  getDoc,
   getDocs,
   updateDoc,
 } from 'firebase/firestore';
@@ -22,13 +21,6 @@ export default function Admin() {
   const [newsItems, setNewsItems] = useState([]);
   const [matches, setMatches] = useState([]);
   const [galleryAlbums, setGalleryAlbums] = useState([]);
-  const [siteStats, setSiteStats] = useState({
-    visitCount: 0,
-    createdAt: null,
-    updatedAt: null,
-  });
-  const [dailyVisitStats, setDailyVisitStats] = useState([]);
-  const [statsPeriod, setStatsPeriod] = useState(30);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -273,24 +265,9 @@ export default function Admin() {
         ...item.data(),
       }));
 
-      const visitsSnapshot = await getDoc(doc(db, 'siteStats', 'visits'));
-      const visitsData = visitsSnapshot.exists() ? visitsSnapshot.data() : null;
-
-      const dailyStatsSnapshot = await getDocs(collection(db, 'siteStatsDaily'));
-      const loadedDailyStats = dailyStatsSnapshot.docs.map((item) => ({
-        id: item.id,
-        ...item.data(),
-      }));
-
       setNewsItems(loadedNews);
       setMatches(loadedMatches);
       setGalleryAlbums(loadedGallery);
-      setSiteStats({
-        visitCount: Number(visitsData?.count) || 0,
-        createdAt: visitsData?.createdAt || null,
-        updatedAt: visitsData?.updatedAt || null,
-      });
-      setDailyVisitStats(loadedDailyStats);
     } catch (error) {
       console.error('Chyba při načítání admin dat:', error);
       alert('Nepodařilo se načíst data z Firebase.');
@@ -340,137 +317,6 @@ export default function Admin() {
   const sortedGallery = useMemo(() => {
     return [...galleryAlbums].sort((a, b) => a.title.localeCompare(b.title, 'cs'));
   }, [galleryAlbums]);
-
-  const formatDateTime = (value) => {
-    if (!value) return '—';
-
-    try {
-      if (typeof value?.toDate === 'function') {
-        return value.toDate().toLocaleString('cs-CZ');
-      }
-
-      const parsed = new Date(value);
-      if (Number.isNaN(parsed.getTime())) return '—';
-      return parsed.toLocaleString('cs-CZ');
-    } catch {
-      return '—';
-    }
-  };
-
-  const dailyVisitStatsSorted = useMemo(() => {
-    return [...dailyVisitStats].sort((a, b) => a.date.localeCompare(b.date));
-  }, [dailyVisitStats]);
-
-  const last14DaysStats = useMemo(() => {
-    return dailyVisitStatsSorted.slice(-14);
-  }, [dailyVisitStatsSorted]);
-
-  const visitTotals = useMemo(() => {
-    const today = dailyVisitStatsSorted[dailyVisitStatsSorted.length - 1] || null;
-
-    const sumFromTail = (days, key) =>
-      dailyVisitStatsSorted
-        .slice(-days)
-        .reduce((sum, item) => sum + (Number(item?.[key]) || 0), 0);
-
-    return {
-      total: Number(siteStats.visitCount) || 0,
-      todayTotal: Number(today?.totalVisits) || 0,
-      todayUnique: Number(today?.uniqueVisits) || 0,
-      total7: sumFromTail(7, 'totalVisits'),
-      unique7: sumFromTail(7, 'uniqueVisits'),
-      total30: sumFromTail(30, 'totalVisits'),
-      unique30: sumFromTail(30, 'uniqueVisits'),
-    };
-  }, [dailyVisitStatsSorted, siteStats.visitCount]);
-
-  const matchesByCategoryStats = useMemo(() => {
-    return categories.map((category) => ({
-      ...category,
-      total: matches.filter((match) => match.category === category.id).length,
-      played: matches.filter(
-        (match) => match.category === category.id && (match.status || 'planned') === 'played'
-      ).length,
-      planned: matches.filter(
-        (match) => match.category === category.id && (match.status || 'planned') === 'planned'
-      ).length,
-    }));
-  }, [matches]);
-
-  const galleryByCategoryStats = useMemo(() => {
-    return categories.map((category) => ({
-      ...category,
-      total: galleryAlbums.filter(
-        (album) => album.type === 'team' && album.category === category.id
-      ).length,
-    }));
-  }, [galleryAlbums]);
-
-  const newsByCategoryStats = useMemo(() => {
-    return categories.map((category) => ({
-      ...category,
-      total: newsItems.filter((item) => item.category === category.id).length,
-    }));
-  }, [newsItems]);
-
-  const linkedAlbumsCount = useMemo(() => {
-    return matches.filter((match) => Boolean(match.galleryAlbumId)).length;
-  }, [matches]);
-
-  const chartMaxValue = useMemo(() => {
-    const values = last14DaysStats.flatMap((item) => [
-      Number(item?.totalVisits) || 0,
-      Number(item?.uniqueVisits) || 0,
-    ]);
-    return Math.max(...values, 1);
-  }, [last14DaysStats]);
-
-  const filteredPeriodStats = useMemo(() => {
-    return dailyVisitStatsSorted.slice(-statsPeriod);
-  }, [dailyVisitStatsSorted, statsPeriod]);
-
-  const filteredChartMaxValue = useMemo(() => {
-    const values = filteredPeriodStats.flatMap((item) => [
-      Number(item?.totalVisits) || 0,
-      Number(item?.uniqueVisits) || 0,
-    ]);
-    return Math.max(...values, 1);
-  }, [filteredPeriodStats]);
-
-  const statsSummary = useMemo(() => {
-    const periodDays = filteredPeriodStats.length || 1;
-    const totalVisits = filteredPeriodStats.reduce((sum, item) => sum + (Number(item?.totalVisits) || 0), 0);
-    const uniqueVisits = filteredPeriodStats.reduce((sum, item) => sum + (Number(item?.uniqueVisits) || 0), 0);
-
-    const bestDay = filteredPeriodStats.reduce((best, item) => {
-      const value = Number(item?.totalVisits) || 0;
-      if (!best || value > (Number(best?.totalVisits) || 0)) return item;
-      return best;
-    }, null);
-
-    const previousDay = filteredPeriodStats.length > 1 ? filteredPeriodStats[filteredPeriodStats.length - 2] : null;
-    const latestDay = filteredPeriodStats.length > 0 ? filteredPeriodStats[filteredPeriodStats.length - 1] : null;
-
-    const latestTotal = Number(latestDay?.totalVisits) || 0;
-    const previousTotal = Number(previousDay?.totalVisits) || 0;
-    const trendDelta = latestTotal - previousTotal;
-
-    return {
-      totalVisits,
-      uniqueVisits,
-      avgTotalPerDay: Math.round((totalVisits / periodDays) * 10) / 10,
-      avgUniquePerDay: Math.round((uniqueVisits / periodDays) * 10) / 10,
-      bestDay,
-      trendDelta,
-    };
-  }, [filteredPeriodStats]);
-
-  const periodButtonClass = (days) =>
-    `rounded-xl px-4 py-2 text-sm font-semibold transition ${
-      statsPeriod === days
-        ? 'bg-green-600 text-white shadow-md'
-        : 'border border-green-200 bg-white text-green-700 hover:bg-green-50'
-    }`;
 
   const handleNewsChange = (field, value) => {
     setNewsForm((prev) => ({
@@ -862,14 +708,6 @@ export default function Admin() {
             className={sectionButtonClass(activeSection === 'gallery')}
           >
             Galerie
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSection('stats')}
-            className={sectionButtonClass(activeSection === 'stats')}
-          >
-            Statistiky
           </button>
         </div>
 
@@ -1486,445 +1324,6 @@ Večeřa 1x`}
               </div>
             )}
 
-
-            {activeSection === 'stats' && (
-              <div className="space-y-8">
-                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                  <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
-                    <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
-                      Celkem návštěv
-                    </div>
-                    <div className="mt-3 text-4xl font-black text-gray-900">
-                      {visitTotals.total.toLocaleString('cs-CZ')}
-                    </div>
-                    <div className="mt-2 text-sm text-gray-500">
-                      Hlavní počítadlo webu
-                    </div>
-                  </div>
-
-                  <div className="rounded-3xl border border-blue-100 bg-white p-6 shadow-sm">
-                    <div className="text-sm font-semibold uppercase tracking-wide text-blue-700">
-                      Dnes
-                    </div>
-                    <div className="mt-3 text-4xl font-black text-gray-900">
-                      {visitTotals.todayTotal.toLocaleString('cs-CZ')}
-                    </div>
-                    <div className="mt-2 text-sm text-gray-500">
-                      Všechny dnešní návštěvy
-                    </div>
-                  </div>
-
-                  <div className="rounded-3xl border border-orange-100 bg-white p-6 shadow-sm">
-                    <div className="text-sm font-semibold uppercase tracking-wide text-orange-700">
-                      Unikátní dnes
-                    </div>
-                    <div className="mt-3 text-4xl font-black text-gray-900">
-                      {visitTotals.todayUnique.toLocaleString('cs-CZ')}
-                    </div>
-                    <div className="mt-2 text-sm text-gray-500">
-                      1 zařízení = 1 návštěva za den
-                    </div>
-                  </div>
-
-                  <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <div className="text-sm font-semibold uppercase tracking-wide text-gray-600">
-                      Rychlá akce
-                    </div>
-                    <button
-                      type="button"
-                      onClick={loadAllData}
-                      className="mt-3 rounded-xl bg-green-600 px-5 py-3 font-semibold text-white transition hover:bg-green-700"
-                    >
-                      Obnovit statistiky
-                    </button>
-                    <div className="mt-2 text-sm text-gray-500">
-                      Načte aktuální data z Firebase
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                  <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <div className="text-sm font-semibold uppercase tracking-wide text-gray-600">
-                      7 dní
-                    </div>
-                    <div className="mt-3 text-3xl font-black text-gray-900">
-                      {visitTotals.total7.toLocaleString('cs-CZ')}
-                    </div>
-                    <div className="mt-2 text-sm text-gray-500">
-                      Všechny návštěvy
-                    </div>
-                  </div>
-
-                  <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <div className="text-sm font-semibold uppercase tracking-wide text-gray-600">
-                      7 dní unikátní
-                    </div>
-                    <div className="mt-3 text-3xl font-black text-gray-900">
-                      {visitTotals.unique7.toLocaleString('cs-CZ')}
-                    </div>
-                    <div className="mt-2 text-sm text-gray-500">
-                      Unikátní návštěvy
-                    </div>
-                  </div>
-
-                  <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <div className="text-sm font-semibold uppercase tracking-wide text-gray-600">
-                      30 dní
-                    </div>
-                    <div className="mt-3 text-3xl font-black text-gray-900">
-                      {visitTotals.total30.toLocaleString('cs-CZ')}
-                    </div>
-                    <div className="mt-2 text-sm text-gray-500">
-                      Všechny návštěvy
-                    </div>
-                  </div>
-
-                  <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
-                    <div className="text-sm font-semibold uppercase tracking-wide text-gray-600">
-                      30 dní unikátní
-                    </div>
-                    <div className="mt-3 text-3xl font-black text-gray-900">
-                      {visitTotals.unique30.toLocaleString('cs-CZ')}
-                    </div>
-                    <div className="mt-2 text-sm text-gray-500">
-                      Unikátní návštěvy
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
-                  <div className="space-y-6">
-                    <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
-                      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                        <div>
-                          <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
-                            Profi statistiky návštěvnosti
-                          </div>
-                          <h2 className="mt-2 text-2xl font-bold text-green-700">
-                            Přehled návštěvnosti
-                          </h2>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2">
-                          <button type="button" onClick={() => setStatsPeriod(7)} className={periodButtonClass(7)}>
-                            7 dní
-                          </button>
-                          <button type="button" onClick={() => setStatsPeriod(30)} className={periodButtonClass(30)}>
-                            30 dní
-                          </button>
-                          <button type="button" onClick={() => setStatsPeriod(90)} className={periodButtonClass(90)}>
-                            90 dní
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                        <div className="rounded-2xl bg-gray-50 p-4">
-                          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Průměr / den
-                          </div>
-                          <div className="mt-2 text-2xl font-black text-gray-900">
-                            {statsSummary.avgTotalPerDay.toLocaleString('cs-CZ')}
-                          </div>
-                          <div className="mt-1 text-sm text-gray-500">všechny návštěvy</div>
-                        </div>
-
-                        <div className="rounded-2xl bg-gray-50 p-4">
-                          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Unikátní / den
-                          </div>
-                          <div className="mt-2 text-2xl font-black text-gray-900">
-                            {statsSummary.avgUniquePerDay.toLocaleString('cs-CZ')}
-                          </div>
-                          <div className="mt-1 text-sm text-gray-500">unikátní návštěvy</div>
-                        </div>
-
-                        <div className="rounded-2xl bg-gray-50 p-4">
-                          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Nejlepší den
-                          </div>
-                          <div className="mt-2 text-lg font-black text-gray-900">
-                            {statsSummary.bestDay?.date || '—'}
-                          </div>
-                          <div className="mt-1 text-sm text-gray-500">
-                            {statsSummary.bestDay ? `${Number(statsSummary.bestDay.totalVisits || 0).toLocaleString('cs-CZ')} návštěv` : 'zatím bez dat'}
-                          </div>
-                        </div>
-
-                        <div className="rounded-2xl bg-gray-50 p-4">
-                          <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                            Trend vs. včera
-                          </div>
-                          <div className={`mt-2 text-2xl font-black ${
-                            statsSummary.trendDelta > 0
-                              ? 'text-green-700'
-                              : statsSummary.trendDelta < 0
-                              ? 'text-red-600'
-                              : 'text-gray-900'
-                          }`}>
-                            {statsSummary.trendDelta > 0 ? '+' : ''}{statsSummary.trendDelta.toLocaleString('cs-CZ')}
-                          </div>
-                          <div className="mt-1 text-sm text-gray-500">
-                            rozdíl všech návštěv
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mb-4 text-sm text-gray-500">
-                        Modrá = všechny návštěvy • Zelená = unikátní návštěvy
-                      </div>
-
-                      {filteredPeriodStats.length > 0 ? (
-                        <div className="space-y-4">
-                          {filteredPeriodStats.map((item) => {
-                            const total = Number(item?.totalVisits) || 0;
-                            const unique = Number(item?.uniqueVisits) || 0;
-                            const totalWidth = `${Math.max((total / filteredChartMaxValue) * 100, total > 0 ? 6 : 0)}%`;
-                            const uniqueWidth = `${Math.max((unique / filteredChartMaxValue) * 100, unique > 0 ? 6 : 0)}%`;
-
-                            return (
-                              <div key={item.id || item.date}>
-                                <div className="mb-2 flex items-center justify-between gap-3">
-                                  <div className="text-sm font-semibold text-gray-800">
-                                    {item.date}
-                                  </div>
-                                  <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                                    <span>Všechny: {total}</span>
-                                    <span>Unikátní: {unique}</span>
-                                  </div>
-                                </div>
-
-                                <div className="space-y-2 rounded-2xl bg-gray-50 p-3">
-                                  <div>
-                                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-700">
-                                      Všechny návštěvy
-                                    </div>
-                                    <div className="h-3 overflow-hidden rounded-full bg-gray-200">
-                                      <div
-                                        className="h-full rounded-full bg-blue-500 transition-all duration-300"
-                                        style={{ width: totalWidth }}
-                                      />
-                                    </div>
-                                  </div>
-
-                                  <div>
-                                    <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-green-700">
-                                      Unikátní návštěvy
-                                    </div>
-                                    <div className="h-3 overflow-hidden rounded-full bg-gray-200">
-                                      <div
-                                        className="h-full rounded-full bg-green-500 transition-all duration-300"
-                                        style={{ width: uniqueWidth }}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <div className="rounded-2xl bg-gray-50 p-5 text-gray-600">
-                          Zatím nejsou nasbíraná denní data. Jakmile web poběží s novým měřením, graf se začne plnit.
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
-                      <div className="mb-5">
-                        <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
-                          Obsah webu
-                        </div>
-                        <h2 className="mt-2 text-2xl font-bold text-green-700">
-                          Souhrn webu
-                        </h2>
-                      </div>
-
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="rounded-2xl bg-green-50 p-5">
-                          <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
-                            Novinky
-                          </div>
-                          <div className="mt-2 text-3xl font-black text-gray-900">
-                            {newsItems.length}
-                          </div>
-                        </div>
-
-                        <div className="rounded-2xl bg-blue-50 p-5">
-                          <div className="text-sm font-semibold uppercase tracking-wide text-blue-700">
-                            Zápasy
-                          </div>
-                          <div className="mt-2 text-3xl font-black text-gray-900">
-                            {matches.length}
-                          </div>
-                        </div>
-
-                        <div className="rounded-2xl bg-orange-50 p-5">
-                          <div className="text-sm font-semibold uppercase tracking-wide text-orange-700">
-                            Alba galerie
-                          </div>
-                          <div className="mt-2 text-3xl font-black text-gray-900">
-                            {galleryAlbums.length}
-                          </div>
-                        </div>
-
-                        <div className="rounded-2xl bg-gray-100 p-5">
-                          <div className="text-sm font-semibold uppercase tracking-wide text-gray-700">
-                            Napojené fotky k zápasu
-                          </div>
-                          <div className="mt-2 text-3xl font-black text-gray-900">
-                            {linkedAlbumsCount}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
-                      <div className="mb-5">
-                        <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
-                          Technické info
-                        </div>
-                        <h2 className="mt-2 text-2xl font-bold text-green-700">
-                          Stav počítadla
-                        </h2>
-                      </div>
-
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
-                          <div className="font-semibold text-gray-800">Počítadlo od</div>
-                          <div className="text-sm font-bold text-gray-900">
-                            {formatDateTime(siteStats.createdAt)}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
-                          <div className="font-semibold text-gray-800">Poslední změna</div>
-                          <div className="text-sm font-bold text-gray-900">
-                            {formatDateTime(siteStats.updatedAt)}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
-                          <div className="font-semibold text-gray-800">Nasbíraných dnů</div>
-                          <div className="text-xl font-black text-gray-900">
-                            {dailyVisitStatsSorted.length}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
-                      <div className="mb-5">
-                        <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
-                          Zápasy podle kategorií
-                        </div>
-                        <h2 className="mt-2 text-2xl font-bold text-green-700">
-                          Kategorie
-                        </h2>
-                      </div>
-
-                      <div className="space-y-4">
-                        {matchesByCategoryStats.map((category) => (
-                          <div
-                            key={category.id}
-                            className="rounded-2xl border border-gray-200 bg-gray-50 p-5"
-                          >
-                            <div className="mb-3 flex items-center justify-between gap-3">
-                              <div className="text-lg font-bold text-gray-900">
-                                {category.label}
-                              </div>
-                              <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-700 shadow-sm">
-                                {category.total} zápasů
-                              </span>
-                            </div>
-
-                            <div className="grid gap-3 sm:grid-cols-3">
-                              <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                  Celkem
-                                </div>
-                                <div className="mt-1 text-2xl font-black text-gray-900">
-                                  {category.total}
-                                </div>
-                              </div>
-
-                              <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                  Odehráno
-                                </div>
-                                <div className="mt-1 text-2xl font-black text-gray-900">
-                                  {category.played}
-                                </div>
-                              </div>
-
-                              <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                                <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                  Plánováno
-                                </div>
-                                <div className="mt-1 text-2xl font-black text-gray-900">
-                                  {category.planned}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
-                      <div className="mb-5">
-                        <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
-                          Přehled kategorií
-                        </div>
-                        <h2 className="mt-2 text-2xl font-bold text-green-700">
-                          Novinky a galerie
-                        </h2>
-                      </div>
-
-                      <div className="space-y-3">
-                        {categories.map((category) => {
-                          const newsCount =
-                            newsByCategoryStats.find((item) => item.id === category.id)?.total || 0;
-                          const galleryCount =
-                            galleryByCategoryStats.find((item) => item.id === category.id)?.total || 0;
-
-                          return (
-                            <div
-                              key={category.id}
-                              className="rounded-2xl border border-gray-200 bg-gray-50 p-4"
-                            >
-                              <div className="mb-2 font-bold text-gray-900">{category.label}</div>
-                              <div className="grid gap-3 sm:grid-cols-2">
-                                <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                                  <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Novinky
-                                  </div>
-                                  <div className="mt-1 text-2xl font-black text-gray-900">
-                                    {newsCount}
-                                  </div>
-                                </div>
-                                <div className="rounded-xl bg-white px-4 py-3 shadow-sm">
-                                  <div className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    Týmová alba
-                                  </div>
-                                  <div className="mt-1 text-2xl font-black text-gray-900">
-                                    {galleryCount}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {activeSection === 'gallery' && (
               <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
                 <div className={cardSoftClass}>
@@ -1996,7 +1395,7 @@ Večeřa 1x`}
                           Automatické generování fotek
                         </div>
                         <div className="mt-1 text-sm text-gray-600">
-                          Vyplň složku a rozsah fotek, admin ti sám připraví celý seznam cest.
+                          Vyplň složku a počet fotek. Když zadáš třeba 45, admin vygeneruje fotky 1–45.
                         </div>
                       </div>
 
@@ -2012,27 +1411,18 @@ Večeřa 1x`}
                           />
                         </div>
 
-                        <div className="grid gap-5 md:grid-cols-3">
+                        <div className="grid gap-5 md:grid-cols-2">
                           <div>
-                            <label className={labelClass}>Od čísla</label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={galleryForm.fromNumber}
-                              onChange={(e) => handleGalleryChange('fromNumber', e.target.value)}
-                              placeholder="1"
-                              className={inputClass}
-                            />
-                          </div>
-
-                          <div>
-                            <label className={labelClass}>Do čísla</label>
+                            <label className={labelClass}>Počet fotek</label>
                             <input
                               type="number"
                               min="1"
                               value={galleryForm.toNumber}
-                              onChange={(e) => handleGalleryChange('toNumber', e.target.value)}
-                              placeholder="44"
+                              onChange={(e) => {
+                                handleGalleryChange('fromNumber', '1');
+                                handleGalleryChange('toNumber', e.target.value);
+                              }}
+                              placeholder="45"
                               className={inputClass}
                             />
                           </div>
