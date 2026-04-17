@@ -9,6 +9,30 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 
+const handleFolderSelect = (e, setForm) => {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+
+  const paths = files
+    .map((file) => {
+      const path = file.webkitRelativePath || file.name;
+      return path.replace(/^public\//, '/');
+    })
+    .filter((path) => /\.(jpg|jpeg|png)$/i.test(path))
+    .sort((a, b) => {
+      const numA = parseInt(a.match(/(\d+)\.jpg/i)?.[1] || 0);
+      const numB = parseInt(b.match(/(\d+)\.jpg/i)?.[1] || 0);
+      return numA - numB;
+    });
+
+  const textPhotos = paths.join('\n');
+
+  setForm((prev) => ({
+    ...prev,
+    photosText: textPhotos,
+  }));
+};
+
 export default function Admin() {
   const categories = [
     { id: 'predpripravka', label: 'Předpřípravka (U7)', shortLabel: 'U7' },
@@ -1392,7 +1416,21 @@ Večeřa 1x`}
                     <div className="rounded-2xl border border-green-200 bg-white/80 p-5">
                       <div className="mb-4">
                         <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
-                          Automatické generování fotek
+                          Vybrat složku s fotkami</div>
+  <input
+    type="file"
+    webkitdirectory="true"
+    multiple
+    onChange={(e) => handleFolderSelect(e, setForm)}
+    className="w-full rounded-xl border border-gray-300 px-4 py-3 mb-4"
+  />
+
+  <div className="text-xs text-gray-500 mb-4">
+    Vyber složku a fotky se načtou automaticky
+  </div>
+
+  <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+    Automatické generování fotek
                         </div>
                         <div className="mt-1 text-sm text-gray-600">
                           Vyplň složku a počet fotek. Když zadáš třeba 45, admin vygeneruje fotky 1–45.
