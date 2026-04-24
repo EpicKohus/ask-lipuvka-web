@@ -328,7 +328,7 @@ export default function Admin() {
     const today = new Date();
     const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-    return sortedMatches.filter((match) => {
+    const filtered = sortedMatches.filter((match) => {
       const categoryOk =
         matchListCategoryFilter === 'all' || match.category === matchListCategoryFilter;
 
@@ -340,6 +340,12 @@ export default function Admin() {
 
       return categoryOk && timeOk;
     });
+
+    if (matchListTimeFilter === 'played') {
+      return filtered.sort((a, b) => parseMatchDate(b) - parseMatchDate(a));
+    }
+
+    return filtered.sort((a, b) => parseMatchDate(a) - parseMatchDate(b));
   }, [sortedMatches, matchListCategoryFilter, matchListTimeFilter]);
 
   const sortedGallery = useMemo(() => {
