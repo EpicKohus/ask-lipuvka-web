@@ -236,43 +236,6 @@ export default function Admin() {
     });
   };
 
-  const formatDateTime = (value) => {
-    if (!value) return '—';
-    const date = value?.toDate ? value.toDate() : new Date(value);
-    if (Number.isNaN(date.getTime())) return '—';
-    return date.toLocaleString('cs-CZ');
-  };
-
-  const loadVisitStats = async () => {
-    setVisitStatsError('');
-
-    try {
-      const response = await fetch('/api/visits', { method: 'GET' });
-      if (response.ok) {
-        const data = await response.json();
-        const count = data?.count ?? data?.total ?? data?.totalVisits ?? null;
-        if (count !== null) setVisitCount(Number(count));
-      }
-    } catch (error) {
-      console.warn('API návštěvnosti není dostupné:', error);
-    }
-
-    try {
-      const snapshot = await getDocs(collection(db, 'visitStats'));
-      const loadedStats = snapshot.docs.map((item) => ({
-        id: item.id,
-        ...item.data(),
-      }));
-
-      loadedStats.sort((a, b) => String(a.date || a.id).localeCompare(String(b.date || b.id)));
-      setDailyVisitStats(loadedStats);
-    } catch (error) {
-      console.warn('Denní statistiky nejsou dostupné:', error);
-      setDailyVisitStats([]);
-      setVisitStatsError('Denní statistiky se teď nepodařilo načíst.');
-    }
-  };
-
   const resetGalleryForm = () => {
     setEditingGalleryId(null);
     setGalleryForm({
@@ -322,8 +285,6 @@ export default function Admin() {
       setNewsItems(loadedNews);
       setMatches(loadedMatches);
       setGalleryAlbums(loadedGallery);
-
-      await loadVisitStats();
       setSiteStats({
         visitCount: Number(visitsData?.count) || 0,
         createdAt: visitsData?.createdAt || null,
@@ -887,50 +848,6 @@ export default function Admin() {
       .join(', ');
   };
 
-  const todayKey = new Date().toISOString().slice(0, 10);
-
-  const filteredPeriodStats = useMemo(() => {
-    return dailyVisitStats.slice(-statsPeriod);
-  }, [dailyVisitStats, statsPeriod]);
-
-  const last14DaysStats = useMemo(() => {
-    return dailyVisitStats.slice(-14);
-  }, [dailyVisitStats]);
-
-  const chartMaxValue = Math.max(
-    1,
-    ...last14DaysStats.map((item) => Number(item.totalVisits || item.total || item.count || 0))
-  );
-
-  const visitTotals = useMemo(() => {
-    const totalFromDays = dailyVisitStats.reduce(
-      (sum, item) => sum + Number(item.totalVisits || item.total || item.count || 0),
-      0
-    );
-
-    const uniqueFromDays = dailyVisitStats.reduce(
-      (sum, item) => sum + Number(item.uniqueVisits || item.unique || 0),
-      0
-    );
-
-    const todayStats = dailyVisitStats.find((item) => String(item.date || item.id) === todayKey);
-    const last7 = dailyVisitStats.slice(-7);
-    const last30 = dailyVisitStats.slice(-30);
-
-    return {
-      total: visitCount ?? totalFromDays,
-      unique: uniqueFromDays,
-      todayTotal: Number(todayStats?.totalVisits || todayStats?.total || todayStats?.count || 0),
-      todayUnique: Number(todayStats?.uniqueVisits || todayStats?.unique || 0),
-      total7: last7.reduce((sum, item) => sum + Number(item.totalVisits || item.total || item.count || 0), 0),
-      unique7: last7.reduce((sum, item) => sum + Number(item.uniqueVisits || item.unique || 0), 0),
-      total30: last30.reduce((sum, item) => sum + Number(item.totalVisits || item.total || item.count || 0), 0),
-      unique30: last30.reduce((sum, item) => sum + Number(item.uniqueVisits || item.unique || 0), 0),
-    };
-  }, [dailyVisitStats, todayKey, visitCount]);
-
-  const linkedAlbumsCount = matches.filter((match) => Boolean(match.galleryAlbumId)).length;
-
   const currentAlbum = matchForm.galleryAlbumId
     ? galleryAlbums.find((album) => album.id === matchForm.galleryAlbumId)
     : null;
@@ -1451,31 +1368,7 @@ Večeřa 1x`}
                         </div>
                       </div>
 
-                      <div className="space-y-4">
-                        <div>
-                          <label className={labelClass}>Přepínač zápasů</label>
-                          <div className="grid gap-2 sm:grid-cols-3">
-                            {[
-                              { id: 'planned', label: 'Budoucí' },
-                              { id: 'played', label: 'Odehrané' },
-                              { id: 'all', label: 'Všechny' },
-                            ].map((item) => (
-                              <button
-                                key={item.id}
-                                type="button"
-                                onClick={() => setMatchListStatusFilter(item.id)}
-                                className={`rounded-xl px-4 py-3 font-semibold transition ${
-                                  matchListStatusFilter === item.id
-                                    ? 'bg-green-600 text-white shadow-md'
-                                    : 'border border-green-200 bg-white text-green-700 hover:bg-green-50'
-                                }`}
-                              >
-                                {item.label}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
                         <div>
                           <label className={labelClass}>Kategorie</label>
                           <select
@@ -1489,6 +1382,19 @@ Večeřa 1x`}
                                 {category.label}
                               </option>
                             ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className={labelClass}>Status</label>
+                          <select
+                            value={matchListStatusFilter}
+                            onChange={(e) => setMatchListStatusFilter(e.target.value)}
+                            className={inputClass}
+                          >
+                            <option value="all">Všechny</option>
+                            <option value="planned">Plánováno</option>
+                            <option value="played">Odehráno</option>
                           </select>
                         </div>
                       </div>
@@ -2157,7 +2063,7 @@ Večeřa 1x`}
                             type="text"
                             value={galleryForm.folder}
                             onChange={(e) => handleGalleryChange('folder', e.target.value)}
-                            placeholder="/zapasy/jaro26/14kolo"
+                            placeholder="/zapasy/jaro26/11kolo"
                             className={inputClass}
                           />
                         </div>
@@ -2249,7 +2155,7 @@ Večeřa 1x`}
                         type="text"
                         value={galleryForm.cover}
                         onChange={(e) => handleGalleryChange('cover', e.target.value)}
-                        placeholder="/zapasy/jaro26/14kolo/10.jpg"
+                        placeholder="/zapasy/jaro26/11kolo/1.jpg"
                         className={inputClass}
                       />
                     </div>
@@ -2260,9 +2166,9 @@ Večeřa 1x`}
                         rows="10"
                         value={galleryForm.photosText}
                         onChange={(e) => handleGalleryChange('photosText', e.target.value)}
-                        placeholder={`/zapasy/jaro26/14kolo/10.jpg
-/zapasy/jaro26/14kolo/11.jpg
-/zapasy/jaro26/14kolo/12.jpg`}
+                        placeholder={`/zapasy/jaro26/11kolo/1.jpg
+/zapasy/jaro26/11kolo/2.jpg
+/zapasy/jaro26/11kolo/3.jpg`}
                         className={inputClass}
                       />
                       <div className="mt-2 text-sm text-gray-500">
@@ -2331,161 +2237,6 @@ Večeřa 1x`}
                       <div className="text-gray-500">Zatím tu nejsou žádná alba.</div>
                     </div>
                   )}
-                </div>
-              </div>
-            )}
-
-
-            {activeSection === 'stats' && (
-              <div className="space-y-8">
-                <div className={cardSoftClass}>
-                  <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
-                        Statistiky webu
-                      </div>
-                      <h2 className="text-2xl font-bold text-green-700">Návštěvnost a obsah</h2>
-                    </div>
-                    <button type="button" onClick={loadAllData} className={outlineButtonClass}>
-                      Obnovit statistiky
-                    </button>
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-2xl bg-white p-5 shadow-sm">
-                      <div className="text-sm font-semibold text-gray-500">Celkem návštěv</div>
-                      <div className="mt-2 text-3xl font-black text-green-700">
-                        {Number(visitTotals.total || 0).toLocaleString('cs-CZ')}
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl bg-white p-5 shadow-sm">
-                      <div className="text-sm font-semibold text-gray-500">Dnes</div>
-                      <div className="mt-2 text-3xl font-black text-gray-900">
-                        {Number(visitTotals.todayTotal || 0).toLocaleString('cs-CZ')}
-                      </div>
-                      <div className="mt-1 text-sm text-gray-500">
-                        Unikátní: {Number(visitTotals.todayUnique || 0).toLocaleString('cs-CZ')}
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl bg-white p-5 shadow-sm">
-                      <div className="text-sm font-semibold text-gray-500">7 dní</div>
-                      <div className="mt-2 text-3xl font-black text-gray-900">
-                        {Number(visitTotals.total7 || 0).toLocaleString('cs-CZ')}
-                      </div>
-                      <div className="mt-1 text-sm text-gray-500">
-                        Unikátní: {Number(visitTotals.unique7 || 0).toLocaleString('cs-CZ')}
-                      </div>
-                    </div>
-
-                    <div className="rounded-2xl bg-white p-5 shadow-sm">
-                      <div className="text-sm font-semibold text-gray-500">30 dní</div>
-                      <div className="mt-2 text-3xl font-black text-gray-900">
-                        {Number(visitTotals.total30 || 0).toLocaleString('cs-CZ')}
-                      </div>
-                      <div className="mt-1 text-sm text-gray-500">
-                        Unikátní: {Number(visitTotals.unique30 || 0).toLocaleString('cs-CZ')}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 grid gap-4 md:grid-cols-3">
-                    <div className="rounded-2xl bg-white p-5 shadow-sm">
-                      <div className="text-sm font-semibold text-gray-500">Novinky</div>
-                      <div className="mt-2 text-3xl font-black text-gray-900">{newsItems.length}</div>
-                    </div>
-                    <div className="rounded-2xl bg-white p-5 shadow-sm">
-                      <div className="text-sm font-semibold text-gray-500">Zápasy</div>
-                      <div className="mt-2 text-3xl font-black text-gray-900">{matches.length}</div>
-                      <div className="mt-1 text-sm text-gray-500">Fotoreporty: {linkedAlbumsCount}</div>
-                    </div>
-                    <div className="rounded-2xl bg-white p-5 shadow-sm">
-                      <div className="text-sm font-semibold text-gray-500">Alba</div>
-                      <div className="mt-2 text-3xl font-black text-gray-900">{galleryAlbums.length}</div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
-                    <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                      <div>
-                        <div className="text-lg font-bold text-gray-900">Návštěvnost po dnech</div>
-                        <div className="text-sm text-gray-500">Denní statistiky z Firebase</div>
-                      </div>
-                      <select
-                        value={statsPeriod}
-                        onChange={(e) => setStatsPeriod(Number(e.target.value))}
-                        className="rounded-xl border border-gray-300 bg-white px-4 py-3 font-semibold text-gray-700"
-                      >
-                        <option value={7}>7 dní</option>
-                        <option value={14}>14 dní</option>
-                        <option value={30}>30 dní</option>
-                        <option value={90}>90 dní</option>
-                      </select>
-                    </div>
-
-                    {visitStatsError && (
-                      <div className="mb-4 rounded-2xl bg-yellow-50 p-4 text-sm text-yellow-800">
-                        {visitStatsError}
-                      </div>
-                    )}
-
-                    {last14DaysStats.length > 0 && (
-                      <div className="mb-6 flex h-44 items-end gap-2 rounded-2xl bg-gray-50 p-4">
-                        {last14DaysStats.map((item) => {
-                          const total = Number(item.totalVisits || item.total || item.count || 0);
-                          const height = Math.max(8, Math.round((total / chartMaxValue) * 130));
-
-                          return (
-                            <div key={item.id || item.date} className="flex flex-1 flex-col items-center justify-end gap-2">
-                              <div className="text-xs font-bold text-gray-700">{total}</div>
-                              <div
-                                className="w-full rounded-t-xl bg-green-500"
-                                style={{ height: `${height}px` }}
-                                title={`${item.date || item.id}: ${total} návštěv`}
-                              />
-                              <div className="max-w-[58px] truncate text-[10px] text-gray-500">
-                                {item.date || item.id}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-
-                    {filteredPeriodStats.length > 0 ? (
-                      <div className="overflow-x-auto">
-                        <table className="w-full min-w-[620px] text-left text-sm">
-                          <thead>
-                            <tr className="border-b text-gray-500">
-                              <th className="py-3 pr-4">Datum</th>
-                              <th className="py-3 pr-4">Celkem</th>
-                              <th className="py-3 pr-4">Unikátní</th>
-                              <th className="py-3 pr-4">Update</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {[...filteredPeriodStats].reverse().map((item) => (
-                              <tr key={item.id || item.date} className="border-b last:border-b-0">
-                                <td className="py-3 pr-4 font-semibold text-gray-900">{item.date || item.id}</td>
-                                <td className="py-3 pr-4 text-gray-700">
-                                  {Number(item.totalVisits || item.total || item.count || 0).toLocaleString('cs-CZ')}
-                                </td>
-                                <td className="py-3 pr-4 text-gray-700">
-                                  {Number(item.uniqueVisits || item.unique || 0).toLocaleString('cs-CZ')}
-                                </td>
-                                <td className="py-3 pr-4 text-gray-500">{formatDateTime(item.updatedAt)}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl bg-gray-50 p-5 text-gray-500">
-                        Denní statistiky zatím nejsou k dispozici.
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
             )}
