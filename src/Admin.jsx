@@ -39,7 +39,7 @@ export default function Admin() {
 
 
   const [matchListCategoryFilter, setMatchListCategoryFilter] = useState('all');
-  const [matchListTimeFilter, setMatchListTimeFilter] = useState('future');
+  const [matchListStatusFilter, setMatchListStatusFilter] = useState('all');
 
   const [newsForm, setNewsForm] = useState({
     category: 'mladsi-pripravka',
@@ -325,32 +325,42 @@ export default function Admin() {
   }, [matches]);
 
   const filteredMatches = useMemo(() => {
-    const today = new Date();
-    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-
-    const filtered = sortedMatches.filter((match) => {
+    return sortedMatches.filter((match) => {
       const categoryOk =
         matchListCategoryFilter === 'all' || match.category === matchListCategoryFilter;
 
-      const matchDate = parseMatchDate(match);
-      const timeOk =
-        matchListTimeFilter === 'all' ||
-        (matchListTimeFilter === 'future' && matchDate >= todayStart) ||
-        (matchListTimeFilter === 'played' && matchDate < todayStart);
+      const status = match.status || 'planned';
+      const statusOk =
+        matchListStatusFilter === 'all' || status === matchListStatusFilter;
 
-      return categoryOk && timeOk;
+      return categoryOk && statusOk;
     });
+  }, [sortedMatches, matchListCategoryFilter, matchListStatusFilter]);
 
-    if (matchListTimeFilter === 'played') {
-      return filtered.sort((a, b) => parseMatchDate(b) - parseMatchDate(a));
+  const getGallerySortTime = (album) => {
+    const linkedMatch = matches.find((match) => match.galleryAlbumId === album.id);
+    if (linkedMatch) {
+      const linkedMatchDate = parseMatchDate(linkedMatch);
+      const linkedMatchTime = linkedMatchDate.getTime();
+      if (!Number.isNaN(linkedMatchTime)) return linkedMatchTime;
     }
 
-    return filtered.sort((a, b) => parseMatchDate(a) - parseMatchDate(b));
-  }, [sortedMatches, matchListCategoryFilter, matchListTimeFilter]);
+    const updatedAt = album.updatedAt || album.createdAt;
+    if (updatedAt) {
+      const parsedUpdatedAt = new Date(updatedAt).getTime();
+      if (!Number.isNaN(parsedUpdatedAt)) return parsedUpdatedAt;
+    }
+
+    return 0;
+  };
 
   const sortedGallery = useMemo(() => {
-    return [...galleryAlbums].sort((a, b) => a.title.localeCompare(b.title, 'cs'));
-  }, [galleryAlbums]);
+    return [...galleryAlbums].sort((a, b) => {
+      const dateDiff = getGallerySortTime(b) - getGallerySortTime(a);
+      if (dateDiff !== 0) return dateDiff;
+      return a.title.localeCompare(b.title, 'cs');
+    });
+  }, [galleryAlbums, matches]);
 
   const formatDateTime = (value) => {
     if (!value) return '—';
@@ -780,18 +790,23 @@ export default function Admin() {
     try {
       setSaving(true);
 
+      const now = new Date().toISOString();
       const payload = {
         type: galleryForm.type,
         category: galleryForm.type === 'team' ? galleryForm.category : '',
         title: galleryForm.title.trim(),
         cover: galleryForm.cover.trim(),
         photos: parsedPhotos,
+        updatedAt: now,
       };
 
       if (editingGalleryId) {
         await updateDoc(doc(db, 'gallery', editingGalleryId), payload);
       } else {
-        await addDoc(collection(db, 'gallery'), payload);
+        await addDoc(collection(db, 'gallery'), {
+          ...payload,
+          createdAt: now,
+        });
       }
 
       await loadAllData();
@@ -1375,7 +1390,7 @@ Večeřa 1x`}
                       <div>
                         <div className="text-lg font-bold text-gray-900">Přehled zápasů</div>
                         <div className="text-sm text-gray-500">
-                          Filtruj si zápasy podle kategorie a podle toho, jestli jsou budoucí nebo odehrané.
+                          Filtruj si zápasy podle kategorie a stavu.
                         </div>
                       </div>
 
@@ -1397,44 +1412,16 @@ Večeřa 1x`}
                         </div>
 
                         <div>
-                          <label className={labelClass}>Zápasy</label>
-                          <div className="grid grid-cols-3 gap-2 rounded-xl bg-gray-100 p-1">
-                            <button
-                              type="button"
-                              onClick={() => setMatchListTimeFilter('future')}
-                              className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
-                                matchListTimeFilter === 'future'
-                                  ? 'bg-green-600 text-white shadow-sm'
-                                  : 'text-gray-700 hover:bg-white'
-                              }`}
-                            >
-                              Budoucí
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => setMatchListTimeFilter('played')}
-                              className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
-                                matchListTimeFilter === 'played'
-                                  ? 'bg-green-600 text-white shadow-sm'
-                                  : 'text-gray-700 hover:bg-white'
-                              }`}
-                            >
-                              Odehrané
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => setMatchListTimeFilter('all')}
-                              className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
-                                matchListTimeFilter === 'all'
-                                  ? 'bg-green-600 text-white shadow-sm'
-                                  : 'text-gray-700 hover:bg-white'
-                              }`}
-                            >
-                              Všechny
-                            </button>
-                          </div>
+                          <label className={labelClass}>Status</label>
+                          <select
+                            value={matchListStatusFilter}
+                            onChange={(e) => setMatchListStatusFilter(e.target.value)}
+                            className={inputClass}
+                          >
+                            <option value="all">Všechny</option>
+                            <option value="planned">Plánováno</option>
+                            <option value="played">Odehráno</option>
+                          </select>
                         </div>
                       </div>
                     </div>
@@ -2226,6 +2213,10 @@ Večeřa 1x`}
                 </div>
 
                 <div className="space-y-5">
+                  <div className="rounded-2xl border border-green-100 bg-white p-4 text-sm text-gray-600 shadow-sm">
+                    Alba jsou seřazená od nejnovějšího nahoře. U alb napojených na zápas se bere datum zápasu, jinak poslední úprava alba.
+                  </div>
+
                   {sortedGallery.length > 0 ? (
                     sortedGallery.map((album) => (
                       <div key={album.id} className={cardClass}>
