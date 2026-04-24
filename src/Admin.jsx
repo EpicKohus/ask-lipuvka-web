@@ -25,10 +25,6 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const [visitStats, setVisitStats] = useState(null);
-  const [visitStatsLoading, setVisitStatsLoading] = useState(false);
-  const [visitStatsError, setVisitStatsError] = useState('');
-
   const [matchListCategoryFilter, setMatchListCategoryFilter] = useState('all');
   const [matchListStatusFilter, setMatchListStatusFilter] = useState('all');
 
@@ -275,30 +271,8 @@ export default function Admin() {
     }
   };
 
-  const loadVisitStats = async () => {
-    try {
-      setVisitStatsLoading(true);
-      setVisitStatsError('');
-
-      const response = await fetch('/api/visits', { method: 'GET' });
-
-      if (!response.ok) {
-        throw new Error('Nepodařilo se načíst statistiky návštěvnosti.');
-      }
-
-      const data = await response.json();
-      setVisitStats(data);
-    } catch (error) {
-      console.error('Chyba při načítání statistik:', error);
-      setVisitStatsError('Statistiky se teď nepodařilo načíst.');
-    } finally {
-      setVisitStatsLoading(false);
-    }
-  };
-
   useEffect(() => {
     loadAllData();
-    loadVisitStats();
   }, []);
 
   const newsByCategory = useMemo(() => {
@@ -668,25 +642,6 @@ export default function Admin() {
     ? galleryAlbums.find((album) => album.id === matchForm.galleryAlbumId)
     : null;
 
-  const totalVisits =
-    visitStats?.count ??
-    visitStats?.total ??
-    visitStats?.totalVisits ??
-    visitStats?.visits ??
-    null;
-
-  const uniqueVisits =
-    visitStats?.unique ??
-    visitStats?.uniqueVisits ??
-    visitStats?.uniqueCount ??
-    null;
-
-  const countryStats = Array.isArray(visitStats?.countries)
-    ? visitStats.countries
-    : visitStats?.countries && typeof visitStats.countries === 'object'
-    ? Object.entries(visitStats.countries).map(([country, count]) => ({ country, count }))
-    : [];
-
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 md:px-6">
       <div className="mx-auto max-w-7xl">
@@ -740,10 +695,7 @@ export default function Admin() {
 
           <button
             type="button"
-            onClick={() => {
-              setActiveSection('stats');
-              loadVisitStats();
-            }}
+            onClick={() => setActiveSection('stats')}
             className={sectionButtonClass(activeSection === 'stats')}
           >
             Statistiky
@@ -756,87 +708,6 @@ export default function Admin() {
           </div>
         ) : (
           <>
-            {activeSection === 'stats' && (
-              <div className="grid gap-6 lg:grid-cols-3">
-                <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm lg:col-span-3">
-                  <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
-                    Statistiky webu
-                  </div>
-                  <h2 className="text-2xl font-bold text-green-700">Návštěvnost</h2>
-                  <p className="mt-2 text-gray-600">
-                    Přehled návštěvnosti z webu.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={loadVisitStats}
-                    className={`${outlineButtonClass} mt-5`}
-                  >
-                    Obnovit statistiky
-                  </button>
-                </div>
-
-                <div className={cardClass}>
-                  <div className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-                    Celkem návštěv
-                  </div>
-                  <div className="mt-3 text-4xl font-black text-green-700">
-                    {visitStatsLoading ? '…' : totalVisits !== null ? Number(totalVisits).toLocaleString('cs-CZ') : '—'}
-                  </div>
-                </div>
-
-                <div className={cardClass}>
-                  <div className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-                    Unikátní návštěvy
-                  </div>
-                  <div className="mt-3 text-4xl font-black text-green-700">
-                    {visitStatsLoading ? '…' : uniqueVisits !== null ? Number(uniqueVisits).toLocaleString('cs-CZ') : '—'}
-                  </div>
-                  <div className="mt-2 text-sm text-gray-500">
-                    Zobrazí se jen pokud je API vrací.
-                  </div>
-                </div>
-
-                <div className={cardClass}>
-                  <div className="text-sm font-semibold uppercase tracking-wide text-gray-500">
-                    Stav
-                  </div>
-                  <div className="mt-3 text-lg font-bold text-gray-900">
-                    {visitStatsLoading ? 'Načítám…' : visitStatsError ? 'Chyba načtení' : 'Načteno'}
-                  </div>
-                  {visitStatsError && (
-                    <div className="mt-2 text-sm text-red-600">{visitStatsError}</div>
-                  )}
-                </div>
-
-                <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm lg:col-span-3">
-                  <div className="mb-4 text-lg font-bold text-gray-900">Státy</div>
-
-                  {countryStats.length > 0 ? (
-                    <div className="space-y-3">
-                      {countryStats
-                        .sort((a, b) => Number(b.count) - Number(a.count))
-                        .map((item) => (
-                          <div
-                            key={item.country}
-                            className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-3"
-                          >
-                            <span className="font-semibold text-gray-800">{item.country}</span>
-                            <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-bold text-green-700">
-                              {Number(item.count).toLocaleString('cs-CZ')}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  ) : (
-                    <div className="rounded-2xl bg-gray-50 p-5 text-gray-600">
-                      Rozpis podle států se zobrazí, jakmile ho API návštěvnosti bude vracet.
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
             {activeSection === 'news' && (
               <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
                 <div className={cardSoftClass}>
@@ -1285,48 +1156,59 @@ Večeřa 1x`}
                         </div>
                       </div>
 
-                      <div>
-                        <label className={labelClass}>Rychlý přepínač zápasů</label>
-                        <div className="grid gap-2 sm:grid-cols-3">
+                      <div className="rounded-2xl border border-green-100 bg-green-50/70 p-3">
+                        <div className="mb-2 text-sm font-bold text-green-800">Rychlý přepínač</div>
+                        <div className="grid grid-cols-3 gap-2">
                           {[
-                            { value: 'planned', label: 'Budoucí' },
-                            { value: 'played', label: 'Odehrané' },
-                            { value: 'all', label: 'Všechny' },
-                          ].map((item) => {
-                            const isActive = matchListStatusFilter === item.value;
-
-                            return (
-                              <button
-                                key={item.value}
-                                type="button"
-                                onClick={() => setMatchListStatusFilter(item.value)}
-                                className={`rounded-xl px-4 py-3 text-sm font-bold transition ${
-                                  isActive
-                                    ? 'bg-green-600 text-white shadow-md'
-                                    : 'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50'
-                                }`}
-                              >
-                                {item.label}
-                              </button>
-                            );
-                          })}
+                            { id: 'planned', label: 'Budoucí' },
+                            { id: 'played', label: 'Odehrané' },
+                            { id: 'all', label: 'Všechny' },
+                          ].map((item) => (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={() => setMatchListStatusFilter(item.id)}
+                              className={`rounded-xl px-3 py-2 text-sm font-bold transition ${
+                                matchListStatusFilter === item.id
+                                  ? 'bg-green-600 text-white shadow-sm'
+                                  : 'bg-white text-green-700 hover:bg-green-100'
+                              }`}
+                            >
+                              {item.label}
+                            </button>
+                          ))}
                         </div>
                       </div>
 
-                      <div>
-                        <label className={labelClass}>Kategorie</label>
-                        <select
-                          value={matchListCategoryFilter}
-                          onChange={(e) => setMatchListCategoryFilter(e.target.value)}
-                          className={inputClass}
-                        >
-                          <option value="all">Všechny kategorie</option>
-                          {categories.map((category) => (
-                            <option key={category.id} value={category.id}>
-                              {category.label}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2">
+                        <div>
+                          <label className={labelClass}>Kategorie</label>
+                          <select
+                            value={matchListCategoryFilter}
+                            onChange={(e) => setMatchListCategoryFilter(e.target.value)}
+                            className={inputClass}
+                          >
+                            <option value="all">Všechny kategorie</option>
+                            {categories.map((category) => (
+                              <option key={category.id} value={category.id}>
+                                {category.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className={labelClass}>Status</label>
+                          <select
+                            value={matchListStatusFilter}
+                            onChange={(e) => setMatchListStatusFilter(e.target.value)}
+                            className={inputClass}
+                          >
+                            <option value="all">Všechny</option>
+                            <option value="planned">Plánováno</option>
+                            <option value="played">Odehráno</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
 
@@ -1724,6 +1606,68 @@ Večeřa 1x`}
                   )}
                 </div>
               </div>
+
+
+            {activeSection === 'stats' && (
+              <div className="space-y-8">
+                <div className={cardSoftClass}>
+                  <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">Statistiky webu</div>
+                      <h2 className="text-2xl font-bold text-green-700">Návštěvnost a obsah</h2>
+                    </div>
+                    <button type="button" onClick={loadAllData} className={outlineButtonClass}>Obnovit statistiky</button>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-2xl bg-white p-5 shadow-sm"><div className="text-sm font-semibold text-gray-500">Celkem návštěv</div><div className="mt-2 text-3xl font-black text-green-700">{visitTotals.total.toLocaleString('cs-CZ')}</div></div>
+                    <div className="rounded-2xl bg-white p-5 shadow-sm"><div className="text-sm font-semibold text-gray-500">Dnes</div><div className="mt-2 text-3xl font-black text-gray-900">{visitTotals.todayTotal.toLocaleString('cs-CZ')}</div><div className="mt-1 text-sm text-gray-500">Unikátní: {visitTotals.todayUnique.toLocaleString('cs-CZ')}</div></div>
+                    <div className="rounded-2xl bg-white p-5 shadow-sm"><div className="text-sm font-semibold text-gray-500">7 dní</div><div className="mt-2 text-3xl font-black text-gray-900">{visitTotals.total7.toLocaleString('cs-CZ')}</div><div className="mt-1 text-sm text-gray-500">Unikátní: {visitTotals.unique7.toLocaleString('cs-CZ')}</div></div>
+                    <div className="rounded-2xl bg-white p-5 shadow-sm"><div className="text-sm font-semibold text-gray-500">30 dní</div><div className="mt-2 text-3xl font-black text-gray-900">{visitTotals.total30.toLocaleString('cs-CZ')}</div><div className="mt-1 text-sm text-gray-500">Unikátní: {visitTotals.unique30.toLocaleString('cs-CZ')}</div></div>
+                  </div>
+
+                  <div className="mt-6 grid gap-4 md:grid-cols-3">
+                    <div className="rounded-2xl bg-white p-5 shadow-sm"><div className="text-sm font-semibold text-gray-500">Novinky</div><div className="mt-2 text-3xl font-black text-gray-900">{newsItems.length}</div></div>
+                    <div className="rounded-2xl bg-white p-5 shadow-sm"><div className="text-sm font-semibold text-gray-500">Zápasy</div><div className="mt-2 text-3xl font-black text-gray-900">{matches.length}</div><div className="mt-1 text-sm text-gray-500">Fotoreporty: {linkedAlbumsCount}</div></div>
+                    <div className="rounded-2xl bg-white p-5 shadow-sm"><div className="text-sm font-semibold text-gray-500">Alba</div><div className="mt-2 text-3xl font-black text-gray-900">{galleryAlbums.length}</div></div>
+                  </div>
+
+                  <div className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
+                    <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                      <div><div className="text-lg font-bold text-gray-900">Návštěvnost po dnech</div><div className="text-sm text-gray-500">Denní statistiky z Firebase</div></div>
+                      <select value={statsPeriod} onChange={(e) => setStatsPeriod(Number(e.target.value))} className="rounded-xl border border-gray-300 bg-white px-4 py-3 font-semibold text-gray-700">
+                        <option value={7}>7 dní</option><option value={14}>14 dní</option><option value={30}>30 dní</option><option value={90}>90 dní</option>
+                      </select>
+                    </div>
+
+                    {last14DaysStats.length > 0 && (
+                      <div className="mb-6 flex h-44 items-end gap-2 rounded-2xl bg-gray-50 p-4">
+                        {last14DaysStats.map((item) => {
+                          const total = Number(item?.totalVisits) || 0;
+                          const height = Math.max(8, Math.round((total / chartMaxValue) * 130));
+                          return (
+                            <div key={item.id || item.date} className="flex flex-1 flex-col items-center justify-end gap-2">
+                              <div className="text-xs font-bold text-gray-700">{total}</div>
+                              <div className="w-full rounded-t-xl bg-green-500" style={{ height: `${height}px` }} title={`${item.date}: ${total} návštěv`} />
+                              <div className="max-w-[58px] truncate text-[10px] text-gray-500">{item.date}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {filteredPeriodStats.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full min-w-[620px] text-left text-sm">
+                          <thead><tr className="border-b text-gray-500"><th className="py-3 pr-4">Datum</th><th className="py-3 pr-4">Celkem</th><th className="py-3 pr-4">Unikátní</th><th className="py-3 pr-4">Update</th></tr></thead>
+                          <tbody>{[...filteredPeriodStats].reverse().map((item) => (<tr key={item.id || item.date} className="border-b last:border-b-0"><td className="py-3 pr-4 font-semibold text-gray-900">{item.date}</td><td className="py-3 pr-4 text-gray-700">{Number(item.totalVisits || 0).toLocaleString('cs-CZ')}</td><td className="py-3 pr-4 text-gray-700">{Number(item.uniqueVisits || 0).toLocaleString('cs-CZ')}</td><td className="py-3 pr-4 text-gray-500">{formatDateTime(item.updatedAt)}</td></tr>))}</tbody>
+                        </table>
+                      </div>
+                    ) : (<div className="rounded-2xl bg-gray-50 p-5 text-gray-500">Denní statistiky zatím nejsou k dispozici.</div>)}
+                  </div>
+                </div>
+              </div>
+            )}
             )}
           </>
         )}
