@@ -25,6 +25,10 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  const [visitStats, setVisitStats] = useState(null);
+  const [visitStatsLoading, setVisitStatsLoading] = useState(false);
+  const [visitStatsError, setVisitStatsError] = useState('');
+
   const [matchListCategoryFilter, setMatchListCategoryFilter] = useState('all');
   const [matchListStatusFilter, setMatchListStatusFilter] = useState('all');
 
@@ -271,8 +275,30 @@ export default function Admin() {
     }
   };
 
+  const loadVisitStats = async () => {
+    try {
+      setVisitStatsLoading(true);
+      setVisitStatsError('');
+
+      const response = await fetch('/api/visits', { method: 'GET' });
+
+      if (!response.ok) {
+        throw new Error('Nepodařilo se načíst statistiky návštěvnosti.');
+      }
+
+      const data = await response.json();
+      setVisitStats(data);
+    } catch (error) {
+      console.error('Chyba při načítání statistik:', error);
+      setVisitStatsError('Statistiky se teď nepodařilo načíst.');
+    } finally {
+      setVisitStatsLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadAllData();
+    loadVisitStats();
   }, []);
 
   const newsByCategory = useMemo(() => {
@@ -642,6 +668,25 @@ export default function Admin() {
     ? galleryAlbums.find((album) => album.id === matchForm.galleryAlbumId)
     : null;
 
+  const totalVisits =
+    visitStats?.count ??
+    visitStats?.total ??
+    visitStats?.totalVisits ??
+    visitStats?.visits ??
+    null;
+
+  const uniqueVisits =
+    visitStats?.unique ??
+    visitStats?.uniqueVisits ??
+    visitStats?.uniqueCount ??
+    null;
+
+  const countryStats = Array.isArray(visitStats?.countries)
+    ? visitStats.countries
+    : visitStats?.countries && typeof visitStats.countries === 'object'
+    ? Object.entries(visitStats.countries).map(([country, count]) => ({ country, count }))
+    : [];
+
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 md:px-6">
       <div className="mx-auto max-w-7xl">
@@ -692,6 +737,17 @@ export default function Admin() {
           >
             Galerie
           </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setActiveSection('stats');
+              loadVisitStats();
+            }}
+            className={sectionButtonClass(activeSection === 'stats')}
+          >
+            Statistiky
+          </button>
         </div>
 
         {loading ? (
@@ -700,6 +756,87 @@ export default function Admin() {
           </div>
         ) : (
           <>
+            {activeSection === 'stats' && (
+              <div className="grid gap-6 lg:grid-cols-3">
+                <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm lg:col-span-3">
+                  <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                    Statistiky webu
+                  </div>
+                  <h2 className="text-2xl font-bold text-green-700">Návštěvnost</h2>
+                  <p className="mt-2 text-gray-600">
+                    Přehled návštěvnosti z webu.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={loadVisitStats}
+                    className={`${outlineButtonClass} mt-5`}
+                  >
+                    Obnovit statistiky
+                  </button>
+                </div>
+
+                <div className={cardClass}>
+                  <div className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                    Celkem návštěv
+                  </div>
+                  <div className="mt-3 text-4xl font-black text-green-700">
+                    {visitStatsLoading ? '…' : totalVisits !== null ? Number(totalVisits).toLocaleString('cs-CZ') : '—'}
+                  </div>
+                </div>
+
+                <div className={cardClass}>
+                  <div className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                    Unikátní návštěvy
+                  </div>
+                  <div className="mt-3 text-4xl font-black text-green-700">
+                    {visitStatsLoading ? '…' : uniqueVisits !== null ? Number(uniqueVisits).toLocaleString('cs-CZ') : '—'}
+                  </div>
+                  <div className="mt-2 text-sm text-gray-500">
+                    Zobrazí se jen pokud je API vrací.
+                  </div>
+                </div>
+
+                <div className={cardClass}>
+                  <div className="text-sm font-semibold uppercase tracking-wide text-gray-500">
+                    Stav
+                  </div>
+                  <div className="mt-3 text-lg font-bold text-gray-900">
+                    {visitStatsLoading ? 'Načítám…' : visitStatsError ? 'Chyba načtení' : 'Načteno'}
+                  </div>
+                  {visitStatsError && (
+                    <div className="mt-2 text-sm text-red-600">{visitStatsError}</div>
+                  )}
+                </div>
+
+                <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm lg:col-span-3">
+                  <div className="mb-4 text-lg font-bold text-gray-900">Státy</div>
+
+                  {countryStats.length > 0 ? (
+                    <div className="space-y-3">
+                      {countryStats
+                        .sort((a, b) => Number(b.count) - Number(a.count))
+                        .map((item) => (
+                          <div
+                            key={item.country}
+                            className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-3"
+                          >
+                            <span className="font-semibold text-gray-800">{item.country}</span>
+                            <span className="rounded-full bg-green-100 px-3 py-1 text-sm font-bold text-green-700">
+                              {Number(item.count).toLocaleString('cs-CZ')}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl bg-gray-50 p-5 text-gray-600">
+                      Rozpis podle států se zobrazí, jakmile ho API návštěvnosti bude vracet.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             {activeSection === 'news' && (
               <div className="grid gap-8 xl:grid-cols-[1.1fr_0.9fr]">
                 <div className={cardSoftClass}>
