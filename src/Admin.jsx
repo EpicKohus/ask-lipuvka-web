@@ -39,7 +39,7 @@ export default function Admin() {
 
 
   const [matchListCategoryFilter, setMatchListCategoryFilter] = useState('all');
-  const [matchListStatusFilter, setMatchListStatusFilter] = useState('all');
+  const [matchListTimeFilter, setMatchListTimeFilter] = useState('future');
 
   const [newsForm, setNewsForm] = useState({
     category: 'mladsi-pripravka',
@@ -325,17 +325,28 @@ export default function Admin() {
   }, [matches]);
 
   const filteredMatches = useMemo(() => {
-    return sortedMatches.filter((match) => {
+    const today = new Date();
+    const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+    const filtered = sortedMatches.filter((match) => {
       const categoryOk =
         matchListCategoryFilter === 'all' || match.category === matchListCategoryFilter;
 
-      const status = match.status || 'planned';
-      const statusOk =
-        matchListStatusFilter === 'all' || status === matchListStatusFilter;
+      const matchDate = parseMatchDate(match);
+      const timeOk =
+        matchListTimeFilter === 'all' ||
+        (matchListTimeFilter === 'future' && matchDate >= todayStart) ||
+        (matchListTimeFilter === 'played' && matchDate < todayStart);
 
-      return categoryOk && statusOk;
+      return categoryOk && timeOk;
     });
-  }, [sortedMatches, matchListCategoryFilter, matchListStatusFilter]);
+
+    if (matchListTimeFilter === 'played') {
+      return filtered.sort((a, b) => parseMatchDate(b) - parseMatchDate(a));
+    }
+
+    return filtered.sort((a, b) => parseMatchDate(a) - parseMatchDate(b));
+  }, [sortedMatches, matchListCategoryFilter, matchListTimeFilter]);
 
   const getGallerySortTime = (album) => {
     const linkedMatch = matches.find((match) => match.galleryAlbumId === album.id);
@@ -1390,7 +1401,7 @@ Večeřa 1x`}
                       <div>
                         <div className="text-lg font-bold text-gray-900">Přehled zápasů</div>
                         <div className="text-sm text-gray-500">
-                          Filtruj si zápasy podle kategorie a stavu.
+                          Filtruj si zápasy podle kategorie a času.
                         </div>
                       </div>
 
@@ -1412,16 +1423,44 @@ Večeřa 1x`}
                         </div>
 
                         <div>
-                          <label className={labelClass}>Status</label>
-                          <select
-                            value={matchListStatusFilter}
-                            onChange={(e) => setMatchListStatusFilter(e.target.value)}
-                            className={inputClass}
-                          >
-                            <option value="all">Všechny</option>
-                            <option value="planned">Plánováno</option>
-                            <option value="played">Odehráno</option>
-                          </select>
+                          <label className={labelClass}>Zápasy</label>
+                          <div className="grid grid-cols-3 gap-2 rounded-xl bg-gray-100 p-1">
+                            <button
+                              type="button"
+                              onClick={() => setMatchListTimeFilter('future')}
+                              className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
+                                matchListTimeFilter === 'future'
+                                  ? 'bg-green-600 text-white shadow-sm'
+                                  : 'text-gray-700 hover:bg-white'
+                              }`}
+                            >
+                              Budoucí
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setMatchListTimeFilter('played')}
+                              className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
+                                matchListTimeFilter === 'played'
+                                  ? 'bg-green-600 text-white shadow-sm'
+                                  : 'text-gray-700 hover:bg-white'
+                              }`}
+                            >
+                              Odehrané
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setMatchListTimeFilter('all')}
+                              className={`rounded-lg px-3 py-2 text-sm font-bold transition ${
+                                matchListTimeFilter === 'all'
+                                  ? 'bg-green-600 text-white shadow-sm'
+                                  : 'text-gray-700 hover:bg-white'
+                              }`}
+                            >
+                              Všechny
+                            </button>
+                          </div>
                         </div>
                       </div>
                     </div>
