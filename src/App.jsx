@@ -1798,7 +1798,7 @@ export default function AskLipuvkaWeb() {
                   <p className="text-gray-700">{item.text}</p>
 
                   {item.image && (
-                    <div className="mt-4 overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
+                    <div className="mt-4 overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 md:max-w-2xl">
                       <img
                         src={item.image}
                         alt={item.title}
