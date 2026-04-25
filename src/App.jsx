@@ -22,7 +22,14 @@ export default function AskLipuvkaWeb() {
   const [gallerySource, setGallerySource] = useState('global');
   const [showAllTeamAlbums, setShowAllTeamAlbums] = useState(false);
 
-  const [activeCategory, setActiveCategory] = useState('mladsi-pripravka');
+  const [activeCategory, setActiveCategory] = useState(() => {
+    try {
+      const savedCategory = localStorage.getItem('ask-lipuvka-active-category');
+      return savedCategory || 'mladsi-pripravka';
+    } catch (error) {
+      return 'mladsi-pripravka';
+    }
+  });
   const [visitCount, setVisitCount] = useState(null);
 
   const [firebaseNews, setFirebaseNews] = useState([]);
@@ -34,6 +41,7 @@ export default function AskLipuvkaWeb() {
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const [selectedNewsImage, setSelectedNewsImage] = useState(null);
   const [theme, setTheme] = useState(() => {
     if (typeof window === 'undefined') return 'light';
     return localStorage.getItem('ask-lipuvka-theme') || 'light';
@@ -617,6 +625,12 @@ export default function AskLipuvkaWeb() {
 
   const selectTeam = (categoryId) => {
     setActiveCategory(categoryId);
+
+    try {
+      localStorage.setItem('ask-lipuvka-active-category', categoryId);
+    } catch (error) {
+      console.error('Nepodařilo se uložit vybranou kategorii:', error);
+    }
     setShowAllTeamAlbums(false);
     setIsTeamsDropdownOpen(false);
     setIsMobileTeamsDropdownOpen(false);
@@ -848,6 +862,7 @@ export default function AskLipuvkaWeb() {
       clubPopupContent ||
       isGalleryOpen ||
       selectedPhoto ||
+      selectedNewsImage ||
       isTermsOpen ||
       isScheduleOpen;
 
@@ -863,6 +878,7 @@ export default function AskLipuvkaWeb() {
     clubPopupContent,
     isGalleryOpen,
     selectedPhoto,
+    selectedNewsImage,
     isTermsOpen,
     isScheduleOpen,
   ]);
@@ -1798,14 +1814,19 @@ export default function AskLipuvkaWeb() {
                   <p className="text-gray-700">{item.text}</p>
 
                   {item.image && (
-                    <div className="mt-4 overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 md:max-w-2xl">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedNewsImage(item.image)}
+                      className="group mt-4 block w-full overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 text-left shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-xl md:max-w-2xl"
+                      aria-label={`Zvětšit fotku novinky ${item.title}`}
+                    >
                       <img
                         src={item.image}
                         alt={item.title}
-                        className="h-40 w-full object-cover sm:h-44 md:h-48"
+                        className="h-40 w-full object-cover transition duration-500 group-hover:scale-105 sm:h-44 md:h-48"
                         loading="lazy"
                       />
-                    </div>
+                    </button>
                   )}
                 </div>
               ))}
@@ -2127,6 +2148,33 @@ export default function AskLipuvkaWeb() {
                 {selectedPhotoIndex + 1} / {selectedAlbum?.photos?.length}
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {selectedNewsImage && (
+        <div
+          className="fixed inset-0 z-[65] flex items-center justify-center bg-black/90 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          onClick={() => setSelectedNewsImage(null)}
+        >
+          <div
+            className="relative flex max-h-full max-w-6xl items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setSelectedNewsImage(null)}
+              className="absolute right-0 top-[-48px] z-20 text-3xl text-white"
+              aria-label="Zavřít fotku"
+            >
+              ×
+            </button>
+
+            <img
+              src={selectedNewsImage}
+              alt="Zvětšená fotka novinky"
+              className="max-h-[85vh] max-w-[92vw] rounded-2xl object-contain shadow-2xl"
+            />
           </div>
         </div>
       )}
