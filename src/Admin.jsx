@@ -46,6 +46,7 @@ export default function Admin() {
     title: '',
     text: '',
     date: '',
+    image: '',
   });
 
   const [editingMatchId, setEditingMatchId] = useState(null);
@@ -637,6 +638,7 @@ export default function Admin() {
         title: newsForm.title.trim(),
         text: newsForm.text.trim(),
         date: newsForm.date.trim(),
+        image: newsForm.image.trim(),
       };
 
       if (existingNews) {
@@ -661,6 +663,7 @@ export default function Admin() {
       title: item.title || '',
       text: item.text || '',
       date: item.date || '',
+      image: item.image || '',
     });
     setActiveSection('news');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1020,6 +1023,20 @@ export default function Admin() {
                       />
                     </div>
 
+                    <div>
+                      <label className={labelClass}>Fotka pod novinkou (nepovinné)</label>
+                      <input
+                        type="text"
+                        value={newsForm.image}
+                        onChange={(e) => handleNewsChange('image', e.target.value)}
+                        placeholder="Např. /novinky/nabor.jpg"
+                        className={inputClass}
+                      />
+                      <div className="mt-2 text-sm text-gray-500">
+                        Když pole necháš prázdné, fotka se na webu nezobrazí.
+                      </div>
+                    </div>
+
                     <button type="submit" disabled={saving} className={greenButtonClass}>
                       {saving ? 'Ukládám…' : 'Uložit novinku'}
                     </button>
@@ -1047,6 +1064,14 @@ export default function Admin() {
                           <p className="mb-4 text-sm leading-7 text-gray-700">
                             {category.item.text}
                           </p>
+
+                          {category.item.image && (
+                            <img
+                              src={category.item.image}
+                              alt={category.item.title}
+                              className="mb-4 max-h-36 w-full rounded-xl object-cover"
+                            />
+                          )}
 
                           <div className="flex flex-wrap gap-3">
                             <button

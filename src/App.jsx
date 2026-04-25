@@ -1796,6 +1796,17 @@ export default function AskLipuvkaWeb() {
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-gray-900">{item.title}</h3>
                   <p className="text-gray-700">{item.text}</p>
+
+                  {item.image && (
+                    <div className="mt-4 overflow-hidden rounded-2xl border border-gray-100 bg-gray-50">
+                      <img
+                        src={item.image}
+                        alt={item.title}
+                        className="h-40 w-full object-cover sm:h-44 md:h-48"
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
