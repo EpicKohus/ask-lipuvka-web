@@ -22,7 +22,14 @@ export default function AskLipuvkaWeb() {
   const [gallerySource, setGallerySource] = useState('global');
   const [showAllTeamAlbums, setShowAllTeamAlbums] = useState(false);
 
-  const [activeCategory, setActiveCategory] = useState('mladsi-pripravka');
+  const [activeCategory, setActiveCategory] = useState(() => {
+    try {
+      const savedCategory = localStorage.getItem('ask-lipuvka-active-category');
+      return savedCategory || 'mladsi-pripravka';
+    } catch (error) {
+      return 'mladsi-pripravka';
+    }
+  });
   const [visitCount, setVisitCount] = useState(null);
 
   const [firebaseNews, setFirebaseNews] = useState([]);
@@ -618,6 +625,12 @@ export default function AskLipuvkaWeb() {
 
   const selectTeam = (categoryId) => {
     setActiveCategory(categoryId);
+
+    try {
+      localStorage.setItem('ask-lipuvka-active-category', categoryId);
+    } catch (error) {
+      console.error('Nepodařilo se uložit vybranou kategorii:', error);
+    }
     setShowAllTeamAlbums(false);
     setIsTeamsDropdownOpen(false);
     setIsMobileTeamsDropdownOpen(false);
@@ -781,11 +794,6 @@ export default function AskLipuvkaWeb() {
     const handleEsc = (event) => {
       if (event.key !== 'Escape') return;
 
-      if (selectedNewsImage) {
-        setSelectedNewsImage(null);
-        return;
-      }
-
       if (selectedPhotoIndex !== null) {
         setSelectedPhotoIndex(null);
         return;
@@ -844,7 +852,7 @@ export default function AskLipuvkaWeb() {
       window.removeEventListener('keydown', handleArrowKeys);
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [selectedNewsImage, selectedPhotoIndex, selectedAlbum, isGalleryOpen, gallerySource]);
+  }, [selectedPhotoIndex, selectedAlbum, isGalleryOpen, gallerySource]);
 
   useEffect(() => {
     const shouldLock =
@@ -1809,15 +1817,37 @@ export default function AskLipuvkaWeb() {
                     <button
                       type="button"
                       onClick={() => setSelectedNewsImage(item.image)}
-                      className="group mx-auto mt-4 block w-full max-w-3xl overflow-hidden rounded-2xl border border-gray-100 bg-black/10 p-2 text-left shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-xl"
+                      className="group relative mt-4 block w-full overflow-hidden rounded-2xl border border-white/10 bg-black/10 p-2 text-left shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-2xl md:max-w-2xl"
                       aria-label={`Zvětšit fotku novinky ${item.title}`}
                     >
-                      <img
-                        src={item.image}
-                        alt={item.title}
-                        className="max-h-[420px] w-full rounded-xl object-contain transition duration-500 group-hover:scale-[1.015]"
-                        loading="lazy"
-                      />
+                      <div className="relative overflow-hidden rounded-xl bg-black/20">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                          className="max-h-[420px] w-full object-contain transition duration-500 group-hover:scale-[1.03]"
+                          loading="lazy"
+                        />
+
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition duration-300 group-hover:bg-black/20 group-hover:opacity-100">
+                          <div className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-bold text-gray-900 shadow-lg backdrop-blur">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-5 w-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
+                              />
+                            </svg>
+                            Zvětšit
+                          </div>
+                        </div>
+                      </div>
                     </button>
                   )}
                 </div>
