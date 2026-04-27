@@ -22,14 +22,7 @@ export default function AskLipuvkaWeb() {
   const [gallerySource, setGallerySource] = useState('global');
   const [showAllTeamAlbums, setShowAllTeamAlbums] = useState(false);
 
-  const [activeCategory, setActiveCategory] = useState(() => {
-    try {
-      const savedCategory = localStorage.getItem('ask-lipuvka-active-category');
-      return savedCategory || 'mladsi-pripravka';
-    } catch (error) {
-      return 'mladsi-pripravka';
-    }
-  });
+  const [activeCategory, setActiveCategory] = useState('mladsi-pripravka');
   const [visitCount, setVisitCount] = useState(null);
 
   const [firebaseNews, setFirebaseNews] = useState([]);
@@ -625,12 +618,6 @@ export default function AskLipuvkaWeb() {
 
   const selectTeam = (categoryId) => {
     setActiveCategory(categoryId);
-
-    try {
-      localStorage.setItem('ask-lipuvka-active-category', categoryId);
-    } catch (error) {
-      console.error('Nepodařilo se uložit vybranou kategorii:', error);
-    }
     setShowAllTeamAlbums(false);
     setIsTeamsDropdownOpen(false);
     setIsMobileTeamsDropdownOpen(false);
@@ -794,6 +781,11 @@ export default function AskLipuvkaWeb() {
     const handleEsc = (event) => {
       if (event.key !== 'Escape') return;
 
+      if (selectedNewsImage) {
+        setSelectedNewsImage(null);
+        return;
+      }
+
       if (selectedPhotoIndex !== null) {
         setSelectedPhotoIndex(null);
         return;
@@ -852,7 +844,7 @@ export default function AskLipuvkaWeb() {
       window.removeEventListener('keydown', handleArrowKeys);
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [selectedPhotoIndex, selectedAlbum, isGalleryOpen, gallerySource]);
+  }, [selectedNewsImage, selectedPhotoIndex, selectedAlbum, isGalleryOpen, gallerySource]);
 
   useEffect(() => {
     const shouldLock =
@@ -1817,13 +1809,13 @@ export default function AskLipuvkaWeb() {
                     <button
                       type="button"
                       onClick={() => setSelectedNewsImage(item.image)}
-                      className="group mt-4 block w-full overflow-hidden rounded-2xl border border-gray-100 bg-gray-50 text-left shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-xl md:max-w-2xl"
+                      className="group mx-auto mt-4 block w-full max-w-3xl overflow-hidden rounded-2xl border border-gray-100 bg-black/10 p-2 text-left shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-xl"
                       aria-label={`Zvětšit fotku novinky ${item.title}`}
                     >
                       <img
                         src={item.image}
                         alt={item.title}
-                        className="h-40 w-full object-cover transition duration-500 group-hover:scale-105 sm:h-44 md:h-48"
+                        className="max-h-[420px] w-full rounded-xl object-contain transition duration-500 group-hover:scale-[1.015]"
                         loading="lazy"
                       />
                     </button>
