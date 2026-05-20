@@ -153,6 +153,35 @@ export default function Merch() {
         createdAt: serverTimestamp(),
       });
 
+      try {
+        const produktyText = cart
+          .map((item) => {
+            const lineTotal = (Number(item.price) || 0) * (Number(item.quantity) || 1);
+            return `- ${item.title}${item.variant ? ` (${item.variant})` : ''} / ${item.quantity} ks / ${formatPrice(lineTotal)}`;
+          })
+          .join('\n');
+
+        const mailResponse = await fetch('/api/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            typ: 'merch',
+            jmeno: customerForm.firstName.trim(),
+            prijmeni: customerForm.lastName.trim(),
+            telefon: customerForm.phone.trim(),
+            email: customerForm.email.trim(),
+            poznamka: customerForm.note.trim(),
+            produkty: `${produktyText}\n\nCelkem: ${formatPrice(cartTotal)}`,
+          }),
+        });
+
+        if (!mailResponse.ok) {
+          throw new Error(`Mail endpoint vrátil stav ${mailResponse.status}`);
+        }
+      } catch (mailError) {
+        console.error('Merch objednávka byla uložena, ale mail se nepodařilo odeslat:', mailError);
+      }
+
       setCart([]);
       setCustomerForm({
         firstName: '',
