@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { db, storage } from './firebase';
+import { db } from './firebase';
 import {
   addDoc,
   collection,
@@ -10,7 +10,6 @@ import {
   updateDoc,
   serverTimestamp,
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
 export default function Admin() {
   const categories = [
@@ -101,7 +100,6 @@ export default function Admin() {
     order: '',
     active: true,
   });
-  const [merchImageFile, setMerchImageFile] = useState(null);
 
   const sectionButtonClass = (isActive) =>
     `rounded-xl px-5 py-3 font-semibold transition ${
@@ -646,7 +644,6 @@ export default function Admin() {
 
   const resetMerchProductForm = () => {
     setEditingMerchProductId(null);
-    setMerchImageFile(null);
     setMerchProductForm({
       title: '',
       productKind: 'clothing',
@@ -660,23 +657,6 @@ export default function Admin() {
     });
   };
 
-  const uploadMerchImageIfNeeded = async () => {
-    if (!merchImageFile) return merchProductForm.image.trim();
-
-    const safeFileName = merchImageFile.name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9.]+/g, '-')
-      .replace(/-+/g, '-')
-      .replace(/^-|-$/g, '');
-
-    const filePath = `merch/${Date.now()}-${safeFileName}`;
-    const storageRef = ref(storage, filePath);
-    await uploadBytes(storageRef, merchImageFile);
-    return getDownloadURL(storageRef);
-  };
-
   const handleSaveMerchProduct = async (e) => {
     e.preventDefault();
 
@@ -687,7 +667,6 @@ export default function Admin() {
 
     try {
       setSaving(true);
-      const imageUrl = await uploadMerchImageIfNeeded();
       const productKind = merchProductForm.productKind === 'item' ? 'item' : 'clothing';
       const payload = {
         title: merchProductForm.title.trim(),
@@ -695,7 +674,7 @@ export default function Admin() {
         type: productKind === 'item' ? 'Předmět' : 'Oblečení',
         description: merchProductForm.description.trim(),
         price: Number(merchProductForm.price) || 0,
-        image: imageUrl,
+        image: merchProductForm.image.trim(),
         variants: productKind === 'clothing' ? parseMerchVariants(merchProductForm.variantsText) : [],
         order: Number(merchProductForm.order) || 0,
         active: Boolean(merchProductForm.active),
@@ -715,7 +694,7 @@ export default function Admin() {
       await loadAllData();
     } catch (error) {
       console.error('Chyba při ukládání merch produktu:', error);
-      alert('Nepodařilo se uložit merch produkt. Zkontroluj Firebase Storage pravidla.');
+      alert(`Nepodařilo se uložit merch produkt: ${error?.message || error}`);
     } finally {
       setSaving(false);
     }
@@ -723,14 +702,15 @@ export default function Admin() {
 
   const handleEditMerchProduct = (product) => {
     setEditingMerchProductId(product.id);
-    setMerchImageFile(null);
+    const productKind = product.productKind === 'item' ? 'item' : 'clothing';
     setMerchProductForm({
       title: product.title || '',
-      type: product.type || 'Oblečení',
+      productKind,
+      type: productKind === 'item' ? 'Předmět' : 'Oblečení',
       description: product.description || '',
       price: product.price || '',
       image: product.image || '',
-      variantsText: formatMerchVariants(product.variants || []),
+      variantsText: productKind === 'clothing' ? formatMerchVariants(product.variants || []) : '',
       order: product.order || '',
       active: product.active !== false,
     });
@@ -1940,7 +1920,7 @@ Večeřa 1x`}
                           {editingMerchProductId ? 'Upravit produkt' : 'Přidat produkt'}
                         </h2>
                         <p className="mt-2 text-sm text-gray-600">
-                          Obrázek se uloží do Firebase Storage a produkt se zobrazí na samostatné stránce Merch.
+                          Obrázek zadej jako cestu nebo URL. Produkt se zobrazí na samostatné stránce Merch.
                         </p>
                       </div>
 
@@ -2003,52 +1983,50 @@ Večeřa 1x`}
                       <div className="rounded-2xl border border-green-200 bg-white/80 p-5">
                         <label className={labelClass}>Obrázek produktu</label>
                         <input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => setMerchImageFile(e.target.files?.[0] || null)}
+                          type="text"
+                          value={merchProductForm.image}
+                          onChange={(e) => handleMerchProductChange('image', e.target.value)}
+                          placeholder="Např. /merch/tricko.jpg nebo https://..."
                           className={inputClass}
                         />
                         <div className="mt-3 text-sm text-gray-500">
-                          Vyber obrázek z počítače. Po uložení se nahraje do Firebase Storage.
+                          Obrázek nahraj ručně do public/merch a sem vlož cestu. Např. /merch/ksiltovka.jpg
                         </div>
 
-                        <div className="mt-4">
-                          <label className={labelClass}>Nebo URL obrázku</label>
-                          <input
-                            type="text"
-                            value={merchProductForm.image}
-                            onChange={(e) => handleMerchProductChange('image', e.target.value)}
-                            placeholder="https://... nebo /merch/tricko.jpg"
-                            className={inputClass}
-                          />
-                        </div>
-
-                        {(merchImageFile || merchProductForm.image) && (
+                        {merchProductForm.image && (
                           <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
-                            {merchImageFile ? (
-                              <div className="p-4 text-sm font-semibold text-gray-700">
-                                Vybraný soubor: {merchImageFile.name}
-                              </div>
-                            ) : (
-                              <img src={merchProductForm.image} alt="Náhled produktu" className="h-48 w-full object-cover" />
-                            )}
+                            <img src={merchProductForm.image} alt="Náhled produktu" className="h-48 w-full object-cover" />
                           </div>
                         )}
                       </div>
 
-                      <div>
-                        <label className={labelClass}>Varianty</label>
-                        <textarea
-                          rows="6"
-                          value={merchProductForm.variantsText}
-                          onChange={(e) => handleMerchProductChange('variantsText', e.target.value)}
-                          placeholder={`Dětská\nDospělá`}
-                          className={inputClass}
-                        />
-                        <div className="mt-2 text-sm text-gray-500">
-                          Jedna varianta na řádek. U trička třeba 116, 128, 140, 152, S, M, L.
+                      {merchProductForm.productKind === 'clothing' && (
+                        <div>
+                          <label className={labelClass}>Velikosti / varianty</label>
+                          <textarea
+                            rows="6"
+                            value={merchProductForm.variantsText}
+                            onChange={(e) => handleMerchProductChange('variantsText', e.target.value)}
+                            placeholder={`116
+128
+140
+152
+S
+M
+L`}
+                            className={inputClass}
+                          />
+                          <div className="mt-2 text-sm text-gray-500">
+                            Jedna velikost nebo varianta na řádek. U kšiltovky třeba Dětská a Dospělá.
+                          </div>
                         </div>
-                      </div>
+                      )}
+
+                      {merchProductForm.productKind === 'item' && (
+                        <div className="rounded-2xl border border-gray-200 bg-white p-4 text-sm text-gray-600">
+                          U předmětu se nevybírá velikost. Rodič zadá jen počet kusů v objednávce.
+                        </div>
+                      )}
 
                       <div className="grid gap-5 md:grid-cols-2">
                         <div>
