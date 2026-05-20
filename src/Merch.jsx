@@ -1,55 +1,31 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
+import { addDoc, collection, getDocs, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
 export default function Merch() {
+  const navigate = useNavigate();
+
   const [theme, setTheme] = useState(() => {
     if (typeof window === 'undefined') return 'light';
     return localStorage.getItem('ask-lipuvka-theme') || 'light';
   });
 
-  const merchProducts = useMemo(
-    () => [
-      {
-        id: 'tricko',
-        name: 'Tričko ASK Lipůvka mládež',
-        price: 350,
-        image: '/logo.png',
-        description: 'Klubové tričko pro děti, rodiče i fanoušky.',
-        sizes: ['116', '128', '140', '152', '164', 'S', 'M', 'L', 'XL'],
-        colors: ['Zelená', 'Bílá', 'Černá'],
-      },
-      {
-        id: 'mikina',
-        name: 'Mikina ASK Lipůvka mládež',
-        price: 750,
-        image: '/logo.png',
-        description: 'Pohodlná mikina na tréninky, zápasy i běžné nošení.',
-        sizes: ['116', '128', '140', '152', '164', 'S', 'M', 'L', 'XL'],
-        colors: ['Zelená', 'Černá', 'Šedá'],
-      },
-      {
-        id: 'cepice',
-        name: 'Kšiltovka ASK Lipůvka',
-        price: 250,
-        image: '/logo.png',
-        description: 'Jednoduchá klubová kšiltovka s logem.',
-        sizes: ['Dětská', 'Dospělá'],
-        colors: ['Zelená', 'Černá'],
-      },
-      {
-        id: 'vak',
-        name: 'Vak na záda ASK Lipůvka',
-        price: 220,
-        image: '/logo.png',
-        description: 'Lehký vak na kopačky, pití a tréninkové věci.',
-        sizes: ['Univerzální'],
-        colors: ['Zelená', 'Černá'],
-      },
-    ],
-    []
-  );
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState('');
+  const [cart, setCart] = useState([]);
+  const [selectedVariants, setSelectedVariants] = useState({});
+  const [selectedQuantities, setSelectedQuantities] = useState({});
+
+  const [customerForm, setCustomerForm] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: '',
+    note: '',
+  });
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-dark', theme === 'dark');
@@ -61,224 +37,373 @@ export default function Merch() {
     };
   }, [theme]);
 
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        setLoading(true);
+        const snapshot = await getDocs(collection(db, 'merchProducts'));
+        const loadedProducts = snapshot.docs
+          .map((item) => ({ id: item.id, ...item.data() }))
+          .filter((product) => product.active !== false)
+          .sort((a, b) => {
+            const orderA = Number(a.order) || 0;
+            const orderB = Number(b.order) || 0;
+            if (orderA !== orderB) return orderA - orderB;
+            return String(a.title || '').localeCompare(String(b.title || ''), 'cs');
+          });
+
+        setProducts(loadedProducts);
+
+        const variants = {};
+        const quantities = {};
+        loadedProducts.forEach((product) => {
+          variants[product.id] = product.variants?.[0] || '';
+          quantities[product.id] = 1;
+        });
+        setSelectedVariants(variants);
+        setSelectedQuantities(quantities);
+      } catch (error) {
+        console.error('Chyba při načítání merch produktů:', error);
+        setMessage('Produkty se nepodařilo načíst. Zkuste to prosím později.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadProducts();
+  }, []);
+
   const toggleTheme = () => {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  const handleSubmitMerch = async (e) => {
-    e.preventDefault();
+  const formatPrice = (price) => {
+    const value = Number(price) || 0;
+    return `${value.toLocaleString('cs-CZ')} Kč`;
+  };
 
-    const formData = new FormData(e.target);
-    const customer = {
-      parentName: String(formData.get('parentName') || '').trim(),
-      childName: String(formData.get('childName') || '').trim(),
-      phone: String(formData.get('phone') || '').trim(),
-      email: String(formData.get('email') || '').trim(),
-      note: String(formData.get('note') || '').trim(),
-    };
+  const cartTotal = useMemo(
+    () => cart.reduce((sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0),
+    [cart]
+  );
 
-    const items = merchProducts
-      .map((product) => {
-        const quantity = Number(formData.get(`${product.id}_quantity`) || 0);
-        if (!Number.isInteger(quantity) || quantity < 1) return null;
+  const addToCart = (product) => {
+    const quantity = Math.max(1, Number(selectedQuantities[product.id]) || 1);
+    const variant = selectedVariants[product.id] || product.variants?.[0] || '';
 
-        const customName = String(formData.get(`${product.id}_customName`) || '').trim();
-        const customNumber = String(formData.get(`${product.id}_customNumber`) || '').trim();
-        const personalizationPrice = customName || customNumber ? 50 : 0;
-
-        return {
-          productId: product.id,
-          name: product.name,
-          price: product.price,
-          quantity,
-          size: String(formData.get(`${product.id}_size`) || product.sizes[0]),
-          color: String(formData.get(`${product.id}_color`) || product.colors[0]),
-          customName,
-          customNumber,
-          personalizationPrice,
-          lineTotal: (product.price + personalizationPrice) * quantity,
-        };
-      })
-      .filter(Boolean);
-
-    if (!customer.parentName || !customer.phone) {
-      alert('Vyplň prosím jméno rodiče a telefon.');
+    if (product.variants?.length && !variant) {
+      setMessage('Vyberte prosím variantu produktu.');
       return;
     }
 
-    if (!items.length) {
-      alert('Vyber prosím alespoň jeden produkt a nastav počet kusů.');
+    setCart((prev) => [
+      ...prev,
+      {
+        productId: product.id,
+        title: product.title || '',
+        type: product.type || 'Oblečení',
+        description: product.description || '',
+        image: product.image || '',
+        price: Number(product.price) || 0,
+        variant,
+        quantity,
+      },
+    ]);
+    setMessage(`${product.title} přidáno do objednávky.`);
+  };
+
+  const removeFromCart = (indexToRemove) => {
+    setCart((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleCustomerChange = (field, value) => {
+    setCustomerForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmitOrder = async (event) => {
+    event.preventDefault();
+    setMessage('');
+
+    if (!cart.length) {
+      setMessage('Nejdřív přidejte alespoň jeden produkt do objednávky.');
       return;
     }
 
-    const total = items.reduce((sum, item) => sum + item.lineTotal, 0);
-    const orderPayload = {
-      customer,
-      items,
-      total,
-      status: 'nová',
-      createdAt: serverTimestamp(),
-    };
+    if (!customerForm.firstName.trim() || !customerForm.lastName.trim() || !customerForm.phone.trim()) {
+      setMessage('Vyplňte prosím jméno, příjmení a telefon.');
+      return;
+    }
 
     try {
-      await addDoc(collection(db, 'merchOrders'), orderPayload);
+      setSaving(true);
+      await addDoc(collection(db, 'merchOrders'), {
+        customer: {
+          firstName: customerForm.firstName.trim(),
+          lastName: customerForm.lastName.trim(),
+          phone: customerForm.phone.trim(),
+          email: customerForm.email.trim(),
+          note: customerForm.note.trim(),
+        },
+        items: cart,
+        total: cartTotal,
+        status: 'new',
+        createdAt: serverTimestamp(),
+      });
 
-      try {
-        await fetch('/api/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            typ: 'merch',
-            customer,
-            items,
-            total,
-            note: customer.note,
-          }),
-        });
-      } catch (mailError) {
-        console.warn('Objednávka je uložená ve Firebase, email se nepodařilo odeslat:', mailError);
-      }
-
-      alert('Objednávka merche byla odeslána. Ozveme se vám kvůli potvrzení.');
-      e.target.reset();
-    } catch (err) {
-      alert('Chyba při odesílání objednávky. Zkuste to prosím znovu.');
-      console.error(err);
+      setCart([]);
+      setCustomerForm({
+        firstName: '',
+        lastName: '',
+        phone: '',
+        email: '',
+        note: '',
+      });
+      setMessage('Objednávka byla odeslána. Děkujeme.');
+    } catch (error) {
+      console.error('Chyba při odesílání objednávky:', error);
+      setMessage('Objednávku se nepodařilo odeslat. Zkuste to prosím znovu.');
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
-      <header className="sticky top-0 z-40 border-b border-green-100 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link to="/" className="flex items-center gap-3">
-            <img src="/logo.png" alt="ASK Lipůvka" className="h-12 w-12 object-contain" />
-            <div>
-              <div className="text-lg font-black text-green-700">ASK Lipůvka mládež</div>
-              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500">Klubový merch</div>
-            </div>
-          </Link>
+      <header className="sticky top-0 z-20 border-b bg-white/90 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+          <button type="button" onClick={() => navigate('/')} className="flex items-center gap-3 text-left">
+            <img src="/logo.png" alt="logo" className="h-10 w-10 rounded-full" />
+            <div className="text-lg font-bold text-green-600 md:text-xl">ASK Lipůvka – merch</div>
+          </button>
 
           <div className="flex items-center gap-3">
-            <button type="button" onClick={toggleTheme} className="theme-toggle-button">
-              {theme === 'dark' ? '☀️ Světlý režim' : '🌙 Tmavý režim'}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="theme-toggle-button hidden md:inline-flex"
+              aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
+            >
+              <span>{theme === 'light' ? '🌙' : '☀️'}</span>
+              <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
             </button>
-            <Link to="/" className="rounded-xl border border-green-200 bg-white px-4 py-3 font-bold text-green-700 transition hover:bg-green-50">
-              Zpět na web
-            </Link>
+            <button
+              type="button"
+              onClick={() => navigate('/')}
+              className="rounded-xl border border-green-200 bg-green-50 px-4 py-3 font-semibold text-green-700 transition hover:bg-green-100"
+            >
+              ← Zpět na web
+            </button>
           </div>
         </div>
       </header>
 
-      <main className="px-6 py-12">
-        <div className="mx-auto max-w-6xl">
-          <div className="mb-8 text-center">
-            <div className="mb-3 inline-flex rounded-full bg-green-100 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-green-700">
+      <main className="mx-auto max-w-7xl px-6 py-10">
+        <section className="mb-8 overflow-hidden rounded-[2rem] border border-green-100 bg-gradient-to-br from-green-50 via-white to-blue-50 p-7 shadow-sm md:p-10">
+          <div className="max-w-3xl">
+            <div className="mb-3 inline-flex rounded-full bg-green-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white">
               Klubový merch
             </div>
-            <h1 className="text-3xl font-black text-green-700 md:text-5xl">
-              Objednávka merche ASK Lipůvka
-            </h1>
-            <p className="mx-auto mt-3 max-w-2xl text-gray-600">
-              Vyberte produkt, velikost, barvu a počet kusů. Objednávka je bez online platby — po odeslání se ozveme s potvrzením.
+            <h1 className="text-4xl font-black text-green-700 md:text-5xl">Objednávka merche ASK Lipůvka</h1>
+            <p className="mt-4 text-lg text-gray-700">
+              Vyberte produkt, variantu a počet kusů. Platba se tady neřeší — objednávka se jen odešle klubu.
             </p>
           </div>
+        </section>
 
-          <form onSubmit={handleSubmitMerch} className="space-y-6">
-            <div className="grid gap-5 md:grid-cols-2">
-              {merchProducts.map((product) => (
-                <div key={product.id} className="rounded-3xl border border-green-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
-                  <div className="flex gap-4">
-                    <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-green-50 p-3">
-                      <img src={product.image} alt={product.name} className="h-full w-full object-contain" />
+        {message && (
+          <div className="mb-6 rounded-2xl border border-green-200 bg-green-50 p-4 font-semibold text-green-800">
+            {message}
+          </div>
+        )}
+
+        <div className="grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+          <section>
+            <h2 className="mb-5 text-2xl font-black text-green-700">Produkty</h2>
+
+            {loading ? (
+              <div className="rounded-3xl border border-green-100 bg-white p-8 text-center shadow-sm">
+                <div className="font-semibold text-gray-700">Načítám produkty…</div>
+              </div>
+            ) : products.length > 0 ? (
+              <div className="grid gap-5 md:grid-cols-2">
+                {products.map((product) => (
+                  <div key={product.id} className="overflow-hidden rounded-3xl border border-green-100 bg-white shadow-sm">
+                    <div className="h-64 bg-gray-100">
+                      {product.image ? (
+                        <img src={product.image} alt={product.title} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-sm font-semibold text-gray-500">
+                          Obrázek bude doplněn
+                        </div>
+                      )}
                     </div>
-                    <div className="flex-1">
-                      <h2 className="text-lg font-black text-gray-900">{product.name}</h2>
-                      <p className="mt-1 text-sm text-gray-600">{product.description}</p>
-                      <div className="mt-2 text-xl font-black text-green-700">
-                        {product.price.toLocaleString('cs-CZ')} Kč
+
+                    <div className="space-y-4 p-5">
+                      <div>
+                        <div className="mb-2 inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                          {product.type || 'Oblečení'}
+                        </div>
+                        <h3 className="text-xl font-black text-gray-900">{product.title}</h3>
+                        {product.description && (
+                          <p className="mt-2 text-sm leading-relaxed text-gray-600">{product.description}</p>
+                        )}
+                      </div>
+
+                      <div className="text-2xl font-black text-green-700">{formatPrice(product.price)}</div>
+
+                      {product.variants?.length > 0 && (
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold text-gray-700">Varianta</label>
+                          <select
+                            value={selectedVariants[product.id] || ''}
+                            onChange={(e) => setSelectedVariants((prev) => ({ ...prev, [product.id]: e.target.value }))}
+                            className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                          >
+                            {product.variants.map((variant) => (
+                              <option key={variant} value={variant}>{variant}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold text-gray-700">Počet</label>
+                        <input
+                          type="number"
+                          min="1"
+                          value={selectedQuantities[product.id] || 1}
+                          onChange={(e) => setSelectedQuantities((prev) => ({ ...prev, [product.id]: e.target.value }))}
+                          className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => addToCart(product)}
+                        className="w-full rounded-xl bg-green-600 px-5 py-3 font-bold text-white transition hover:bg-green-700"
+                      >
+                        Přidat do objednávky
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-3xl border border-green-100 bg-white p-8 shadow-sm">
+                <div className="font-semibold text-gray-700">Zatím tu nejsou žádné aktivní produkty.</div>
+                <div className="mt-2 text-sm text-gray-500">Produkty přidáte v administraci v sekci Merch.</div>
+              </div>
+            )}
+          </section>
+
+          <section className="lg:sticky lg:top-24 lg:self-start">
+            <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
+              <h2 className="mb-5 text-2xl font-black text-green-700">Objednávka</h2>
+
+              {cart.length > 0 ? (
+                <div className="mb-6 space-y-3">
+                  {cart.map((item, index) => (
+                    <div key={`${item.productId}-${index}`} className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <div className="font-bold text-gray-900">{item.title}</div>
+                          <div className="mt-1 text-sm text-gray-600">
+                            {item.variant && <>Varianta: <span className="font-semibold">{item.variant}</span> · </>}
+                            Počet: <span className="font-semibold">{item.quantity}</span>
+                          </div>
+                          <div className="mt-1 text-sm font-bold text-green-700">
+                            {formatPrice((Number(item.price) || 0) * (Number(item.quantity) || 1))}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeFromCart(index)}
+                          className="rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-bold text-red-600 hover:bg-red-50"
+                        >
+                          Odebrat
+                        </button>
                       </div>
                     </div>
-                  </div>
+                  ))}
 
-                  <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                    <label className="block">
-                      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500">Počet</span>
-                      <input type="number" min="0" name={`${product.id}_quantity`} defaultValue="0" className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200" />
-                    </label>
-
-                    <label className="block">
-                      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500">Velikost</span>
-                      <select name={`${product.id}_size`} className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200">
-                        {product.sizes.map((size) => (
-                          <option key={size} value={size}>{size}</option>
-                        ))}
-                      </select>
-                    </label>
-
-                    <label className="block">
-                      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500">Barva</span>
-                      <select name={`${product.id}_color`} className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200">
-                        {product.colors.map((color) => (
-                          <option key={color} value={color}>{color}</option>
-                        ))}
-                      </select>
-                    </label>
-                  </div>
-
-                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
-                    <label className="block">
-                      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500">Jméno na záda</span>
-                      <input type="text" name={`${product.id}_customName`} placeholder="např. NOVÁK" className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200" />
-                    </label>
-
-                    <label className="block">
-                      <span className="mb-1 block text-xs font-bold uppercase tracking-wide text-gray-500">Číslo</span>
-                      <input type="text" name={`${product.id}_customNumber`} placeholder="např. 9" className="w-full rounded-xl border border-gray-300 bg-white px-3 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200" />
-                    </label>
-                  </div>
-
-                  <div className="mt-3 rounded-2xl bg-green-50 px-4 py-3 text-sm text-gray-700">
-                    Jméno nebo číslo na záda: +50 Kč k ceně za kus.
+                  <div className="flex items-center justify-between rounded-2xl bg-green-50 p-4 text-lg font-black text-green-800">
+                    <span>Celkem</span>
+                    <span>{formatPrice(cartTotal)}</span>
                   </div>
                 </div>
-              ))}
-            </div>
+              ) : (
+                <div className="mb-6 rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                  Zatím není vybraný žádný produkt.
+                </div>
+              )}
 
-            <div className="rounded-3xl border border-green-100 bg-green-50/60 p-5 shadow-sm md:p-6">
-              <h2 className="mb-4 text-2xl font-black text-green-700">Kontaktní údaje</h2>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-gray-700">Jméno rodiče *</span>
-                  <input name="parentName" required className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200" />
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-gray-700">Jméno dítěte</span>
-                  <input name="childName" className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200" />
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-gray-700">Telefon *</span>
-                  <input name="phone" required inputMode="tel" className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200" />
-                </label>
-                <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-gray-700">Email</span>
-                  <input name="email" type="email" className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200" />
-                </label>
-              </div>
-              <label className="mt-4 block">
-                <span className="mb-2 block text-sm font-bold text-gray-700">Poznámka</span>
-                <textarea name="note" rows="4" placeholder="Např. upřesnění velikosti, jméno na záda, domluva předání…" className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-200" />
-              </label>
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-gray-600">
-                  Odesláním se objednávka uloží a slouží pouze k domluvě klubového merche. Platba se neprovádí online.
-                </p>
-                <button type="submit" className="rounded-xl bg-green-600 px-6 py-3 font-bold text-white transition hover:bg-green-700">
-                  Odeslat objednávku
+              <form onSubmit={handleSubmitOrder} className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-gray-700">Jméno</label>
+                    <input
+                      type="text"
+                      value={customerForm.firstName}
+                      onChange={(e) => handleCustomerChange('firstName', e.target.value)}
+                      placeholder="Jan"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-gray-700">Příjmení</label>
+                    <input
+                      type="text"
+                      value={customerForm.lastName}
+                      onChange={(e) => handleCustomerChange('lastName', e.target.value)}
+                      placeholder="NOVÁK"
+                      className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">Telefon</label>
+                  <input
+                    type="tel"
+                    value={customerForm.phone}
+                    onChange={(e) => handleCustomerChange('phone', e.target.value)}
+                    placeholder="777 123 456"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">Email</label>
+                  <input
+                    type="email"
+                    value={customerForm.email}
+                    onChange={(e) => handleCustomerChange('email', e.target.value)}
+                    placeholder="email@seznam.cz"
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                  />
+                </div>
+
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">Poznámka</label>
+                  <textarea
+                    rows="4"
+                    value={customerForm.note}
+                    onChange={(e) => handleCustomerChange('note', e.target.value)}
+                    placeholder="Např. předání na tréninku."
+                    className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="w-full rounded-xl bg-green-600 px-5 py-4 text-lg font-black text-white transition hover:bg-green-700 disabled:cursor-not-allowed disabled:bg-gray-300"
+                >
+                  {saving ? 'Odesílám…' : 'Odeslat objednávku'}
                 </button>
-              </div>
+              </form>
             </div>
-          </form>
+          </section>
         </div>
       </main>
     </div>

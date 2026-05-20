@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { db } from './firebase';
+import { db, storage } from './firebase';
 import {
   addDoc,
   collection,
@@ -8,7 +8,9 @@ import {
   getDoc,
   getDocs,
   updateDoc,
+  serverTimestamp,
 } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 
 export default function Admin() {
   const categories = [
@@ -22,6 +24,8 @@ export default function Admin() {
   const [newsItems, setNewsItems] = useState([]);
   const [matches, setMatches] = useState([]);
   const [galleryAlbums, setGalleryAlbums] = useState([]);
+  const [merchProducts, setMerchProducts] = useState([]);
+  const [merchOrders, setMerchOrders] = useState([]);
   const [siteStats, setSiteStats] = useState({
     visitCount: 0,
     createdAt: null,
@@ -83,6 +87,20 @@ export default function Admin() {
     toNumber: '',
     coverNumber: '1',
   });
+
+
+  const [editingMerchProductId, setEditingMerchProductId] = useState(null);
+  const [merchProductForm, setMerchProductForm] = useState({
+    title: '',
+    type: 'Oblečení',
+    description: '',
+    price: '',
+    image: '',
+    variantsText: '',
+    order: '',
+    active: true,
+  });
+  const [merchImageFile, setMerchImageFile] = useState(null);
 
   const sectionButtonClass = (isActive) =>
     `rounded-xl px-5 py-3 font-semibold transition ${
@@ -274,6 +292,18 @@ export default function Admin() {
         ...item.data(),
       }));
 
+      const merchProductsSnapshot = await getDocs(collection(db, 'merchProducts'));
+      const loadedMerchProducts = merchProductsSnapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
+
+      const merchOrdersSnapshot = await getDocs(collection(db, 'merchOrders'));
+      const loadedMerchOrders = merchOrdersSnapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
+
       const visitsSnapshot = await getDoc(doc(db, 'siteStats', 'visits'));
       const visitsData = visitsSnapshot.exists() ? visitsSnapshot.data() : null;
 
@@ -286,6 +316,8 @@ export default function Admin() {
       setNewsItems(loadedNews);
       setMatches(loadedMatches);
       setGalleryAlbums(loadedGallery);
+      setMerchProducts(loadedMerchProducts);
+      setMerchOrders(loadedMerchOrders);
       setSiteStats({
         visitCount: Number(visitsData?.count) || 0,
         createdAt: visitsData?.createdAt || null,
@@ -373,6 +405,42 @@ export default function Admin() {
       return a.title.localeCompare(b.title, 'cs');
     });
   }, [galleryAlbums, matches]);
+
+
+  const sortedMerchProducts = useMemo(() => {
+    return [...merchProducts].sort((a, b) => {
+      const orderA = Number(a.order) || 0;
+      const orderB = Number(b.order) || 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return String(a.title || '').localeCompare(String(b.title || ''), 'cs');
+    });
+  }, [merchProducts]);
+
+  const sortedMerchOrders = useMemo(() => {
+    return [...merchOrders].sort((a, b) => {
+      const getTime = (value) => {
+        if (typeof value?.toDate === 'function') return value.toDate().getTime();
+        const parsed = new Date(value).getTime();
+        return Number.isNaN(parsed) ? 0 : parsed;
+      };
+      return getTime(b.createdAt) - getTime(a.createdAt);
+    });
+  }, [merchOrders]);
+
+  const merchOrderStatusLabels = {
+    new: 'Nová',
+    ordered: 'Objednáno',
+    ready: 'Připraveno',
+    handed: 'Předáno',
+  };
+
+  const parseMerchVariants = (value) =>
+    value
+      .split('\n')
+      .map((item) => item.trim())
+      .filter(Boolean);
+
+  const formatMerchVariants = (variants = []) => variants.join('\n');
 
   const formatDateTime = (value) => {
     if (!value) return '—';
@@ -545,6 +613,209 @@ export default function Admin() {
       ...prev,
       [field]: value,
     }));
+  };
+
+
+  const handleMerchProductChange = (field, value) => {
+    setMerchProductForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const resetMerchProductForm = () => {
+    setEditingMerchProductId(null);
+    setMerchImageFile(null);
+    setMerchProductForm({
+      title: '',
+      type: 'Oblečení',
+      description: '',
+      price: '',
+      image: '',
+      variantsText: '',
+      order: '',
+      active: true,
+    });
+  };
+
+  const uploadMerchImageIfNeeded = async () => {
+    if (!merchImageFile) return merchProductForm.image.trim();
+
+    const safeFileName = merchImageFile.name
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9.]+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    const filePath = `merch/${Date.now()}-${safeFileName}`;
+    const storageRef = ref(storage, filePath);
+    await uploadBytes(storageRef, merchImageFile);
+    return getDownloadURL(storageRef);
+  };
+
+  const handleSaveMerchProduct = async (e) => {
+    e.preventDefault();
+
+    if (!merchProductForm.title.trim() || !merchProductForm.price.trim()) {
+      alert('Vyplň název produktu a cenu.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const imageUrl = await uploadMerchImageIfNeeded();
+      const payload = {
+        title: merchProductForm.title.trim(),
+        type: merchProductForm.type.trim() || 'Oblečení',
+        description: merchProductForm.description.trim(),
+        price: Number(merchProductForm.price) || 0,
+        image: imageUrl,
+        variants: parseMerchVariants(merchProductForm.variantsText),
+        order: Number(merchProductForm.order) || 0,
+        active: Boolean(merchProductForm.active),
+        updatedAt: serverTimestamp(),
+      };
+
+      if (editingMerchProductId) {
+        await updateDoc(doc(db, 'merchProducts', editingMerchProductId), payload);
+      } else {
+        await addDoc(collection(db, 'merchProducts'), {
+          ...payload,
+          createdAt: serverTimestamp(),
+        });
+      }
+
+      resetMerchProductForm();
+      await loadAllData();
+    } catch (error) {
+      console.error('Chyba při ukládání merch produktu:', error);
+      alert('Nepodařilo se uložit merch produkt. Zkontroluj Firebase Storage pravidla.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditMerchProduct = (product) => {
+    setEditingMerchProductId(product.id);
+    setMerchImageFile(null);
+    setMerchProductForm({
+      title: product.title || '',
+      type: product.type || 'Oblečení',
+      description: product.description || '',
+      price: product.price || '',
+      image: product.image || '',
+      variantsText: formatMerchVariants(product.variants || []),
+      order: product.order || '',
+      active: product.active !== false,
+    });
+    setActiveSection('merch');
+  };
+
+  const handleDeleteMerchProduct = async (productId) => {
+    const confirmed = window.confirm('Opravdu smazat tento merch produkt?');
+    if (!confirmed) return;
+
+    try {
+      setSaving(true);
+      await deleteDoc(doc(db, 'merchProducts', productId));
+      await loadAllData();
+    } catch (error) {
+      console.error('Chyba při mazání merch produktu:', error);
+      alert('Nepodařilo se smazat merch produkt.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleMerchProductActive = async (product) => {
+    try {
+      setSaving(true);
+      await updateDoc(doc(db, 'merchProducts', product.id), {
+        active: product.active === false,
+        updatedAt: serverTimestamp(),
+      });
+      await loadAllData();
+    } catch (error) {
+      console.error('Chyba při změně viditelnosti merch produktu:', error);
+      alert('Nepodařilo se změnit viditelnost produktu.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateMerchOrderStatus = async (orderId, status) => {
+    try {
+      await updateDoc(doc(db, 'merchOrders', orderId), {
+        status,
+        updatedAt: serverTimestamp(),
+      });
+      await loadAllData();
+    } catch (error) {
+      console.error('Chyba při změně stavu objednávky:', error);
+      alert('Nepodařilo se změnit stav objednávky.');
+    }
+  };
+
+
+  const handleCreateStarterMerchProducts = async () => {
+    const confirmed = window.confirm('Přidat základní produkty: bílé tričko a bílo-černá kšiltovka?');
+    if (!confirmed) return;
+
+    try {
+      setSaving(true);
+      const starterProducts = [
+        {
+          title: 'Bílé tričko',
+          type: 'Oblečení',
+          description: 'Bílé klubové tričko.',
+          price: 0,
+          image: '',
+          variants: ['116', '128', '140', '152', 'S', 'M', 'L'],
+          order: 1,
+          active: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        {
+          title: 'Bílo-černá kšiltovka',
+          type: 'Oblečení',
+          description: 'Bílo-černá klubová kšiltovka.',
+          price: 0,
+          image: '',
+          variants: ['Dětská', 'Dospělá'],
+          order: 2,
+          active: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+      ];
+
+      await Promise.all(
+        starterProducts.map((product) => addDoc(collection(db, 'merchProducts'), product))
+      );
+
+      await loadAllData();
+    } catch (error) {
+      console.error('Chyba při vytvoření základních merch produktů:', error);
+      alert('Nepodařilo se vytvořit základní produkty.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteMerchOrder = async (orderId) => {
+    const confirmed = window.confirm('Opravdu smazat tuto objednávku?');
+    if (!confirmed) return;
+
+    try {
+      await deleteDoc(doc(db, 'merchOrders', orderId));
+      await loadAllData();
+    } catch (error) {
+      console.error('Chyba při mazání merch objednávky:', error);
+      alert('Nepodařilo se smazat objednávku.');
+    }
   };
 
   const handleFolderSelect = (e) => {
@@ -946,6 +1217,14 @@ export default function Admin() {
             className={sectionButtonClass(activeSection === 'gallery')}
           >
             Galerie
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('merch')}
+            className={sectionButtonClass(activeSection === 'merch')}
+          >
+            Merch
           </button>
 
           <button
@@ -1620,6 +1899,296 @@ Večeřa 1x`}
               </div>
             )}
 
+
+
+            {activeSection === 'merch' && (
+              <div className="space-y-8">
+                <div className="grid gap-8 xl:grid-cols-[1fr_1fr]">
+                  <div className={cardSoftClass}>
+                    <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                      <div>
+                        <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                          Produkty na stránce /merch
+                        </div>
+                        <h2 className="text-2xl font-bold text-green-700">
+                          {editingMerchProductId ? 'Upravit produkt' : 'Přidat produkt'}
+                        </h2>
+                        <p className="mt-2 text-sm text-gray-600">
+                          Obrázek se uloží do Firebase Storage a produkt se zobrazí na samostatné stránce Merch.
+                        </p>
+                      </div>
+
+                      {editingMerchProductId && (
+                        <button type="button" onClick={resetMerchProductForm} className={outlineButtonClass}>
+                          Zrušit editaci
+                        </button>
+                      )}
+                    </div>
+
+                    <form onSubmit={handleSaveMerchProduct} className="space-y-5">
+                      <div>
+                        <label className={labelClass}>Název produktu</label>
+                        <input
+                          type="text"
+                          value={merchProductForm.title}
+                          onChange={(e) => handleMerchProductChange('title', e.target.value)}
+                          placeholder="Bílé tričko ASK Lipůvka"
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <div>
+                          <label className={labelClass}>Typ produktu</label>
+                          <input
+                            type="text"
+                            value={merchProductForm.type}
+                            onChange={(e) => handleMerchProductChange('type', e.target.value)}
+                            placeholder="Oblečení"
+                            className={inputClass}
+                          />
+                        </div>
+
+                        <div>
+                          <label className={labelClass}>Cena v Kč</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={merchProductForm.price}
+                            onChange={(e) => handleMerchProductChange('price', e.target.value)}
+                            placeholder="390"
+                            className={inputClass}
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Popis</label>
+                        <textarea
+                          rows="4"
+                          value={merchProductForm.description}
+                          onChange={(e) => handleMerchProductChange('description', e.target.value)}
+                          placeholder="Bílé klubové tričko vhodné na zápasy i tréninky."
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div className="rounded-2xl border border-green-200 bg-white/80 p-5">
+                        <label className={labelClass}>Obrázek produktu</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => setMerchImageFile(e.target.files?.[0] || null)}
+                          className={inputClass}
+                        />
+                        <div className="mt-3 text-sm text-gray-500">
+                          Vyber obrázek z počítače. Po uložení se nahraje do Firebase Storage.
+                        </div>
+
+                        <div className="mt-4">
+                          <label className={labelClass}>Nebo URL obrázku</label>
+                          <input
+                            type="text"
+                            value={merchProductForm.image}
+                            onChange={(e) => handleMerchProductChange('image', e.target.value)}
+                            placeholder="https://... nebo /merch/tricko.jpg"
+                            className={inputClass}
+                          />
+                        </div>
+
+                        {(merchImageFile || merchProductForm.image) && (
+                          <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+                            {merchImageFile ? (
+                              <div className="p-4 text-sm font-semibold text-gray-700">
+                                Vybraný soubor: {merchImageFile.name}
+                              </div>
+                            ) : (
+                              <img src={merchProductForm.image} alt="Náhled produktu" className="h-48 w-full object-cover" />
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Varianty</label>
+                        <textarea
+                          rows="6"
+                          value={merchProductForm.variantsText}
+                          onChange={(e) => handleMerchProductChange('variantsText', e.target.value)}
+                          placeholder={`Dětská\nDospělá`}
+                          className={inputClass}
+                        />
+                        <div className="mt-2 text-sm text-gray-500">
+                          Jedna varianta na řádek. U trička třeba 116, 128, 140, 152, S, M, L.
+                        </div>
+                      </div>
+
+                      <div className="grid gap-5 md:grid-cols-2">
+                        <div>
+                          <label className={labelClass}>Pořadí</label>
+                          <input
+                            type="number"
+                            value={merchProductForm.order}
+                            onChange={(e) => handleMerchProductChange('order', e.target.value)}
+                            placeholder="1"
+                            className={inputClass}
+                          />
+                        </div>
+
+                        <label className="flex items-center gap-3 rounded-2xl border border-green-200 bg-white p-4 font-semibold text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={merchProductForm.active}
+                            onChange={(e) => handleMerchProductChange('active', e.target.checked)}
+                            className="h-5 w-5"
+                          />
+                          Zobrazit na webu
+                        </label>
+                      </div>
+
+                      <button type="submit" disabled={saving} className={greenButtonClass}>
+                        {saving ? 'Ukládám…' : editingMerchProductId ? 'Uložit produkt' : 'Přidat produkt'}
+                      </button>
+                    </form>
+                  </div>
+
+                  <div className="space-y-5">
+                    <div className={cardClass}>
+                      <div className="mb-2 text-lg font-bold text-gray-900">Rychlý start</div>
+                      <div className="space-y-2 text-sm text-gray-600">
+                        <div><span className="font-semibold">Tričko:</span> varianty 116, 128, 140, 152, S, M, L.</div>
+                        <div><span className="font-semibold">Kšiltovka:</span> varianty Dětská, Dospělá.</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCreateStarterMerchProducts}
+                        disabled={saving}
+                        className={`${greenButtonClass} mt-4`}
+                      >
+                        Vytvořit tričko a kšiltovku
+                      </button>
+                    </div>
+
+                    {sortedMerchProducts.length > 0 ? (
+                      sortedMerchProducts.map((product) => (
+                        <div key={product.id} className={cardClass}>
+                          <div className="flex gap-4">
+                            <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-gray-100">
+                              {product.image ? (
+                                <img src={product.image} alt={product.title} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full items-center justify-center text-xs text-gray-500">Bez fotky</div>
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-2 flex flex-wrap items-center gap-2">
+                                <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${product.active === false ? 'bg-gray-100 text-gray-600' : 'bg-green-100 text-green-700'}`}>
+                                  {product.active === false ? 'Skryto' : 'Aktivní'}
+                                </span>
+                                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
+                                  {product.type || 'Oblečení'}
+                                </span>
+                              </div>
+                              <div className="text-lg font-bold text-gray-900">{product.title}</div>
+                              <div className="mt-1 text-sm font-semibold text-green-700">{Number(product.price || 0).toLocaleString('cs-CZ')} Kč</div>
+                              {product.description && <div className="mt-2 text-sm text-gray-600">{product.description}</div>}
+                              {product.variants?.length > 0 && (
+                                <div className="mt-2 text-sm text-gray-500">
+                                  Varianty: {product.variants.join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-3">
+                            <button type="button" onClick={() => handleEditMerchProduct(product)} className={outlineButtonClass}>
+                              Upravit
+                            </button>
+                            <button type="button" onClick={() => handleToggleMerchProductActive(product)} className={outlineButtonClass}>
+                              {product.active === false ? 'Zobrazit' : 'Skrýt'}
+                            </button>
+                            <button type="button" onClick={() => handleDeleteMerchProduct(product.id)} className={dangerButtonClass}>
+                              Smazat
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className={cardClass}>
+                        <div className="text-gray-500">Zatím tu nejsou žádné merch produkty.</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className={cardSoftClass}>
+                  <div className="mb-6">
+                    <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                      Objednávky z webu
+                    </div>
+                    <h2 className="text-2xl font-bold text-green-700">Merch objednávky</h2>
+                  </div>
+
+                  {sortedMerchOrders.length > 0 ? (
+                    <div className="space-y-4">
+                      {sortedMerchOrders.map((order) => (
+                        <div key={order.id} className="rounded-2xl border border-green-100 bg-white p-5 shadow-sm">
+                          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                            <div>
+                              <div className="mb-1 text-lg font-bold text-gray-900">
+                                {order.customer?.firstName || ''} {order.customer?.lastName || ''}
+                              </div>
+                              <div className="space-y-1 text-sm text-gray-600">
+                                <div>Telefon: <span className="font-semibold">{order.customer?.phone || '—'}</span></div>
+                                <div>Email: <span className="font-semibold">{order.customer?.email || '—'}</span></div>
+                                <div>Datum: <span className="font-semibold">{formatDateTime(order.createdAt)}</span></div>
+                                {order.customer?.note && <div>Poznámka: {order.customer.note}</div>}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-3">
+                              <select
+                                value={order.status || 'new'}
+                                onChange={(e) => handleUpdateMerchOrderStatus(order.id, e.target.value)}
+                                className={inputClass}
+                              >
+                                {Object.entries(merchOrderStatusLabels).map(([value, label]) => (
+                                  <option key={value} value={value}>{label}</option>
+                                ))}
+                              </select>
+                              <button type="button" onClick={() => handleDeleteMerchOrder(order.id)} className={dangerButtonClass}>
+                                Smazat
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="mt-5 space-y-3">
+                            {(order.items || []).map((item, index) => (
+                              <div key={`${order.id}-${index}`} className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
+                                <div className="font-bold text-gray-900">{item.title}</div>
+                                <div className="mt-1">
+                                  {item.variant && <>Varianta: <span className="font-semibold">{item.variant}</span> · </>}
+                                  Počet: <span className="font-semibold">{item.quantity}</span> · Cena: <span className="font-semibold">{Number(item.price || 0).toLocaleString('cs-CZ')} Kč / ks</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="mt-4 rounded-2xl bg-green-50 p-4 text-right text-lg font-black text-green-800">
+                            Celkem: {Number(order.total || 0).toLocaleString('cs-CZ')} Kč
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className={cardClass}>
+                      <div className="text-gray-500">Zatím tu nejsou žádné objednávky.</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {activeSection === 'stats' && (
               <div className="space-y-8">

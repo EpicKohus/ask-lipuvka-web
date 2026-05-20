@@ -1376,6 +1376,14 @@ export default function AskLipuvkaWeb() {
               Galerie
             </button>
 
+            <button
+              type="button"
+              onClick={() => navigate('/merch')}
+              className="hover:text-green-600"
+            >
+              Merch
+            </button>
+
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
@@ -1603,6 +1611,17 @@ export default function AskLipuvkaWeb() {
                 className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
               >
                 Galerie
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  navigate('/merch');
+                }}
+                className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
+              >
+                Merch
               </button>
 
               <button
