@@ -1091,85 +1091,85 @@ export default function AskLipuvkaWeb() {
     const label2 = m.matchLabel2?.trim() || '2. blok';
 
     const articlePreview = m.article?.trim()
-      ? `${m.article.trim().slice(0, 220)}${m.article.trim().length > 220 ? '…' : ''}`
+      ? `${m.article.trim().slice(0, 190)}${m.article.trim().length > 190 ? '…' : ''}`
       : 'Klikni na detail zápasu a zobraz si výsledek, report i fotky.';
 
     return (
-      <div className="mb-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-lg">
+      <div className={`mb-6 overflow-hidden rounded-3xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${activeCategoryStyle.light}`}>
         <button
           type="button"
           onClick={() => m.id && navigate(`/zapas/${m.id}`)}
           className="block w-full text-left"
         >
-          <div className="relative">
-            {isVideoFile(coverSrc) ? (
-              <video
-                src={coverSrc}
-                className="h-[250px] w-full object-cover md:h-[320px]"
-                muted
-                playsInline
-                preload="metadata"
-              />
-            ) : (
-              <img
-                src={coverSrc}
-                alt={m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
-                className="h-[250px] w-full object-cover md:h-[320px]"
-              />
-            )}
+          <div className="grid gap-5 lg:grid-cols-[0.92fr_1.08fr] lg:items-stretch">
+            <div className="relative min-h-[220px] overflow-hidden rounded-[1.35rem] bg-gray-100 lg:min-h-[260px]">
+              {isVideoFile(coverSrc) ? (
+                <video
+                  src={coverSrc}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  muted
+                  playsInline
+                  preload="metadata"
+                />
+              ) : (
+                <img
+                  src={coverSrc}
+                  alt={m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              )}
 
-            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
-            <div className="absolute left-4 top-4 md:left-6 md:top-6">
-              <span className="rounded-full bg-white/90 px-4 py-2 text-xs font-black uppercase tracking-wide text-gray-900 shadow-sm">
-                Poslední odehraný zápas
-              </span>
-            </div>
-
-            <div className="absolute bottom-0 left-0 w-full p-5 text-white md:p-7">
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <span className={`rounded-full px-3 py-1 text-xs font-bold ${categoryStyle.badge}`}>
+              <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-green-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-md">
+                  Poslední odehraný zápas
+                </span>
+                <span className={`rounded-full px-3 py-1 text-xs font-bold shadow-sm ${categoryStyle.badge}`}>
                   {getCategoryShortLabel(m.category)}
                 </span>
-                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-                  {m.date}
-                </span>
-                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-                  {m.home ? 'Domácí' : 'Venkovní'}
-                </span>
               </div>
 
-              <h3 className="text-2xl font-black leading-tight drop-shadow md:text-4xl">
-                {m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
-              </h3>
+              <div className="absolute bottom-0 left-0 w-full p-4 text-white md:p-5">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+                    {m.date}
+                  </span>
+                  <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+                    {m.home ? 'Domácí' : 'Venkovní'}
+                  </span>
+                </div>
 
-              <div className="mt-2 text-sm text-white/90 md:text-base">
-                {m.time} • {m.home ? 'Lipůvka' : m.venue || 'bude doplněno'}
+                <h3 className="text-xl font-black leading-tight drop-shadow md:text-3xl">
+                  {m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
+                </h3>
+
+                <div className="mt-2 text-sm text-white/90 md:text-base">
+                  {m.time} • {m.home ? 'Lipůvka' : m.venue || 'bude doplněno'}
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="p-5 md:p-7">
-            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="flex flex-col justify-between rounded-[1.35rem] bg-white/82 p-5 shadow-sm ring-1 ring-white/70 md:p-6">
               <div>
-                <div className="mb-3 flex flex-wrap items-center gap-3">
+                <div className="mb-4 flex flex-wrap items-center gap-3">
                   <span className={`rounded-full px-3 py-1 text-sm font-bold ${categoryStyle.softBadge}`}>
-                    Hlavní tahák
+                    Odehráno
                   </span>
-                  <span className="text-sm font-semibold text-gray-500">
+                  <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-gray-600 shadow-sm">
                     Klikni kamkoliv pro detail zápasu
                   </span>
                 </div>
 
-                <p className="max-w-3xl leading-7 text-gray-700">
+                <p className="leading-7 text-gray-700">
                   {articlePreview}
                 </p>
               </div>
 
-              <div className="space-y-3">
+              <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 {firstPlayedResult && (
-                  <div className="rounded-2xl bg-gray-50 p-4">
-                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                  <div className="rounded-2xl border border-green-200 bg-green-50 p-4 shadow-sm">
+                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">
                       {label1}
                     </div>
                     <div className="text-2xl font-black text-gray-900 md:text-3xl">
@@ -1179,8 +1179,8 @@ export default function AskLipuvkaWeb() {
                 )}
 
                 {secondPlayedResult && (
-                  <div className="rounded-2xl bg-gray-50 p-4">
-                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+                  <div className="rounded-2xl border border-green-200 bg-green-50 p-4 shadow-sm">
+                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">
                       {label2}
                     </div>
                     <div className="text-2xl font-black text-gray-900 md:text-3xl">
@@ -1190,7 +1190,7 @@ export default function AskLipuvkaWeb() {
                 )}
 
                 {!firstPlayedResult && !secondPlayedResult && (
-                  <div className="rounded-2xl bg-gray-50 p-4 text-sm text-gray-600">
+                  <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-gray-700 shadow-sm sm:col-span-2">
                     Výsledek je v detailu zápasu.
                   </div>
                 )}
@@ -1200,7 +1200,7 @@ export default function AskLipuvkaWeb() {
         </button>
 
         {hasPhotoReport && (
-          <div className="border-t border-gray-100 px-5 pb-5 pt-4 md:px-7 md:pb-7">
+          <div className="mt-4 flex flex-wrap gap-3">
             <button
               type="button"
               onClick={(e) => {
@@ -1216,6 +1216,7 @@ export default function AskLipuvkaWeb() {
       </div>
     );
   };
+
 
   const renderAlbumCover = (album) => {
     const coverSrc = album.cover || album.photos?.[0] || '/field.png';
