@@ -4,6 +4,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import App from './App'
 import Admin from './Admin'
 import MatchDetail from './MatchDetail'
+import Merch from './Merch'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -12,6 +13,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/" element={<App />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/merch" element={<Merch />} />
         <Route path="/zapas/:matchId" element={<MatchDetail />} />
       </Routes>
     </BrowserRouter>
