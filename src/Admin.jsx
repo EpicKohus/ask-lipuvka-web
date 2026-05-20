@@ -292,17 +292,28 @@ export default function Admin() {
         ...item.data(),
       }));
 
-      const merchProductsSnapshot = await getDocs(collection(db, 'merchProducts'));
-      const loadedMerchProducts = merchProductsSnapshot.docs.map((item) => ({
-        id: item.id,
-        ...item.data(),
-      }));
+      let loadedMerchProducts = [];
+      let loadedMerchOrders = [];
 
-      const merchOrdersSnapshot = await getDocs(collection(db, 'merchOrders'));
-      const loadedMerchOrders = merchOrdersSnapshot.docs.map((item) => ({
-        id: item.id,
-        ...item.data(),
-      }));
+      try {
+        const merchProductsSnapshot = await getDocs(collection(db, 'merchProducts'));
+        loadedMerchProducts = merchProductsSnapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+      } catch (merchProductsError) {
+        console.warn('Merch produkty se nepodařilo načíst. Ostatní admin nechávám běžet:', merchProductsError);
+      }
+
+      try {
+        const merchOrdersSnapshot = await getDocs(collection(db, 'merchOrders'));
+        loadedMerchOrders = merchOrdersSnapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+      } catch (merchOrdersError) {
+        console.warn('Merch objednávky se nepodařilo načíst. Ostatní admin nechávám běžet:', merchOrdersError);
+      }
 
       const visitsSnapshot = await getDoc(doc(db, 'siteStats', 'visits'));
       const visitsData = visitsSnapshot.exists() ? visitsSnapshot.data() : null;
