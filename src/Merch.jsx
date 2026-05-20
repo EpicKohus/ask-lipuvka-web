@@ -57,7 +57,8 @@ export default function Merch() {
         const variants = {};
         const quantities = {};
         loadedProducts.forEach((product) => {
-          variants[product.id] = product.variants?.[0] || '';
+          const isClothing = product.productKind !== 'item';
+          variants[product.id] = isClothing ? product.variants?.[0] || '' : '';
           quantities[product.id] = 1;
         });
         setSelectedVariants(variants);
@@ -89,10 +90,11 @@ export default function Merch() {
 
   const addToCart = (product) => {
     const quantity = Math.max(1, Number(selectedQuantities[product.id]) || 1);
-    const variant = selectedVariants[product.id] || product.variants?.[0] || '';
+    const isClothing = product.productKind !== 'item';
+    const variant = isClothing ? selectedVariants[product.id] || product.variants?.[0] || '' : '';
 
-    if (product.variants?.length && !variant) {
-      setMessage('Vyberte prosím variantu produktu.');
+    if (isClothing && product.variants?.length && !variant) {
+      setMessage('Vyberte prosím velikost nebo variantu produktu.');
       return;
     }
 
@@ -101,7 +103,8 @@ export default function Merch() {
       {
         productId: product.id,
         title: product.title || '',
-        type: product.type || 'Oblečení',
+        productKind: product.productKind === 'item' ? 'item' : 'clothing',
+        type: product.type || (product.productKind === 'item' ? 'Předmět' : 'Oblečení'),
         description: product.description || '',
         image: product.image || '',
         price: Number(product.price) || 0,
@@ -241,7 +244,7 @@ export default function Merch() {
                     <div className="space-y-4 p-5">
                       <div>
                         <div className="mb-2 inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
-                          {product.type || 'Oblečení'}
+                          {product.type || (product.productKind === 'item' ? 'Předmět' : 'Oblečení')}
                         </div>
                         <h3 className="text-xl font-black text-gray-900">{product.title}</h3>
                         {product.description && (
@@ -251,9 +254,9 @@ export default function Merch() {
 
                       <div className="text-2xl font-black text-green-700">{formatPrice(product.price)}</div>
 
-                      {product.variants?.length > 0 && (
+                      {product.productKind !== 'item' && product.variants?.length > 0 && (
                         <div>
-                          <label className="mb-2 block text-sm font-semibold text-gray-700">Varianta</label>
+                          <label className="mb-2 block text-sm font-semibold text-gray-700">Velikost / varianta</label>
                           <select
                             value={selectedVariants[product.id] || ''}
                             onChange={(e) => setSelectedVariants((prev) => ({ ...prev, [product.id]: e.target.value }))}
@@ -308,7 +311,7 @@ export default function Merch() {
                         <div>
                           <div className="font-bold text-gray-900">{item.title}</div>
                           <div className="mt-1 text-sm text-gray-600">
-                            {item.variant && <>Varianta: <span className="font-semibold">{item.variant}</span> · </>}
+                            {item.variant && <>Velikost/varianta: <span className="font-semibold">{item.variant}</span> · </>}
                             Počet: <span className="font-semibold">{item.quantity}</span>
                           </div>
                           <div className="mt-1 text-sm font-bold text-green-700">

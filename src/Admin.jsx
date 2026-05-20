@@ -92,6 +92,7 @@ export default function Admin() {
   const [editingMerchProductId, setEditingMerchProductId] = useState(null);
   const [merchProductForm, setMerchProductForm] = useState({
     title: '',
+    productKind: 'clothing',
     type: 'Oblečení',
     description: '',
     price: '',
@@ -628,10 +629,19 @@ export default function Admin() {
 
 
   const handleMerchProductChange = (field, value) => {
-    setMerchProductForm((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setMerchProductForm((prev) => {
+      const next = {
+        ...prev,
+        [field]: value,
+      };
+
+      if (field === 'productKind') {
+        next.type = value === 'item' ? 'Předmět' : 'Oblečení';
+        if (value === 'item') next.variantsText = '';
+      }
+
+      return next;
+    });
   };
 
   const resetMerchProductForm = () => {
@@ -639,6 +649,7 @@ export default function Admin() {
     setMerchImageFile(null);
     setMerchProductForm({
       title: '',
+      productKind: 'clothing',
       type: 'Oblečení',
       description: '',
       price: '',
@@ -677,13 +688,15 @@ export default function Admin() {
     try {
       setSaving(true);
       const imageUrl = await uploadMerchImageIfNeeded();
+      const productKind = merchProductForm.productKind === 'item' ? 'item' : 'clothing';
       const payload = {
         title: merchProductForm.title.trim(),
-        type: merchProductForm.type.trim() || 'Oblečení',
+        productKind,
+        type: productKind === 'item' ? 'Předmět' : 'Oblečení',
         description: merchProductForm.description.trim(),
         price: Number(merchProductForm.price) || 0,
         image: imageUrl,
-        variants: parseMerchVariants(merchProductForm.variantsText),
+        variants: productKind === 'clothing' ? parseMerchVariants(merchProductForm.variantsText) : [],
         order: Number(merchProductForm.order) || 0,
         active: Boolean(merchProductForm.active),
         updatedAt: serverTimestamp(),
@@ -779,6 +792,7 @@ export default function Admin() {
       const starterProducts = [
         {
           title: 'Bílé tričko',
+          productKind: 'clothing',
           type: 'Oblečení',
           description: 'Bílé klubové tričko.',
           price: 0,
@@ -791,6 +805,7 @@ export default function Admin() {
         },
         {
           title: 'Bílo-černá kšiltovka',
+          productKind: 'clothing',
           type: 'Oblečení',
           description: 'Bílo-černá klubová kšiltovka.',
           price: 0,
@@ -1950,14 +1965,15 @@ Večeřa 1x`}
 
                       <div className="grid gap-5 md:grid-cols-2">
                         <div>
-                          <label className={labelClass}>Typ produktu</label>
-                          <input
-                            type="text"
-                            value={merchProductForm.type}
-                            onChange={(e) => handleMerchProductChange('type', e.target.value)}
-                            placeholder="Oblečení"
+                          <label className={labelClass}>Co chceš založit</label>
+                          <select
+                            value={merchProductForm.productKind}
+                            onChange={(e) => handleMerchProductChange('productKind', e.target.value)}
                             className={inputClass}
-                          />
+                          >
+                            <option value="clothing">Oblečení</option>
+                            <option value="item">Předmět</option>
+                          </select>
                         </div>
 
                         <div>
@@ -2067,8 +2083,8 @@ Večeřa 1x`}
                     <div className={cardClass}>
                       <div className="mb-2 text-lg font-bold text-gray-900">Rychlý start</div>
                       <div className="space-y-2 text-sm text-gray-600">
-                        <div><span className="font-semibold">Tričko:</span> varianty 116, 128, 140, 152, S, M, L.</div>
-                        <div><span className="font-semibold">Kšiltovka:</span> varianty Dětská, Dospělá.</div>
+                        <div><span className="font-semibold">Oblečení:</span> vyplníš velikosti / varianty.</div>
+                        <div><span className="font-semibold">Předmět:</span> jen název, popis, cena, obrázek a počet kusů v objednávce.</div>
                       </div>
                       <button
                         type="button"
