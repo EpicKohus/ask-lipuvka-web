@@ -22,7 +22,6 @@ export default function Admin() {
   const [newsItems, setNewsItems] = useState([]);
   const [matches, setMatches] = useState([]);
   const [galleryAlbums, setGalleryAlbums] = useState([]);
-  const [merchOrders, setMerchOrders] = useState([]);
   const [siteStats, setSiteStats] = useState({
     visitCount: 0,
     createdAt: null,
@@ -275,12 +274,6 @@ export default function Admin() {
         ...item.data(),
       }));
 
-      const merchOrdersSnapshot = await getDocs(collection(db, 'merchOrders'));
-      const loadedMerchOrders = merchOrdersSnapshot.docs.map((item) => ({
-        id: item.id,
-        ...item.data(),
-      }));
-
       const visitsSnapshot = await getDoc(doc(db, 'siteStats', 'visits'));
       const visitsData = visitsSnapshot.exists() ? visitsSnapshot.data() : null;
 
@@ -293,7 +286,6 @@ export default function Admin() {
       setNewsItems(loadedNews);
       setMatches(loadedMatches);
       setGalleryAlbums(loadedGallery);
-      setMerchOrders(loadedMerchOrders);
       setSiteStats({
         visitCount: Number(visitsData?.count) || 0,
         createdAt: visitsData?.createdAt || null,
@@ -381,21 +373,6 @@ export default function Admin() {
       return a.title.localeCompare(b.title, 'cs');
     });
   }, [galleryAlbums, matches]);
-
-
-  const sortedMerchOrders = useMemo(() => {
-    const getOrderTime = (order) => {
-      const createdAt = order.createdAt;
-      if (createdAt && typeof createdAt?.toDate === 'function') return createdAt.toDate().getTime();
-      if (createdAt) {
-        const parsed = new Date(createdAt).getTime();
-        if (!Number.isNaN(parsed)) return parsed;
-      }
-      return 0;
-    };
-
-    return [...merchOrders].sort((a, b) => getOrderTime(b) - getOrderTime(a));
-  }, [merchOrders]);
 
   const formatDateTime = (value) => {
     if (!value) return '—';
@@ -914,45 +891,6 @@ export default function Admin() {
       .join(', ');
   };
 
-
-  const formatMerchItems = (items = []) =>
-    items
-      .map((item) => {
-        const details = [
-          item.size ? `vel. ${item.size}` : '',
-          item.color || '',
-          item.customName ? `jméno: ${item.customName}` : '',
-          item.customNumber ? `číslo: ${item.customNumber}` : '',
-        ]
-          .filter(Boolean)
-          .join(', ');
-
-        return `${item.quantity || 1}× ${item.name}${details ? ` (${details})` : ''}`;
-      })
-      .join('\n');
-
-  const handleUpdateMerchOrderStatus = async (id, status) => {
-    try {
-      await updateDoc(doc(db, 'merchOrders', id), { status });
-      await loadAllData();
-    } catch (error) {
-      console.error('Chyba při změně stavu objednávky:', error);
-      alert('Nepodařilo se změnit stav objednávky.');
-    }
-  };
-
-  const handleDeleteMerchOrder = async (id) => {
-    if (!window.confirm('Opravdu chceš smazat tuto objednávku merche?')) return;
-
-    try {
-      await deleteDoc(doc(db, 'merchOrders', id));
-      await loadAllData();
-    } catch (error) {
-      console.error('Chyba při mazání objednávky:', error);
-      alert('Nepodařilo se smazat objednávku.');
-    }
-  };
-
   const currentAlbum = matchForm.galleryAlbumId
     ? galleryAlbums.find((album) => album.id === matchForm.galleryAlbumId)
     : null;
@@ -1008,14 +946,6 @@ export default function Admin() {
             className={sectionButtonClass(activeSection === 'gallery')}
           >
             Galerie
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveSection('merch')}
-            className={sectionButtonClass(activeSection === 'merch')}
-          >
-            Merch objednávky
           </button>
 
           <button
@@ -1690,88 +1620,6 @@ Večeřa 1x`}
               </div>
             )}
 
-
-
-            {activeSection === 'merch' && (
-              <div className="space-y-5">
-                <div className={cardSoftClass}>
-                  <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
-                    Merch objednávky
-                  </div>
-                  <h2 className="text-2xl font-black text-gray-900">Objednávky z formuláře</h2>
-                  <p className="mt-2 text-gray-600">
-                    Tady uvidíš objednávky, které rodiče odešlou přes sekci Merch na webu.
-                  </p>
-                </div>
-
-                {sortedMerchOrders.length > 0 ? (
-                  sortedMerchOrders.map((order) => (
-                    <div key={order.id} className={cardClass}>
-                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-                        <div className="min-w-0 flex-1">
-                          <div className="mb-2 flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
-                              {order.status || 'nová'}
-                            </span>
-                            <span className="text-sm text-gray-500">
-                              {formatDateTime(order.createdAt)}
-                            </span>
-                          </div>
-
-                          <div className="text-xl font-black text-gray-900">
-                            {order.customer?.parentName || 'Bez jména'}
-                          </div>
-                          <div className="mt-1 text-sm text-gray-600">
-                            Dítě: {order.customer?.childName || '—'} · Telefon: {order.customer?.phone || '—'} · Email: {order.customer?.email || '—'}
-                          </div>
-
-                          <pre className="mt-4 whitespace-pre-wrap rounded-2xl bg-gray-50 p-4 text-sm text-gray-800">
-                            {formatMerchItems(order.items)}
-                          </pre>
-
-                          {order.customer?.note && (
-                            <div className="mt-3 rounded-2xl bg-green-50 px-4 py-3 text-sm text-gray-700">
-                              <span className="font-semibold">Poznámka:</span> {order.customer.note}
-                            </div>
-                          )}
-
-                          <div className="mt-4 text-lg font-black text-green-700">
-                            Celkem: {(Number(order.total) || 0).toLocaleString('cs-CZ')} Kč
-                          </div>
-                        </div>
-
-                        <div className="flex min-w-[220px] flex-col gap-3">
-                          <label className="block">
-                            <span className="mb-2 block text-sm font-semibold text-gray-700">Stav</span>
-                            <select
-                              value={order.status || 'nová'}
-                              onChange={(event) => handleUpdateMerchOrderStatus(order.id, event.target.value)}
-                              className={inputClass}
-                            >
-                              <option value="nová">Nová</option>
-                              <option value="objednáno">Objednáno</option>
-                              <option value="připraveno">Připraveno</option>
-                              <option value="předáno">Předáno</option>
-                            </select>
-                          </label>
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteMerchOrder(order.id)}
-                            className={dangerButtonClass}
-                          >
-                            Smazat
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                ) : (
-                  <div className={cardClass}>
-                    <div className="text-gray-500">Zatím tu nejsou žádné objednávky merche.</div>
-                  </div>
-                )}
-              </div>
-            )}
 
             {activeSection === 'stats' && (
               <div className="space-y-8">
