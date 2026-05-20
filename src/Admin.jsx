@@ -660,7 +660,7 @@ export default function Admin() {
   const handleSaveMerchProduct = async (e) => {
     e.preventDefault();
 
-    if (!merchProductForm.title.trim() || !merchProductForm.price.trim()) {
+    if (!merchProductForm.title.trim() || String(merchProductForm.price).trim() === '') {
       alert('Vyplň název produktu a cenu.');
       return;
     }
@@ -692,6 +692,7 @@ export default function Admin() {
 
       resetMerchProductForm();
       await loadAllData();
+      alert(editingMerchProductId ? 'Produkt byl upraven.' : 'Produkt byl přidán.');
     } catch (error) {
       console.error('Chyba při ukládání merch produktu:', error);
       alert(`Nepodařilo se uložit merch produkt: ${error?.message || error}`);
@@ -708,13 +709,14 @@ export default function Admin() {
       productKind,
       type: productKind === 'item' ? 'Předmět' : 'Oblečení',
       description: product.description || '',
-      price: product.price || '',
+      price: product.price ?? '',
       image: product.image || '',
       variantsText: productKind === 'clothing' ? formatMerchVariants(product.variants || []) : '',
-      order: product.order || '',
+      order: product.order ?? '',
       active: product.active !== false,
     });
     setActiveSection('merch');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeleteMerchProduct = async (productId) => {
