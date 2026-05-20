@@ -153,6 +153,9 @@ export default function Merch() {
         createdAt: serverTimestamp(),
       });
 
+      let mailSent = false;
+      let mailErrorMessage = '';
+
       try {
         const produktyText = cart
           .map((item) => {
@@ -172,14 +175,25 @@ export default function Merch() {
             email: customerForm.email.trim(),
             poznamka: customerForm.note.trim(),
             produkty: `${produktyText}\n\nCelkem: ${formatPrice(cartTotal)}`,
+            total: cartTotal,
           }),
         });
 
-        if (!mailResponse.ok) {
-          throw new Error(`Mail endpoint vrátil stav ${mailResponse.status}`);
+        let mailResult = null;
+        try {
+          mailResult = await mailResponse.json();
+        } catch {
+          mailResult = null;
         }
+
+        if (!mailResponse.ok) {
+          throw new Error(mailResult?.error || `Mail endpoint vrátil stav ${mailResponse.status}`);
+        }
+
+        mailSent = true;
       } catch (mailError) {
         console.error('Merch objednávka byla uložena, ale mail se nepodařilo odeslat:', mailError);
+        mailErrorMessage = mailError?.message || 'neznámá chyba mailu';
       }
 
       setCart([]);
@@ -190,7 +204,11 @@ export default function Merch() {
         email: '',
         note: '',
       });
-      setMessage('Objednávka byla odeslána. Děkujeme.');
+      setMessage(
+        mailSent
+          ? 'Objednávka byla odeslána. Děkujeme. Potvrzení odešlo i na klubový email.'
+          : `Objednávka byla uložena, ale email se nepodařilo odeslat: ${mailErrorMessage}`
+      );
     } catch (error) {
       console.error('Chyba při odesílání objednávky:', error);
       setMessage('Objednávku se nepodařilo odeslat. Zkuste to prosím znovu.');
