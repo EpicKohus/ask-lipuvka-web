@@ -278,9 +278,9 @@ export default function Merch() {
               <div className="grid gap-5 md:grid-cols-2">
                 {products.map((product) => (
                   <div key={product.id} className="overflow-hidden rounded-3xl border border-green-100 bg-white shadow-sm">
-                    <div className="h-64 bg-gray-100">
+                    <div className="aspect-square bg-gray-100">
                       {product.image ? (
-                        <img src={product.image} alt={product.title} className="h-full w-full object-cover" />
+                        <img src={product.image} alt={product.title} className="h-full w-full object-contain" />
                       ) : (
                         <div className="flex h-full items-center justify-center text-sm font-semibold text-gray-500">
                           Obrázek bude doplněn
