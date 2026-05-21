@@ -250,29 +250,30 @@ export default function Merch() {
 
       <main className="mx-auto max-w-7xl px-6 py-10">
 
-      <div className="mx-auto mb-10 max-w-3xl rounded-3xl bg-gradient-to-r from-green-600 to-green-700 px-8 py-8 text-center text-white shadow-lg">
-        <h2 className="text-3xl font-black">
-          ❤️ Podpořte mládež ASK Lipůvka
-        </h2>
-
-        <p className="mt-4 text-lg text-white/95">
-          Každým nákupem klubového merche pomáháte rozvíjet fotbal u dětí.
-        </p>
-
-        <p className="mt-2 text-sm text-white/85">
-          Výtěžek pomůže s tréninky, vybavením a dalšími aktivitami mládeže.
-        </p>
-      </div>
 
         <section className="mb-8 overflow-hidden rounded-[2rem] border border-green-100 bg-gradient-to-br from-green-50 via-white to-blue-50 p-7 shadow-sm md:p-10">
-          <div className="max-w-3xl">
-            <div className="mb-3 inline-flex rounded-full bg-green-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white">
-              Klubový merch
+          <div className="grid gap-7 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div>
+              <div className="mb-3 inline-flex rounded-full bg-green-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white">
+                Klubový merch
+              </div>
+              <h1 className="text-4xl font-black text-green-700 md:text-5xl">
+                Objednávka merche ASK Lipůvka
+              </h1>
+              <p className="mt-4 text-lg text-gray-700">
+                Vyberte produkt, variantu a počet kusů. Platba se tady neřeší — objednávka se jen odešle klubu.
+              </p>
             </div>
-            <h1 className="text-4xl font-black text-green-700 md:text-5xl">Objednávka merche ASK Lipůvka</h1>
-            <p className="mt-4 text-lg text-gray-700">
-              Vyberte produkt, variantu a počet kusů. Platba se tady neřeší — objednávka se jen odešle klubu.
-            </p>
+
+            <div className="rounded-3xl border border-green-200 bg-white/85 p-5 shadow-sm">
+              <div className="text-xl font-black text-green-700">
+                ❤️ Podpořte mládež ASK Lipůvka
+              </div>
+              <p className="mt-3 text-sm leading-6 text-gray-700">
+                Každým nákupem klubového merche pomáháte rozvíjet fotbal u dětí.
+                Výtěžek pomůže s tréninky, vybavením a dalšími aktivitami mládeže.
+              </p>
+            </div>
           </div>
         </section>
 
