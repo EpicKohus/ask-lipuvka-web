@@ -18,6 +18,7 @@ export default function Merch() {
   const [cart, setCart] = useState([]);
   const [selectedVariants, setSelectedVariants] = useState({});
   const [selectedQuantities, setSelectedQuantities] = useState({});
+  const [previewImage, setPreviewImage] = useState(null);
 
   const [customerForm, setCustomerForm] = useState({
     firstName: '',
@@ -278,9 +279,19 @@ export default function Merch() {
               <div className="grid gap-5 md:grid-cols-2">
                 {products.map((product) => (
                   <div key={product.id} className="overflow-hidden rounded-3xl border border-green-100 bg-white shadow-sm">
-                    <div className="aspect-square bg-gray-100">
+                    <div className="h-64 bg-gray-100">
                       {product.image ? (
-                        <img src={product.image} alt={product.title} className="h-full w-full object-contain" />
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImage(product.image)}
+                          className="h-full w-full"
+                        >
+                          <img
+                            src={product.image}
+                            alt={product.title}
+                            className="h-full w-full object-contain transition hover:scale-[1.02]"
+                          />
+                        </button>
                       ) : (
                         <div className="flex h-full items-center justify-center text-sm font-semibold text-gray-500">
                           Obrázek bude doplněn
@@ -455,7 +466,29 @@ export default function Merch() {
             </div>
           </section>
         </div>
-      </main>
+      
+      {previewImage && (
+        <div
+          className="fixed inset-0 z-[80] flex items-center justify-center bg-black/85 p-4"
+          onClick={() => setPreviewImage(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setPreviewImage(null)}
+            className="absolute right-5 top-5 text-4xl text-white"
+          >
+            ×
+          </button>
+
+          <img
+            src={previewImage}
+            alt="Náhled"
+            className="max-h-[90vh] max-w-[90vw] rounded-3xl object-contain"
+          />
+        </div>
+      )}
+
+</main>
     </div>
   );
 }
