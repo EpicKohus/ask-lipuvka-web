@@ -1390,12 +1390,17 @@ export default function AskLipuvkaWeb() {
               <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
             </button>
 
-            <label className="flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-800">
+          <nav className="hidden items-center gap-6 text-sm md:flex">
+            <a href="#novinky" className="hover:text-green-600">Novinky</a>
+            <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
+
+            <label className="flex cursor-pointer items-center gap-1 font-medium text-gray-700 transition hover:text-green-600">
               <span>Sezona</span>
               <select
                 value={selectedSeason}
                 onChange={(e) => handleSeasonChange(e.target.value)}
-                className="rounded-xl border border-green-200 bg-white px-3 py-2 font-bold text-green-700 outline-none"
+                className="cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-green-700 outline-none"
+                aria-label="Vybrat sezonu"
               >
                 {seasonOptions.map((season) => (
                   <option key={season} value={season}>
@@ -1404,10 +1409,6 @@ export default function AskLipuvkaWeb() {
                 ))}
               </select>
             </label>
-
-          <nav className="hidden gap-6 text-sm md:flex">
-            <a href="#novinky" className="hover:text-green-600">Novinky</a>
-            <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
 
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
@@ -1630,21 +1631,6 @@ export default function AskLipuvkaWeb() {
             </div>
 
             <div className="flex flex-1 flex-col px-3 pb-4 pt-3">
-              <label className={`mx-2 mb-2 rounded-2xl border px-4 py-3 text-left text-sm font-semibold ${theme === 'dark' ? 'border-white/10 bg-white/5 text-white' : 'border-[#e8dece] bg-white/80 text-gray-800 shadow-sm'}`}>
-                <div className="mb-2 text-xs uppercase tracking-wide opacity-70">Sezona webu</div>
-                <select
-                  value={selectedSeason}
-                  onChange={(e) => handleSeasonChange(e.target.value)}
-                  className={`w-full rounded-xl border px-3 py-3 font-bold outline-none ${theme === 'dark' ? 'border-white/10 bg-slate-900 text-white' : 'border-green-200 bg-white text-green-700'}`}
-                >
-                  {seasonOptions.map((season) => (
-                    <option key={season} value={season}>
-                      {season}{season === currentSeason ? ' · aktuální' : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
               <a
                 href="#novinky"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -1823,6 +1809,27 @@ export default function AskLipuvkaWeb() {
                   }`}>
                     Zobrazení webu
                   </div>
+
+                  <label className={`mb-3 flex items-center justify-between rounded-2xl px-3 py-2 text-sm font-semibold ${
+                    theme === 'dark' ? 'bg-white/5 text-slate-100' : 'bg-[#f8f4ed] text-gray-700'
+                  }`}>
+                    <span>Sezona</span>
+                    <select
+                      value={selectedSeason}
+                      onChange={(e) => handleSeasonChange(e.target.value)}
+                      className={`max-w-[9rem] bg-transparent text-right text-sm font-bold outline-none ${
+                        theme === 'dark' ? 'text-white' : 'text-green-700'
+                      }`}
+                      aria-label="Vybrat sezonu"
+                    >
+                      {seasonOptions.map((season) => (
+                        <option key={season} value={season}>
+                          {season}{season === currentSeason ? ' · aktuální' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
                   <button
                     type="button"
                     onClick={toggleTheme}
