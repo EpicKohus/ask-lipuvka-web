@@ -8,6 +8,7 @@ import {
   getDoc,
   getDocs,
   updateDoc,
+  setDoc,
   serverTimestamp,
 } from 'firebase/firestore';
 
@@ -17,6 +18,12 @@ export default function Admin() {
     { id: 'mladsi-pripravka', label: 'Mladší přípravka (U9)', shortLabel: 'U9' },
     { id: 'starsi-pripravka', label: 'Starší přípravka (U11)', shortLabel: 'U11' },
   ];
+
+  const CURRENT_SEASON = '2025/26';
+  const NEXT_SEASON = '2026/27';
+  const ARCHIVE_SEASON = '2025/26';
+  const seasonOptions = [CURRENT_SEASON, NEXT_SEASON];
+  const getItemSeason = (item) => item?.season || ARCHIVE_SEASON;
 
   const [activeSection, setActiveSection] = useState('news');
 
@@ -32,6 +39,8 @@ export default function Admin() {
   });
   const [dailyVisitStats, setDailyVisitStats] = useState([]);
   const [statsPeriod, setStatsPeriod] = useState(7);
+  const [currentSeason, setCurrentSeason] = useState(CURRENT_SEASON);
+  const [savingCurrentSeason, setSavingCurrentSeason] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -43,8 +52,10 @@ export default function Admin() {
 
   const [matchListCategoryFilter, setMatchListCategoryFilter] = useState('all');
   const [matchListTimeFilter, setMatchListTimeFilter] = useState('future');
+  const [matchListSeasonFilter, setMatchListSeasonFilter] = useState(CURRENT_SEASON);
 
   const [newsForm, setNewsForm] = useState({
+    season: CURRENT_SEASON,
     category: 'mladsi-pripravka',
     title: '',
     text: '',
@@ -54,6 +65,7 @@ export default function Admin() {
 
   const [editingMatchId, setEditingMatchId] = useState(null);
   const [matchForm, setMatchForm] = useState({
+    season: CURRENT_SEASON,
     category: 'mladsi-pripravka',
     date: '',
     dateISO: '',
@@ -76,6 +88,7 @@ export default function Admin() {
 
   const [editingGalleryId, setEditingGalleryId] = useState(null);
   const [galleryForm, setGalleryForm] = useState({
+    season: CURRENT_SEASON,
     type: 'global',
     category: 'mladsi-pripravka',
     title: '',
@@ -233,6 +246,7 @@ export default function Admin() {
   const resetMatchForm = () => {
     setEditingMatchId(null);
     setMatchForm({
+      season: CURRENT_SEASON,
       category: 'mladsi-pripravka',
       date: '',
       dateISO: '',
@@ -257,6 +271,7 @@ export default function Admin() {
   const resetGalleryForm = () => {
     setEditingGalleryId(null);
     setGalleryForm({
+      season: CURRENT_SEASON,
       type: 'global',
       category: 'mladsi-pripravka',
       title: '',
@@ -317,6 +332,20 @@ export default function Admin() {
       const visitsSnapshot = await getDoc(doc(db, 'siteStats', 'visits'));
       const visitsData = visitsSnapshot.exists() ? visitsSnapshot.data() : null;
 
+      try {
+        const seasonSnapshot = await getDoc(doc(db, 'siteSettings', 'season'));
+        const savedCurrentSeason = seasonSnapshot.exists()
+          ? seasonSnapshot.data()?.currentSeason
+          : CURRENT_SEASON;
+
+        if (savedCurrentSeason) {
+          setCurrentSeason(savedCurrentSeason);
+          setMatchListSeasonFilter(savedCurrentSeason);
+        }
+      } catch (seasonError) {
+        console.warn('Nepodařilo se načíst nastavení sezony:', seasonError);
+      }
+
       const dailyStatsSnapshot = await getDocs(collection(db, 'siteStatsDaily'));
       const loadedDailyStats = dailyStatsSnapshot.docs.map((item) => ({
         id: item.id,
@@ -359,9 +388,12 @@ export default function Admin() {
   const newsByCategory = useMemo(() => {
     return categories.map((category) => ({
       ...category,
-      item: newsItems.find((news) => news.category === category.id) || null,
+      item:
+        newsItems.find(
+          (news) => news.category === category.id && getItemSeason(news) === newsForm.season
+        ) || null,
     }));
-  }, [newsItems]);
+  }, [newsItems, newsForm.season]);
 
   const sortedMatches = useMemo(() => {
     return [...matches].sort((a, b) => parseMatchDate(a) - parseMatchDate(b));
@@ -374,6 +406,8 @@ export default function Admin() {
     const filtered = sortedMatches.filter((match) => {
       const categoryOk =
         matchListCategoryFilter === 'all' || match.category === matchListCategoryFilter;
+      const seasonOk =
+        matchListSeasonFilter === 'all' || getItemSeason(match) === matchListSeasonFilter;
 
       const matchDate = parseMatchDate(match);
       const timeOk =
@@ -381,7 +415,7 @@ export default function Admin() {
         (matchListTimeFilter === 'future' && matchDate >= todayStart) ||
         (matchListTimeFilter === 'played' && matchDate < todayStart);
 
-      return categoryOk && timeOk;
+      return categoryOk && seasonOk && timeOk;
     });
 
     if (matchListTimeFilter === 'played') {
@@ -389,7 +423,7 @@ export default function Admin() {
     }
 
     return filtered.sort((a, b) => parseMatchDate(a) - parseMatchDate(b));
-  }, [sortedMatches, matchListCategoryFilter, matchListTimeFilter]);
+  }, [sortedMatches, matchListCategoryFilter, matchListSeasonFilter, matchListTimeFilter]);
 
   const getGallerySortTime = (album) => {
     const linkedMatch = matches.find((match) => match.galleryAlbumId === album.id);
@@ -585,6 +619,23 @@ export default function Admin() {
         ? 'bg-green-600 text-white shadow-md'
         : 'border border-green-200 bg-white text-green-700 hover:bg-green-50'
     }`;
+
+  const handleSaveCurrentSeason = async () => {
+    try {
+      setSavingCurrentSeason(true);
+      await setDoc(doc(db, 'siteSettings', 'season'), {
+        currentSeason,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      setMatchListSeasonFilter(currentSeason);
+      alert(`Aktuální sezona webu je nastavená na ${currentSeason}.`);
+    } catch (error) {
+      console.error('Chyba při ukládání aktuální sezony:', error);
+      alert('Nepodařilo se uložit aktuální sezonu.');
+    } finally {
+      setSavingCurrentSeason(false);
+    }
+  };
 
   const handleNewsChange = (field, value) => {
     setNewsForm((prev) => ({
@@ -913,9 +964,12 @@ export default function Admin() {
     try {
       setSaving(true);
 
-      const existingNews = newsItems.find((item) => item.category === newsForm.category);
+      const existingNews = newsItems.find(
+        (item) => item.category === newsForm.category && getItemSeason(item) === newsForm.season
+      );
 
       const payload = {
+        season: newsForm.season || CURRENT_SEASON,
         category: newsForm.category,
         title: newsForm.title.trim(),
         text: newsForm.text.trim(),
@@ -941,6 +995,7 @@ export default function Admin() {
 
   const handleEditNews = (item) => {
     setNewsForm({
+      season: getItemSeason(item),
       category: item.category || 'mladsi-pripravka',
       title: item.title || '',
       text: item.text || '',
@@ -977,6 +1032,7 @@ export default function Admin() {
       setSaving(true);
 
       const payload = {
+        season: matchForm.season || CURRENT_SEASON,
         category: matchForm.category,
         date: matchForm.date.trim(),
         dateISO: matchForm.dateISO || formatDateToISO(matchForm.date),
@@ -1021,6 +1077,7 @@ export default function Admin() {
 
     setEditingMatchId(match.id);
     setMatchForm({
+      season: getItemSeason(match),
       category: match.category || 'mladsi-pripravka',
       date: match.date || '',
       dateISO: match.dateISO || formatDateToISO(match.date || ''),
@@ -1088,6 +1145,7 @@ export default function Admin() {
 
       const now = new Date().toISOString();
       const payload = {
+        season: galleryForm.season || CURRENT_SEASON,
         type: galleryForm.type,
         category: galleryForm.type === 'team' ? galleryForm.category : '',
         title: galleryForm.title.trim(),
@@ -1119,6 +1177,7 @@ export default function Admin() {
   const handleEditGallery = (album) => {
     setEditingGalleryId(album.id);
     setGalleryForm({
+      season: getItemSeason(album),
       type: album.type || 'global',
       category: album.category || 'mladsi-pripravka',
       title: album.title || '',
@@ -1244,6 +1303,40 @@ export default function Admin() {
           </button>
         </div>
 
+        <div className="mb-8 rounded-3xl border border-green-100 bg-green-50/70 p-6 shadow-sm">
+          <div className="mb-3 text-sm font-bold uppercase tracking-wide text-green-700">
+            Nastavení sezony na webu
+          </div>
+          <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+            <label>
+              <span className={labelClass}>Aktuální sezona, která se ukáže návštěvníkům po otevření webu</span>
+              <select
+                value={currentSeason}
+                onChange={(e) => setCurrentSeason(e.target.value)}
+                className={inputClass}
+              >
+                {seasonOptions.map((season) => (
+                  <option key={season} value={season}>{season}</option>
+                ))}
+              </select>
+            </label>
+
+            <div className="flex items-end">
+              <button
+                type="button"
+                onClick={handleSaveCurrentSeason}
+                disabled={savingCurrentSeason}
+                className={greenButtonClass}
+              >
+                {savingCurrentSeason ? 'Ukládám…' : 'Uložit aktuální sezonu'}
+              </button>
+            </div>
+          </div>
+          <p className="mt-3 text-sm text-gray-600">
+            Teď necháš 2025/26. V červenci jen přepneš na 2026/27 a web začne jako výchozí ukazovat novou sezonu. Staré věci zůstanou dohledatelné přes přepínač sezony.
+          </p>
+        </div>
+
         {loading ? (
           <div className="rounded-3xl border border-green-100 bg-white p-10 text-center shadow-sm">
             <div className="text-lg font-semibold text-gray-700">Načítám data…</div>
@@ -1258,13 +1351,31 @@ export default function Admin() {
                       Jedna novinka pro každý tým
                     </div>
                     <h2 className="text-2xl font-bold text-green-700">
-                      {newsItems.find((item) => item.category === newsForm.category)
+                      {newsItems.find(
+                        (item) => item.category === newsForm.category && getItemSeason(item) === newsForm.season
+                      )
                         ? 'Upravit novinku'
                         : 'Přidat novinku'}
                     </h2>
                   </div>
 
                   <form onSubmit={handleSaveNews} className="space-y-5">
+                    <div>
+                      <label className={labelClass}>Sezona</label>
+                      <select
+                        value={newsForm.season}
+                        onChange={(e) => handleNewsChange('season', e.target.value)}
+                        className={inputClass}
+                      >
+                        {seasonOptions.map((season) => (
+                          <option key={season} value={season}>{season}</option>
+                        ))}
+                      </select>
+                      <div className="mt-2 text-sm text-gray-500">
+                        Nová sezona se zobrazí na hlavní stránce. Starší sezona zůstane v historii.
+                      </div>
+                    </div>
+
                     <div>
                       <label className={labelClass}>Kategorie</label>
                       <select
@@ -1339,14 +1450,14 @@ export default function Admin() {
                       <div className="mb-3 flex items-center justify-between gap-3">
                         <div>
                           <div className="text-lg font-bold text-gray-900">{category.label}</div>
-                          <div className="text-sm text-gray-500">Aktuální novinka</div>
+                          <div className="text-sm text-gray-500">Sezona {newsForm.season}</div>
                         </div>
                       </div>
 
                       {category.item ? (
                         <>
                           <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
-                            {category.item.date}
+                            {category.item.date} · {getItemSeason(category.item)}
                           </div>
                           <div className="mb-2 text-lg font-bold text-gray-900">
                             {category.item.title}
@@ -1422,6 +1533,19 @@ export default function Admin() {
                         <div className="mb-4 text-lg font-bold text-green-700">Základ zápasu</div>
 
                         <div className="grid gap-5 md:grid-cols-2">
+                          <div>
+                            <label className={labelClass}>Sezona</label>
+                            <select
+                              value={matchForm.season}
+                              onChange={(e) => handleMatchChange('season', e.target.value)}
+                              className={inputClass}
+                            >
+                              {seasonOptions.map((season) => (
+                                <option key={season} value={season}>{season}</option>
+                              ))}
+                            </select>
+                          </div>
+
                           <div>
                             <label className={labelClass}>Kategorie</label>
                             <select
@@ -1808,6 +1932,10 @@ Večeřa 1x`}
 
                             <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
                               {categoryLabel}
+                            </span>
+
+                            <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+                              {getItemSeason(match)}
                             </span>
 
                             <span
@@ -2660,6 +2788,19 @@ L`}
                   </div>
 
                   <form onSubmit={handleSaveGallery} className="space-y-6">
+                    <div>
+                      <label className={labelClass}>Sezona</label>
+                      <select
+                        value={galleryForm.season}
+                        onChange={(e) => handleGalleryChange('season', e.target.value)}
+                        className={inputClass}
+                      >
+                        {seasonOptions.map((season) => (
+                          <option key={season} value={season}>{season}</option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div>
                       <label className={labelClass}>Typ alba</label>
                       <select

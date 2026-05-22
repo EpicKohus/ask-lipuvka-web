@@ -36,6 +36,14 @@ export default function AskLipuvkaWeb() {
   const [firebaseMatches, setFirebaseMatches] = useState([]);
   const [firebaseGallery, setFirebaseGallery] = useState([]);
 
+  const DEFAULT_CURRENT_SEASON = '2025/26';
+  const NEXT_SEASON = '2026/27';
+  const ARCHIVE_SEASON = '2025/26';
+  const [currentSeason, setCurrentSeason] = useState(DEFAULT_CURRENT_SEASON);
+  const [selectedSeason, setSelectedSeason] = useState(DEFAULT_CURRENT_SEASON);
+  const CURRENT_SEASON = selectedSeason;
+  const getItemSeason = (item) => item?.season || ARCHIVE_SEASON;
+
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
@@ -450,17 +458,58 @@ export default function AskLipuvkaWeb() {
     return /\.(mp4|webm|ogg)$/i.test(filePath);
   };
 
-  const availableNews = useMemo(() => {
+  const allAvailableNews = useMemo(() => {
     return firebaseNews.length > 0 ? firebaseNews : newsItems;
   }, [firebaseNews]);
 
-  const availableMatches = useMemo(() => {
+  const allAvailableMatches = useMemo(() => {
     return firebaseMatches.length > 0 ? firebaseMatches : matches;
   }, [firebaseMatches]);
 
-  const globalGalleryAlbums = useMemo(() => {
-    return firebaseGallery.filter((album) => album.type === 'global');
+  const seasonOptions = useMemo(() => {
+    const seasons = [currentSeason, DEFAULT_CURRENT_SEASON, NEXT_SEASON];
+
+    allAvailableNews.forEach((item) => seasons.push(getItemSeason(item)));
+    allAvailableMatches.forEach((item) => seasons.push(getItemSeason(item)));
+    firebaseGallery.forEach((item) => seasons.push(getItemSeason(item)));
+
+    return [...new Set(seasons.filter(Boolean))].sort((a, b) => b.localeCompare(a, 'cs'));
+  }, [allAvailableNews, allAvailableMatches, firebaseGallery, currentSeason]);
+
+  const handleSeasonChange = (value) => {
+    setSelectedSeason(value);
+    setShowAllTeamAlbums(false);
+  };
+
+  const availableNews = useMemo(() => {
+    return allAvailableNews.filter((item) => getItemSeason(item) === CURRENT_SEASON);
+  }, [allAvailableNews]);
+
+  const availableMatches = useMemo(() => {
+    return allAvailableMatches.filter((match) => getItemSeason(match) === CURRENT_SEASON);
+  }, [allAvailableMatches]);
+
+  const availableGallery = useMemo(() => {
+    return firebaseGallery.filter((album) => getItemSeason(album) === CURRENT_SEASON);
   }, [firebaseGallery]);
+
+  const archiveMatches = useMemo(() => {
+    return allAvailableMatches
+      .filter((match) => getItemSeason(match) === ARCHIVE_SEASON)
+      .sort((a, b) => parseMatchDate(b.date) - parseMatchDate(a.date));
+  }, [allAvailableMatches]);
+
+  const archiveNews = useMemo(() => {
+    return allAvailableNews.filter((item) => getItemSeason(item) === ARCHIVE_SEASON);
+  }, [allAvailableNews]);
+
+  const archiveGalleryAlbums = useMemo(() => {
+    return firebaseGallery.filter((album) => getItemSeason(album) === ARCHIVE_SEASON);
+  }, [firebaseGallery]);
+
+  const globalGalleryAlbums = useMemo(() => {
+    return availableGallery.filter((album) => album.type === 'global');
+  }, [availableGallery]);
 
   const getAlbumMatchDate = (albumId) => {
     const linkedMatch = availableMatches.find((match) => match.galleryAlbumId === albumId);
@@ -473,10 +522,10 @@ export default function AskLipuvkaWeb() {
   };
 
   const teamGalleryAlbums = useMemo(() => {
-    return firebaseGallery
+    return availableGallery
       .filter((album) => album.type === 'team' && album.category === activeCategory)
       .sort((a, b) => getAlbumMatchDate(b.id) - getAlbumMatchDate(a.id));
-  }, [firebaseGallery, activeCategory, availableMatches]);
+  }, [availableGallery, activeCategory, availableMatches]);
 
   const visibleTeamGalleryAlbums = useMemo(() => {
     return showAllTeamAlbums ? teamGalleryAlbums : teamGalleryAlbums.slice(0, 3);
@@ -778,6 +827,22 @@ export default function AskLipuvkaWeb() {
           id: item.id,
           ...item.data(),
         }));
+
+        try {
+          const seasonSnapshot = await getDoc(doc(db, 'siteSettings', 'season'));
+          const savedCurrentSeason = seasonSnapshot.exists()
+            ? seasonSnapshot.data()?.currentSeason
+            : DEFAULT_CURRENT_SEASON;
+
+          if (savedCurrentSeason) {
+            setCurrentSeason(savedCurrentSeason);
+            setSelectedSeason(savedCurrentSeason);
+          }
+        } catch (seasonError) {
+          console.warn('Nepodařilo se načíst aktuální sezonu, používám výchozí 2025/26:', seasonError);
+          setCurrentSeason(DEFAULT_CURRENT_SEASON);
+          setSelectedSeason(DEFAULT_CURRENT_SEASON);
+        }
 
         setFirebaseNews(loadedNews);
         setFirebaseMatches(loadedMatches);
@@ -1325,6 +1390,21 @@ export default function AskLipuvkaWeb() {
               <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
             </button>
 
+            <label className="flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-3 py-2 text-sm font-semibold text-green-800">
+              <span>Sezona</span>
+              <select
+                value={selectedSeason}
+                onChange={(e) => handleSeasonChange(e.target.value)}
+                className="rounded-xl border border-green-200 bg-white px-3 py-2 font-bold text-green-700 outline-none"
+              >
+                {seasonOptions.map((season) => (
+                  <option key={season} value={season}>
+                    {season}{season === currentSeason ? ' · aktuální' : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+
           <nav className="hidden gap-6 text-sm md:flex">
             <a href="#novinky" className="hover:text-green-600">Novinky</a>
             <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
@@ -1550,6 +1630,21 @@ export default function AskLipuvkaWeb() {
             </div>
 
             <div className="flex flex-1 flex-col px-3 pb-4 pt-3">
+              <label className={`mx-2 mb-2 rounded-2xl border px-4 py-3 text-left text-sm font-semibold ${theme === 'dark' ? 'border-white/10 bg-white/5 text-white' : 'border-[#e8dece] bg-white/80 text-gray-800 shadow-sm'}`}>
+                <div className="mb-2 text-xs uppercase tracking-wide opacity-70">Sezona webu</div>
+                <select
+                  value={selectedSeason}
+                  onChange={(e) => handleSeasonChange(e.target.value)}
+                  className={`w-full rounded-xl border px-3 py-3 font-bold outline-none ${theme === 'dark' ? 'border-white/10 bg-slate-900 text-white' : 'border-green-200 bg-white text-green-700'}`}
+                >
+                  {seasonOptions.map((season) => (
+                    <option key={season} value={season}>
+                      {season}{season === currentSeason ? ' · aktuální' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
               <a
                 href="#novinky"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -2039,6 +2134,80 @@ export default function AskLipuvkaWeb() {
               Pro tuto kategorii zatím nejsou doplněná žádná alba.
             </div>
           )}
+        </div>
+      </section>
+
+      <section id="historie" className="mx-auto max-w-5xl px-6 pb-14">
+        <div className="rounded-3xl border border-amber-200 bg-amber-50/70 p-8 shadow-sm">
+          <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-amber-700">
+            Archiv klubu
+          </div>
+          <h2 className="mb-3 text-3xl font-bold text-amber-800">Historie a sezony</h2>
+          <p className="mb-6 text-gray-700">
+            Nahoře si můžeš přepnout sezonu. Web potom ukáže novinky, zápasy i galerie vybrané sezony. Aktuálně nastavená sezona je {currentSeason}.
+          </p>
+
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="rounded-2xl bg-white p-5 shadow-sm lg:col-span-2">
+              <h3 className="mb-4 text-xl font-bold text-gray-900">Zápasy v historii</h3>
+              {archiveMatches.length > 0 ? (
+                <div className="space-y-3">
+                  {archiveMatches.slice(0, 12).map((match) => (
+                    <button
+                      type="button"
+                      key={match.id || `${match.date}-${match.opponent}`}
+                      onClick={() => match.id && navigate(`/zapas/${match.id}`)}
+                      className="w-full rounded-xl border border-gray-100 bg-gray-50 p-4 text-left transition hover:bg-white hover:shadow-sm"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="font-bold text-gray-900">{match.home ? `ASK Lipůvka vs. ${match.opponent}` : `${match.opponent} vs. ASK Lipůvka`}</div>
+                        <div className="text-sm font-semibold text-amber-700">{match.date}</div>
+                      </div>
+                      <div className="mt-1 text-sm text-gray-600">
+                        {getCategoryShortLabel(match.category)} · {match.venue || 'místo bude doplněno'} · {match.result1 || match.result2 || 'bez výsledku'}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl bg-gray-100 p-4 text-gray-600">Historie zatím neobsahuje žádné zápasy.</div>
+              )}
+            </div>
+
+            <div className="space-y-6">
+              <div className="rounded-2xl bg-white p-5 shadow-sm">
+                <h3 className="mb-4 text-xl font-bold text-gray-900">Novinky</h3>
+                {archiveNews.length > 0 ? (
+                  <div className="space-y-3">
+                    {archiveNews.slice(0, 5).map((item) => (
+                      <div key={`${item.category}-${item.title}`} className="rounded-xl bg-gray-50 p-3">
+                        <div className="text-xs font-bold uppercase text-amber-700">{item.date}</div>
+                        <div className="font-semibold text-gray-900">{item.title}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-600">Žádné starší novinky.</div>
+                )}
+              </div>
+
+              <div className="rounded-2xl bg-white p-5 shadow-sm">
+                <h3 className="mb-4 text-xl font-bold text-gray-900">Alba</h3>
+                {archiveGalleryAlbums.length > 0 ? (
+                  <div className="space-y-3">
+                    {archiveGalleryAlbums.slice(0, 5).map((album) => (
+                      <div key={album.id} className="rounded-xl bg-gray-50 p-3">
+                        <div className="font-semibold text-gray-900">{album.title}</div>
+                        <div className="text-sm text-gray-600">{album.photos?.length || 0} položek</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-600">Žádná starší alba.</div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
