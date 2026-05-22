@@ -1913,7 +1913,7 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <section id="novinky" className="mx-auto max-w-5xl px-6 py-14">
-        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
+        <div className="rounded-3xl border border-green-100 bg-white p-8 shadow-sm">
           <div className="mb-2 flex flex-wrap items-center gap-3">
             <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
               {activeCategoryLabel}
@@ -1928,7 +1928,10 @@ export default function AskLipuvkaWeb() {
           {filteredNews.length > 0 ? (
             <div className="space-y-4">
               {filteredNews.map((item) => (
-                <div key={`${item.category}-${item.title}`} className="rounded-2xl bg-white p-5 shadow-sm">
+                <div
+                  key={`${item.category}-${item.title}`}
+                  className="rounded-2xl border border-green-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
                   <div className={`mb-2 text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
                     {item.date}
                   </div>
@@ -1976,7 +1979,7 @@ export default function AskLipuvkaWeb() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
+            <div className="rounded-2xl border border-green-100 bg-white p-5 text-gray-600 shadow-sm">
               Pro tuto kategorii zatím nejsou doplněné žádné novinky.
             </div>
           )}
