@@ -1913,7 +1913,7 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <section id="novinky" className="mx-auto max-w-5xl px-6 py-14">
-        <div className="rounded-3xl border border-green-100 bg-white p-8 shadow-sm">
+        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}> 
           <div className="mb-2 flex flex-wrap items-center gap-3">
             <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
               {activeCategoryLabel}
