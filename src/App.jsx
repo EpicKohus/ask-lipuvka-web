@@ -1379,36 +1379,10 @@ export default function AskLipuvkaWeb() {
             </div>
           </a>
 
-          <div className="hidden items-center gap-3 md:flex">
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="theme-toggle-button"
-              aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
-            >
-              <span>{theme === 'light' ? '🌙' : '☀️'}</span>
-              <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
-            </button>
-
-          <nav className="hidden items-center gap-6 text-sm md:flex">
-            <a href="#novinky" className="hover:text-green-600">Novinky</a>
-            <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
-
-            <label className="flex cursor-pointer items-center gap-1 font-medium text-gray-700 transition hover:text-green-600">
-              <span>Sezona</span>
-              <select
-                value={selectedSeason}
-                onChange={(e) => handleSeasonChange(e.target.value)}
-                className="cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-green-700 outline-none"
-                aria-label="Vybrat sezonu"
-              >
-                {seasonOptions.map((season) => (
-                  <option key={season} value={season}>
-                    {season}{season === currentSeason ? ' · aktuální' : ''}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div className="hidden items-center gap-6 md:flex">
+            <nav className="flex items-center gap-6 text-sm">
+              <a href="#novinky" className="hover:text-green-600">Novinky</a>
+              <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
 
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
@@ -1553,7 +1527,33 @@ export default function AskLipuvkaWeb() {
             >
               Kde nás najdete
             </button>
-          </nav>
+            </nav>
+
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="theme-toggle-button"
+              aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
+            >
+              <span>{theme === 'light' ? '🌙' : '☀️'}</span>
+              <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
+            </button>
+
+            <label className="flex cursor-pointer items-center gap-1 text-sm font-medium text-gray-700 transition hover:text-green-600">
+              <span>Sezona</span>
+              <select
+                value={selectedSeason}
+                onChange={(e) => handleSeasonChange(e.target.value)}
+                className="cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-gray-800 outline-none transition hover:text-green-600"
+                aria-label="Vybrat sezonu"
+              >
+                {seasonOptions.map((season) => (
+                  <option key={season} value={season}>
+                    {season}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           <button
@@ -1824,7 +1824,7 @@ export default function AskLipuvkaWeb() {
                     >
                       {seasonOptions.map((season) => (
                         <option key={season} value={season}>
-                          {season}{season === currentSeason ? ' · aktuální' : ''}
+                          {season}
                         </option>
                       ))}
                     </select>
