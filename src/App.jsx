@@ -36,10 +36,6 @@ export default function AskLipuvkaWeb() {
   const [firebaseMatches, setFirebaseMatches] = useState([]);
   const [firebaseGallery, setFirebaseGallery] = useState([]);
 
-  const CURRENT_SEASON = '2026/27';
-  const ARCHIVE_SEASON = '2025/26';
-  const getItemSeason = (item) => item?.season || ARCHIVE_SEASON;
-
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
@@ -454,43 +450,17 @@ export default function AskLipuvkaWeb() {
     return /\.(mp4|webm|ogg)$/i.test(filePath);
   };
 
-  const allAvailableNews = useMemo(() => {
+  const availableNews = useMemo(() => {
     return firebaseNews.length > 0 ? firebaseNews : newsItems;
   }, [firebaseNews]);
 
-  const allAvailableMatches = useMemo(() => {
+  const availableMatches = useMemo(() => {
     return firebaseMatches.length > 0 ? firebaseMatches : matches;
   }, [firebaseMatches]);
 
-  const availableNews = useMemo(() => {
-    return allAvailableNews.filter((item) => getItemSeason(item) === CURRENT_SEASON);
-  }, [allAvailableNews]);
-
-  const availableMatches = useMemo(() => {
-    return allAvailableMatches.filter((match) => getItemSeason(match) === CURRENT_SEASON);
-  }, [allAvailableMatches]);
-
-  const availableGallery = useMemo(() => {
-    return firebaseGallery.filter((album) => getItemSeason(album) === CURRENT_SEASON);
-  }, [firebaseGallery]);
-
-  const archiveMatches = useMemo(() => {
-    return allAvailableMatches
-      .filter((match) => getItemSeason(match) === ARCHIVE_SEASON)
-      .sort((a, b) => parseMatchDate(b.date) - parseMatchDate(a.date));
-  }, [allAvailableMatches]);
-
-  const archiveNews = useMemo(() => {
-    return allAvailableNews.filter((item) => getItemSeason(item) === ARCHIVE_SEASON);
-  }, [allAvailableNews]);
-
-  const archiveGalleryAlbums = useMemo(() => {
-    return firebaseGallery.filter((album) => getItemSeason(album) === ARCHIVE_SEASON);
-  }, [firebaseGallery]);
-
   const globalGalleryAlbums = useMemo(() => {
-    return availableGallery.filter((album) => album.type === 'global');
-  }, [availableGallery]);
+    return firebaseGallery.filter((album) => album.type === 'global');
+  }, [firebaseGallery]);
 
   const getAlbumMatchDate = (albumId) => {
     const linkedMatch = availableMatches.find((match) => match.galleryAlbumId === albumId);
@@ -503,10 +473,10 @@ export default function AskLipuvkaWeb() {
   };
 
   const teamGalleryAlbums = useMemo(() => {
-    return availableGallery
+    return firebaseGallery
       .filter((album) => album.type === 'team' && album.category === activeCategory)
       .sort((a, b) => getAlbumMatchDate(b.id) - getAlbumMatchDate(a.id));
-  }, [availableGallery, activeCategory, availableMatches]);
+  }, [firebaseGallery, activeCategory, availableMatches]);
 
   const visibleTeamGalleryAlbums = useMemo(() => {
     return showAllTeamAlbums ? teamGalleryAlbums : teamGalleryAlbums.slice(0, 3);
@@ -2069,80 +2039,6 @@ export default function AskLipuvkaWeb() {
               Pro tuto kategorii zatím nejsou doplněná žádná alba.
             </div>
           )}
-        </div>
-      </section>
-
-      <section id="historie" className="mx-auto max-w-5xl px-6 pb-14">
-        <div className="rounded-3xl border border-amber-200 bg-amber-50/70 p-8 shadow-sm">
-          <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-amber-700">
-            Archiv klubu
-          </div>
-          <h2 className="mb-3 text-3xl font-bold text-amber-800">Historie sezony {ARCHIVE_SEASON}</h2>
-          <p className="mb-6 text-gray-700">
-            Staré zápasy, novinky a alba zůstávají uložené. Hlavní stránka nahoře už ukazuje jen aktuální sezonu {CURRENT_SEASON}.
-          </p>
-
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="rounded-2xl bg-white p-5 shadow-sm lg:col-span-2">
-              <h3 className="mb-4 text-xl font-bold text-gray-900">Zápasy v historii</h3>
-              {archiveMatches.length > 0 ? (
-                <div className="space-y-3">
-                  {archiveMatches.slice(0, 12).map((match) => (
-                    <button
-                      type="button"
-                      key={match.id || `${match.date}-${match.opponent}`}
-                      onClick={() => match.id && navigate(`/zapas/${match.id}`)}
-                      className="w-full rounded-xl border border-gray-100 bg-gray-50 p-4 text-left transition hover:bg-white hover:shadow-sm"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div className="font-bold text-gray-900">{match.home ? `ASK Lipůvka vs. ${match.opponent}` : `${match.opponent} vs. ASK Lipůvka`}</div>
-                        <div className="text-sm font-semibold text-amber-700">{match.date}</div>
-                      </div>
-                      <div className="mt-1 text-sm text-gray-600">
-                        {getCategoryShortLabel(match.category)} · {match.venue || 'místo bude doplněno'} · {match.result1 || match.result2 || 'bez výsledku'}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl bg-gray-100 p-4 text-gray-600">Historie zatím neobsahuje žádné zápasy.</div>
-              )}
-            </div>
-
-            <div className="space-y-6">
-              <div className="rounded-2xl bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-xl font-bold text-gray-900">Novinky</h3>
-                {archiveNews.length > 0 ? (
-                  <div className="space-y-3">
-                    {archiveNews.slice(0, 5).map((item) => (
-                      <div key={`${item.category}-${item.title}`} className="rounded-xl bg-gray-50 p-3">
-                        <div className="text-xs font-bold uppercase text-amber-700">{item.date}</div>
-                        <div className="font-semibold text-gray-900">{item.title}</div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-600">Žádné starší novinky.</div>
-                )}
-              </div>
-
-              <div className="rounded-2xl bg-white p-5 shadow-sm">
-                <h3 className="mb-4 text-xl font-bold text-gray-900">Alba</h3>
-                {archiveGalleryAlbums.length > 0 ? (
-                  <div className="space-y-3">
-                    {archiveGalleryAlbums.slice(0, 5).map((album) => (
-                      <div key={album.id} className="rounded-xl bg-gray-50 p-3">
-                        <div className="font-semibold text-gray-900">{album.title}</div>
-                        <div className="text-sm text-gray-600">{album.photos?.length || 0} položek</div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-sm text-gray-600">Žádná starší alba.</div>
-                )}
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
