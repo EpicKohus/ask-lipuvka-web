@@ -13,12 +13,6 @@ import {
 } from 'firebase/firestore';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 
-const ALLOWED_ADMIN_EMAILS = [
-  'radek.manek86@gmail.com',
-  'radek.manek@email.cz',
-  'slavik.rade@gmail.com',
-];
-
 export default function Admin() {
   const categories = [
     { id: 'predpripravka', label: 'Předpřípravka (U7)', shortLabel: 'U7' },
@@ -33,10 +27,6 @@ export default function Admin() {
   const getItemSeason = (item) => item?.season || ARCHIVE_SEASON;
 
   const [activeSection, setActiveSection] = useState('news');
-
-  const [authUser, setAuthUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [authError, setAuthError] = useState('');
 
   const [newsItems, setNewsItems] = useState([]);
   const [matches, setMatches] = useState([]);
@@ -55,7 +45,17 @@ export default function Admin() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [authUser, setAuthUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
+  const [adminRole, setAdminRole] = useState(null);
+  const [adminName, setAdminName] = useState('');
+  const [adminRoleLoading, setAdminRoleLoading] = useState(false);
+
   const [theme, setTheme] = useState('light');
+
+
+  const [matchListCategoryFilter, setMatchListCategoryFilter] = useState('all');
   const [matchListTimeFilter, setMatchListTimeFilter] = useState('future');
   const [matchListSeasonFilter, setMatchListSeasonFilter] = useState(CURRENT_SEASON);
 
@@ -376,10 +376,6 @@ export default function Admin() {
     }
   };
 
-  const isAllowedAdmin = Boolean(
-    authUser?.email && ALLOWED_ADMIN_EMAILS.includes(authUser.email.toLowerCase())
-  );
-
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setAuthUser(user);
@@ -390,23 +386,67 @@ export default function Admin() {
   }, []);
 
   useEffect(() => {
-    if (!authLoading && isAllowedAdmin) {
-      loadAllData();
+    const loadAdminRole = async () => {
+      if (!authUser?.email) {
+        setAdminRole(null);
+        setAdminName('');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setAdminRoleLoading(true);
+        const email = authUser.email.toLowerCase();
+        const roleSnapshot = await getDoc(doc(db, 'adminUsers', email));
+
+        if (!roleSnapshot.exists()) {
+          setAdminRole(null);
+          setAdminName('');
+          setLoading(false);
+          return;
+        }
+
+        const roleData = roleSnapshot.data();
+        if (roleData?.active === false) {
+          setAdminRole(null);
+          setAdminName(roleData?.name || '');
+          setLoading(false);
+          return;
+        }
+
+        const role = roleData?.role || 'viewer';
+        setAdminRole(role);
+        setAdminName(roleData?.name || authUser.displayName || email);
+
+        if (['owner', 'editor', 'viewer'].includes(role)) {
+          await loadAllData();
+        } else {
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('Chyba při kontrole role admina:', error);
+        setAdminRole(null);
+        setAdminName('');
+        setLoading(false);
+      } finally {
+        setAdminRoleLoading(false);
+      }
+    };
+
+    if (!authLoading) {
+      loadAdminRole();
     }
+  }, [authLoading, authUser]);
 
-    if (!authLoading && !authUser) {
-      setLoading(false);
-    }
-  }, [authLoading, isAllowedAdmin, authUser]);
+  useEffect(() => {
+    document.documentElement.classList.toggle('theme-dark', theme === 'dark');
+    document.documentElement.style.colorScheme = theme;
+    localStorage.setItem('ask-lipuvka-theme', theme);
 
-useEffect(() => {
-  document.documentElement.classList.toggle('theme-dark', false);
-  document.documentElement.style.colorScheme = 'light';
-
-  return () => {
-    document.documentElement.style.colorScheme = '';
-  };
-}, []);
+    return () => {
+      document.documentElement.style.colorScheme = '';
+    };
+  }, [theme]);
 
   const newsByCategory = useMemo(() => {
     return categories.map((category) => ({
@@ -1256,6 +1296,9 @@ useEffect(() => {
     ? galleryAlbums.find((album) => album.id === matchForm.galleryAlbumId)
     : null;
 
+  const isAdminAllowed = Boolean(adminRole && ['owner', 'editor', 'viewer'].includes(adminRole));
+  const canEdit = Boolean(adminRole && ['owner', 'editor'].includes(adminRole));
+
   const handleGoogleLogin = async () => {
     try {
       setAuthError('');
@@ -1275,7 +1318,7 @@ useEffect(() => {
     }
   };
 
-  if (authLoading) {
+  if (authLoading || adminRoleLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 text-gray-900">
         <div className="rounded-3xl border border-green-100 bg-white p-8 text-center shadow-sm">
@@ -1318,14 +1361,14 @@ useEffect(() => {
     );
   }
 
-  if (!isAllowedAdmin) {
+  if (!isAdminAllowed) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 text-gray-900">
         <div className="w-full max-w-lg rounded-3xl border border-red-100 bg-white p-8 text-center shadow-sm">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-2xl">⛔</div>
           <h1 className="text-3xl font-black text-red-700">Nemáš přístup</h1>
           <p className="mt-3 text-gray-600">
-            Přihlášený účet <span className="font-bold text-gray-900">{authUser.email}</span> není v seznamu povolených administrátorů.
+            Účet <span className="font-bold text-gray-900">{authUser.email}</span> není aktivní v adminUsers.
           </p>
           <button
             type="button"
@@ -1544,7 +1587,7 @@ useEffect(() => {
                       </div>
                     </div>
 
-                    <button type="submit" disabled={saving} className={greenButtonClass}>
+                    <button type="submit" disabled={saving || !canEdit} className={greenButtonClass}>
                       {saving ? 'Ukládám…' : 'Uložit novinku'}
                     </button>
                   </form>
@@ -1929,7 +1972,7 @@ Večeřa 1x`}
                         </div>
                       </div>
 
-                      <button type="submit" disabled={saving} className={greenButtonClass}>
+                      <button type="submit" disabled={saving || !canEdit} className={greenButtonClass}>
                         {saving
                           ? 'Ukládám…'
                           : editingMatchId
@@ -2287,7 +2330,7 @@ L`}
                         </label>
                       </div>
 
-                      <button type="submit" disabled={saving} className={greenButtonClass}>
+                      <button type="submit" disabled={saving || !canEdit} className={greenButtonClass}>
                         {saving ? 'Ukládám…' : editingMerchProductId ? 'Uložit produkt' : 'Přidat produkt'}
                       </button>
                     </form>
@@ -2303,7 +2346,7 @@ L`}
                       <button
                         type="button"
                         onClick={handleCreateStarterMerchProducts}
-                        disabled={saving}
+                        disabled={saving || !canEdit}
                         className={`${greenButtonClass} mt-4`}
                       >
                         Vytvořit tričko a kšiltovku
@@ -3092,7 +3135,7 @@ L`}
                       </div>
                     </div>
 
-                    <button type="submit" disabled={saving} className={greenButtonClass}>
+                    <button type="submit" disabled={saving || !canEdit} className={greenButtonClass}>
                       {saving
                         ? 'Ukládám…'
                         : editingGalleryId
