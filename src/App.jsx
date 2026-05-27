@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from './firebase';
-import { collection, doc, getDocs, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 
 export default function AskLipuvkaWeb() {
   const navigate = useNavigate();
@@ -22,39 +22,18 @@ export default function AskLipuvkaWeb() {
   const [gallerySource, setGallerySource] = useState('global');
   const [showAllTeamAlbums, setShowAllTeamAlbums] = useState(false);
 
-  const [activeCategory, setActiveCategory] = useState(() => {
-    try {
-      const savedCategory = localStorage.getItem('ask-lipuvka-active-category');
-      return savedCategory || 'mladsi-pripravka';
-    } catch (error) {
-      return 'mladsi-pripravka';
-    }
-  });
+  const [activeCategory, setActiveCategory] = useState('mladsi-pripravka');
   const [visitCount, setVisitCount] = useState(null);
 
   const [firebaseNews, setFirebaseNews] = useState([]);
   const [firebaseMatches, setFirebaseMatches] = useState([]);
   const [firebaseGallery, setFirebaseGallery] = useState([]);
 
-  const DEFAULT_CURRENT_SEASON = '2025/26';
-  const NEXT_SEASON = '2026/27';
-  const ARCHIVE_SEASON = '2025/26';
-  const [currentSeason, setCurrentSeason] = useState(DEFAULT_CURRENT_SEASON);
-  const [selectedSeason, setSelectedSeason] = useState(DEFAULT_CURRENT_SEASON);
-  const CURRENT_SEASON = selectedSeason;
-  const getItemSeason = (item) => item?.season || ARCHIVE_SEASON;
-
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
 
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
-  const [selectedNewsImage, setSelectedNewsImage] = useState(null);
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === 'undefined') return 'light';
-    return localStorage.getItem('ask-lipuvka-theme') || 'light';
-  });
-
 
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
@@ -458,58 +437,17 @@ export default function AskLipuvkaWeb() {
     return /\.(mp4|webm|ogg)$/i.test(filePath);
   };
 
-  const allAvailableNews = useMemo(() => {
+  const availableNews = useMemo(() => {
     return firebaseNews.length > 0 ? firebaseNews : newsItems;
   }, [firebaseNews]);
 
-  const allAvailableMatches = useMemo(() => {
+  const availableMatches = useMemo(() => {
     return firebaseMatches.length > 0 ? firebaseMatches : matches;
   }, [firebaseMatches]);
 
-  const seasonOptions = useMemo(() => {
-    const seasons = [currentSeason, DEFAULT_CURRENT_SEASON, NEXT_SEASON];
-
-    allAvailableNews.forEach((item) => seasons.push(getItemSeason(item)));
-    allAvailableMatches.forEach((item) => seasons.push(getItemSeason(item)));
-    firebaseGallery.forEach((item) => seasons.push(getItemSeason(item)));
-
-    return [...new Set(seasons.filter(Boolean))].sort((a, b) => b.localeCompare(a, 'cs'));
-  }, [allAvailableNews, allAvailableMatches, firebaseGallery, currentSeason]);
-
-  const handleSeasonChange = (value) => {
-    setSelectedSeason(value);
-    setShowAllTeamAlbums(false);
-  };
-
-  const availableNews = useMemo(() => {
-    return allAvailableNews.filter((item) => getItemSeason(item) === CURRENT_SEASON);
-  }, [allAvailableNews]);
-
-  const availableMatches = useMemo(() => {
-    return allAvailableMatches.filter((match) => getItemSeason(match) === CURRENT_SEASON);
-  }, [allAvailableMatches]);
-
-  const availableGallery = useMemo(() => {
-    return firebaseGallery.filter((album) => getItemSeason(album) === CURRENT_SEASON);
-  }, [firebaseGallery]);
-
-  const archiveMatches = useMemo(() => {
-    return allAvailableMatches
-      .filter((match) => getItemSeason(match) === ARCHIVE_SEASON)
-      .sort((a, b) => parseMatchDate(b.date) - parseMatchDate(a.date));
-  }, [allAvailableMatches]);
-
-  const archiveNews = useMemo(() => {
-    return allAvailableNews.filter((item) => getItemSeason(item) === ARCHIVE_SEASON);
-  }, [allAvailableNews]);
-
-  const archiveGalleryAlbums = useMemo(() => {
-    return firebaseGallery.filter((album) => getItemSeason(album) === ARCHIVE_SEASON);
-  }, [firebaseGallery]);
-
   const globalGalleryAlbums = useMemo(() => {
-    return availableGallery.filter((album) => album.type === 'global');
-  }, [availableGallery]);
+    return firebaseGallery.filter((album) => album.type === 'global');
+  }, [firebaseGallery]);
 
   const getAlbumMatchDate = (albumId) => {
     const linkedMatch = availableMatches.find((match) => match.galleryAlbumId === albumId);
@@ -522,10 +460,10 @@ export default function AskLipuvkaWeb() {
   };
 
   const teamGalleryAlbums = useMemo(() => {
-    return availableGallery
+    return firebaseGallery
       .filter((album) => album.type === 'team' && album.category === activeCategory)
       .sort((a, b) => getAlbumMatchDate(b.id) - getAlbumMatchDate(a.id));
-  }, [availableGallery, activeCategory, availableMatches]);
+  }, [firebaseGallery, activeCategory, availableMatches]);
 
   const visibleTeamGalleryAlbums = useMemo(() => {
     return showAllTeamAlbums ? teamGalleryAlbums : teamGalleryAlbums.slice(0, 3);
@@ -618,10 +556,6 @@ export default function AskLipuvkaWeb() {
     }
   };
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
-  };
-
   const activeCategoryStyle = getCategoryStyle(activeCategory);
 
   const getMatchAlbum = (match) => {
@@ -674,12 +608,6 @@ export default function AskLipuvkaWeb() {
 
   const selectTeam = (categoryId) => {
     setActiveCategory(categoryId);
-
-    try {
-      localStorage.setItem('ask-lipuvka-active-category', categoryId);
-    } catch (error) {
-      console.error('Nepodařilo se uložit vybranou kategorii:', error);
-    }
     setShowAllTeamAlbums(false);
     setIsTeamsDropdownOpen(false);
     setIsMobileTeamsDropdownOpen(false);
@@ -720,87 +648,24 @@ export default function AskLipuvkaWeb() {
   useEffect(() => {
     const loadVisits = async () => {
       try {
-        const visitsDocRef = doc(db, 'siteStats', 'visits');
+        const alreadyCounted = sessionStorage.getItem('ask-lipuvka-visit-counted');
 
-        const now = new Date();
-        const yyyy = now.getFullYear();
-        const mm = String(now.getMonth() + 1).padStart(2, '0');
-        const dd = String(now.getDate()).padStart(2, '0');
-        const dayKey = `${yyyy}-${mm}-${dd}`;
-
-        const dailyDocRef = doc(db, 'siteStatsDaily', dayKey);
-        const uniqueStorageKey = `ask-lipuvka-unique-visit-${dayKey}`;
-        const alreadyCountedUniqueToday = localStorage.getItem(uniqueStorageKey) === 'true';
-
-        const nextCount = await runTransaction(db, async (transaction) => {
-          const totalSnapshot = await transaction.get(visitsDocRef);
-          const dailySnapshot = await transaction.get(dailyDocRef);
-
-          let totalCount = 478;
-          let createdAtValue = serverTimestamp();
-
-          if (!totalSnapshot.exists()) {
-            totalCount = 479;
-            transaction.set(visitsDocRef, {
-              count: totalCount,
-              createdAt: createdAtValue,
-              updatedAt: serverTimestamp(),
-            });
-          } else {
-            const currentCount = Number(totalSnapshot.data()?.count) || 478;
-            totalCount = currentCount + 1;
-            transaction.update(visitsDocRef, {
-              count: totalCount,
-              updatedAt: serverTimestamp(),
-            });
-            createdAtValue = totalSnapshot.data()?.createdAt || serverTimestamp();
-          }
-
-          const currentDailyTotal = dailySnapshot.exists()
-            ? Number(dailySnapshot.data()?.totalVisits) || 0
-            : 0;
-
-          const currentDailyUnique = dailySnapshot.exists()
-            ? Number(dailySnapshot.data()?.uniqueVisits) || 0
-            : 0;
-
-          const dailyPayload = {
-            date: dayKey,
-            totalVisits: currentDailyTotal + 1,
-            uniqueVisits: alreadyCountedUniqueToday
-              ? currentDailyUnique
-              : currentDailyUnique + 1,
-            updatedAt: serverTimestamp(),
-          };
-
-          if (dailySnapshot.exists()) {
-            transaction.update(dailyDocRef, dailyPayload);
-          } else {
-            transaction.set(dailyDocRef, {
-              ...dailyPayload,
-              createdAt: serverTimestamp(),
-            });
-          }
-
-          return totalCount;
+        const response = await fetch('/api/visits', {
+          method: alreadyCounted ? 'GET' : 'POST',
         });
 
-        setVisitCount(nextCount);
+        if (!response.ok) {
+          throw new Error('Nepodařilo se načíst návštěvnost');
+        }
 
-        if (!alreadyCountedUniqueToday) {
-          localStorage.setItem(uniqueStorageKey, 'true');
+        const data = await response.json();
+        setVisitCount(data.count);
+
+        if (!alreadyCounted) {
+          sessionStorage.setItem('ask-lipuvka-visit-counted', 'true');
         }
       } catch (error) {
-        console.error('Chyba při načítání návštěvnosti:', error);
-
-        try {
-          const snapshot = await getDoc(doc(db, 'siteStats', 'visits'));
-          if (snapshot.exists()) {
-            setVisitCount(Number(snapshot.data()?.count) || 478);
-          }
-        } catch (fallbackError) {
-          console.error('Chyba při záložním načtení návštěvnosti:', fallbackError);
-        }
+        console.error(error);
       }
     };
 
@@ -827,22 +692,6 @@ export default function AskLipuvkaWeb() {
           id: item.id,
           ...item.data(),
         }));
-
-        try {
-          const seasonSnapshot = await getDoc(doc(db, 'siteSettings', 'season'));
-          const savedCurrentSeason = seasonSnapshot.exists()
-            ? seasonSnapshot.data()?.currentSeason
-            : DEFAULT_CURRENT_SEASON;
-
-          if (savedCurrentSeason) {
-            setCurrentSeason(savedCurrentSeason);
-            setSelectedSeason(savedCurrentSeason);
-          }
-        } catch (seasonError) {
-          console.warn('Nepodařilo se načíst aktuální sezonu, používám výchozí 2025/26:', seasonError);
-          setCurrentSeason(DEFAULT_CURRENT_SEASON);
-          setSelectedSeason(DEFAULT_CURRENT_SEASON);
-        }
 
         setFirebaseNews(loadedNews);
         setFirebaseMatches(loadedMatches);
@@ -927,7 +776,6 @@ export default function AskLipuvkaWeb() {
       clubPopupContent ||
       isGalleryOpen ||
       selectedPhoto ||
-      selectedNewsImage ||
       isTermsOpen ||
       isScheduleOpen;
 
@@ -943,20 +791,9 @@ export default function AskLipuvkaWeb() {
     clubPopupContent,
     isGalleryOpen,
     selectedPhoto,
-    selectedNewsImage,
     isTermsOpen,
     isScheduleOpen,
   ]);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('theme-dark', theme === 'dark');
-    document.documentElement.style.colorScheme = theme;
-    localStorage.setItem('ask-lipuvka-theme', theme);
-
-    return () => {
-      document.documentElement.style.colorScheme = '';
-    };
-  }, [theme]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1156,85 +993,85 @@ export default function AskLipuvkaWeb() {
     const label2 = m.matchLabel2?.trim() || '2. blok';
 
     const articlePreview = m.article?.trim()
-      ? `${m.article.trim().slice(0, 190)}${m.article.trim().length > 190 ? '…' : ''}`
+      ? `${m.article.trim().slice(0, 220)}${m.article.trim().length > 220 ? '…' : ''}`
       : 'Klikni na detail zápasu a zobraz si výsledek, report i fotky.';
 
     return (
-      <div className={`mb-6 overflow-hidden rounded-3xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${activeCategoryStyle.light}`}>
+      <div className="mb-6 overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-lg">
         <button
           type="button"
           onClick={() => m.id && navigate(`/zapas/${m.id}`)}
           className="block w-full text-left"
         >
-          <div className="grid gap-5 lg:grid-cols-[0.92fr_1.08fr] lg:items-stretch">
-            <div className="relative min-h-[220px] overflow-hidden rounded-[1.35rem] bg-gray-100 lg:min-h-[260px]">
-              {isVideoFile(coverSrc) ? (
-                <video
-                  src={coverSrc}
-                  className="absolute inset-0 h-full w-full object-cover"
-                  muted
-                  playsInline
-                  preload="metadata"
-                />
-              ) : (
-                <img
-                  src={coverSrc}
-                  alt={m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              )}
+          <div className="relative">
+            {isVideoFile(coverSrc) ? (
+              <video
+                src={coverSrc}
+                className="h-[250px] w-full object-cover md:h-[320px]"
+                muted
+                playsInline
+                preload="metadata"
+              />
+            ) : (
+              <img
+                src={coverSrc}
+                alt={m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
+                className="h-[250px] w-full object-cover md:h-[320px]"
+              />
+            )}
 
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/30 to-transparent" />
 
-              <div className="absolute left-4 top-4 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-green-600 px-4 py-2 text-xs font-black uppercase tracking-wide text-white shadow-md">
-                  Poslední odehraný zápas
-                </span>
-                <span className={`rounded-full px-3 py-1 text-xs font-bold shadow-sm ${categoryStyle.badge}`}>
-                  {getCategoryShortLabel(m.category)}
-                </span>
-              </div>
-
-              <div className="absolute bottom-0 left-0 w-full p-4 text-white md:p-5">
-                <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-                    {m.date}
-                  </span>
-                  <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
-                    {m.home ? 'Domácí' : 'Venkovní'}
-                  </span>
-                </div>
-
-                <h3 className="text-xl font-black leading-tight drop-shadow md:text-3xl">
-                  {m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
-                </h3>
-
-                <div className="mt-2 text-sm text-white/90 md:text-base">
-                  {m.time} • {m.home ? 'Lipůvka' : m.venue || 'bude doplněno'}
-                </div>
-              </div>
+            <div className="absolute left-4 top-4 md:left-6 md:top-6">
+              <span className="rounded-full bg-white/90 px-4 py-2 text-xs font-black uppercase tracking-wide text-gray-900 shadow-sm">
+                Poslední odehraný zápas
+              </span>
             </div>
 
-            <div className="flex flex-col justify-between rounded-[1.35rem] bg-white/82 p-5 shadow-sm ring-1 ring-white/70 md:p-6">
+            <div className="absolute bottom-0 left-0 w-full p-5 text-white md:p-7">
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <span className={`rounded-full px-3 py-1 text-xs font-bold ${categoryStyle.badge}`}>
+                  {getCategoryShortLabel(m.category)}
+                </span>
+                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+                  {m.date}
+                </span>
+                <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+                  {m.home ? 'Domácí' : 'Venkovní'}
+                </span>
+              </div>
+
+              <h3 className="text-2xl font-black leading-tight drop-shadow md:text-4xl">
+                {m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
+              </h3>
+
+              <div className="mt-2 text-sm text-white/90 md:text-base">
+                {m.time} • {m.home ? 'Lipůvka' : m.venue || 'bude doplněno'}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5 md:p-7">
+            <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
               <div>
-                <div className="mb-4 flex flex-wrap items-center gap-3">
+                <div className="mb-3 flex flex-wrap items-center gap-3">
                   <span className={`rounded-full px-3 py-1 text-sm font-bold ${categoryStyle.softBadge}`}>
-                    Odehráno
+                    Hlavní tahák
                   </span>
-                  <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-gray-600 shadow-sm">
+                  <span className="text-sm font-semibold text-gray-500">
                     Klikni kamkoliv pro detail zápasu
                   </span>
                 </div>
 
-                <p className="leading-7 text-gray-700">
+                <p className="max-w-3xl leading-7 text-gray-700">
                   {articlePreview}
                 </p>
               </div>
 
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="space-y-3">
                 {firstPlayedResult && (
-                  <div className="rounded-2xl border border-green-200 bg-green-50 p-4 shadow-sm">
-                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                  <div className="rounded-2xl bg-gray-50 p-4">
+                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
                       {label1}
                     </div>
                     <div className="text-2xl font-black text-gray-900 md:text-3xl">
@@ -1244,8 +1081,8 @@ export default function AskLipuvkaWeb() {
                 )}
 
                 {secondPlayedResult && (
-                  <div className="rounded-2xl border border-green-200 bg-green-50 p-4 shadow-sm">
-                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                  <div className="rounded-2xl bg-gray-50 p-4">
+                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-500">
                       {label2}
                     </div>
                     <div className="text-2xl font-black text-gray-900 md:text-3xl">
@@ -1255,7 +1092,7 @@ export default function AskLipuvkaWeb() {
                 )}
 
                 {!firstPlayedResult && !secondPlayedResult && (
-                  <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-gray-700 shadow-sm sm:col-span-2">
+                  <div className="rounded-2xl bg-gray-50 p-4 text-sm text-gray-600">
                     Výsledek je v detailu zápasu.
                   </div>
                 )}
@@ -1265,7 +1102,7 @@ export default function AskLipuvkaWeb() {
         </button>
 
         {hasPhotoReport && (
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="border-t border-gray-100 px-5 pb-5 pt-4 md:px-7 md:pb-7">
             <button
               type="button"
               onClick={(e) => {
@@ -1281,7 +1118,6 @@ export default function AskLipuvkaWeb() {
       </div>
     );
   };
-
 
   const renderAlbumCover = (album) => {
     const coverSrc = album.cover || album.photos?.[0] || '/field.png';
@@ -1379,21 +1215,14 @@ export default function AskLipuvkaWeb() {
             </div>
           </a>
 
-          <div className="hidden items-center gap-6 md:flex">
-            <nav className="flex items-center gap-6 text-sm">
-              <a href="#novinky" className="hover:text-green-600">Novinky</a>
-              <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
+          <nav className="hidden gap-6 text-sm md:flex">
+            <a href="#novinky" className="hover:text-green-600">Novinky</a>
+            <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
 
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
-                onClick={() => {
-                  setIsTeamsDropdownOpen((prev) => {
-                    const next = !prev;
-                    if (next) setIsClubDropdownOpen(false);
-                    return next;
-                  });
-                }}
+                onClick={() => setIsTeamsDropdownOpen((prev) => !prev)}
                 className="hover:text-green-600"
               >
                 Týmy ▼
@@ -1432,24 +1261,10 @@ export default function AskLipuvkaWeb() {
               Galerie
             </button>
 
-            <button
-              type="button"
-              onClick={() => navigate('/merch')}
-              className="hover:text-green-600"
-            >
-              Merch
-            </button>
-
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
                 type="button"
-                onClick={() => {
-                  setIsClubDropdownOpen((prev) => {
-                    const next = !prev;
-                    if (next) setIsTeamsDropdownOpen(false);
-                    return next;
-                  });
-                }}
+                onClick={() => setIsClubDropdownOpen((prev) => !prev)}
                 className="hover:text-green-600"
               >
                 Klub ▼
@@ -1527,34 +1342,7 @@ export default function AskLipuvkaWeb() {
             >
               Kde nás najdete
             </button>
-            </nav>
-
-            <button
-              type="button"
-              onClick={toggleTheme}
-              className="theme-toggle-button"
-              aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
-            >
-              <span>{theme === 'light' ? '🌙' : '☀️'}</span>
-              <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
-            </button>
-
-            <label className="flex cursor-pointer items-center gap-1 text-sm font-medium text-gray-700 transition hover:text-green-600">
-              <span>Sezona</span>
-              <select
-                value={selectedSeason}
-                onChange={(e) => handleSeasonChange(e.target.value)}
-                className="cursor-pointer border-0 bg-transparent p-0 text-sm font-semibold text-gray-800 outline-none transition hover:text-green-600"
-                aria-label="Vybrat sezonu"
-              >
-                {seasonOptions.map((season) => (
-                  <option key={season} value={season}>
-                    {season}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          </nav>
 
           <button
             type="button"
@@ -1582,59 +1370,32 @@ export default function AskLipuvkaWeb() {
           onClick={() => setIsMobileMenuOpen(false)}
         >
           <div
-            className={`ml-auto flex h-full w-[88%] max-w-sm flex-col overflow-y-auto rounded-l-[2rem] shadow-2xl ${
-              theme === 'dark'
-                ? 'border-l border-white/20 bg-gradient-to-b from-[#0f1a17] via-[#0c1513] to-[#08110f]'
-                : 'border-l border-[#efe7da] bg-gradient-to-b from-[#fcfaf6] via-[#f7f2e9] to-[#f2eadf]'
-            }`}
+            className="ml-auto flex h-full w-[85%] max-w-sm flex-col bg-white shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div
-              className={`border-b px-5 pb-5 pt-6 ${
-                theme === 'dark'
-                  ? 'border-white/10 bg-transparent'
-                  : 'border-[#e7dccb] bg-transparent'
-              }`}
-            >
-              <div className="mb-2 flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <img
-                    src="/logo.png"
-                    alt="logo"
-                    className={`h-11 w-11 rounded-full ${
-                      theme === 'dark' ? 'ring-2 ring-white/10' : 'ring-2 ring-green-100'
-                    }`}
-                  />
-                  <div>
-                    <div className={theme === 'dark' ? 'text-lg font-black text-white' : 'text-lg font-black text-green-700'}>
-                      ASK Lipůvka
-                    </div>
-                    <div className={theme === 'dark' ? 'text-sm text-slate-300' : 'text-sm text-gray-500'}>
-                      Mládežnický fotbal
-                    </div>
-                  </div>
+            <div className="flex items-center justify-between border-b px-5 py-4">
+              <div className="flex items-center gap-3">
+                <img src="/logo.png" alt="logo" className="h-10 w-10 rounded-full" />
+                <div className="text-base font-bold text-green-600">
+                  ASK Lipůvka – mládež
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex h-11 w-11 items-center justify-center rounded-2xl border text-2xl shadow-sm transition ${
-                    theme === 'dark'
-                      ? 'border-white/10 bg-white/5 text-white hover:bg-white/10'
-                      : 'border-[#e7dccb] bg-white/70 text-gray-600 hover:bg-white'
-                  }`}
-                  aria-label="Zavřít menu"
-                >
-                  ×
-                </button>
               </div>
+
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-gray-300 text-2xl text-gray-600"
+                aria-label="Zavřít menu"
+              >
+                ×
+              </button>
             </div>
 
-            <div className="flex flex-1 flex-col px-3 pb-4 pt-3">
+            <div className="flex flex-col">
               <a
                 href="#novinky"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
                 Novinky
               </a>
@@ -1642,45 +1403,39 @@ export default function AskLipuvkaWeb() {
               <a
                 href="#zapasy"
                 onClick={() => setIsMobileMenuOpen(false)}
-                className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
                 Zápasy
               </a>
 
               <button
                 type="button"
-                onClick={() => {
-                  setIsMobileTeamsDropdownOpen((prev) => {
-                    const next = !prev;
-                    if (next) setIsMobileClubDropdownOpen(false);
-                    return next;
-                  });
-                }}
-                className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
+                onClick={() => setIsMobileTeamsDropdownOpen((prev) => !prev)}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
                 Týmy {isMobileTeamsDropdownOpen ? '▲' : '▼'}
               </button>
 
               {isMobileTeamsDropdownOpen && (
-                <div className={`mx-2 mb-2 flex flex-col rounded-2xl p-2 ${theme === 'dark' ? 'border border-emerald-900/40 bg-white/5' : 'border border-[#e8dece] bg-white/80 shadow-sm'}`}>
+                <div className="flex flex-col bg-gray-50">
                   <button
                     type="button"
                     onClick={() => selectTeam('predpripravka')}
-                    className={`rounded-xl px-4 py-3 text-left transition ${theme === 'dark' ? 'text-slate-200 hover:bg-white/5' : 'text-gray-700 hover:bg-[#f8f4ed]'}`}
+                    className="px-8 py-3 text-left text-gray-700"
                   >
                     U7 – Předpřípravka
                   </button>
                   <button
                     type="button"
                     onClick={() => selectTeam('mladsi-pripravka')}
-                    className={`rounded-xl px-4 py-3 text-left transition ${theme === 'dark' ? 'text-slate-200 hover:bg-white/5' : 'text-gray-700 hover:bg-[#f8f4ed]'}`}
+                    className="px-8 py-3 text-left text-gray-700"
                   >
                     U9 – Mladší přípravka
                   </button>
                   <button
                     type="button"
                     onClick={() => selectTeam('starsi-pripravka')}
-                    className={`rounded-xl px-4 py-3 text-left transition ${theme === 'dark' ? 'text-slate-200 hover:bg-white/5' : 'text-gray-700 hover:bg-[#f8f4ed]'}`}
+                    className="px-8 py-3 text-left text-gray-700"
                   >
                     U11 – Starší přípravka
                   </button>
@@ -1690,42 +1445,25 @@ export default function AskLipuvkaWeb() {
               <button
                 type="button"
                 onClick={openGallery}
-                className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
                 Galerie
               </button>
 
               <button
                 type="button"
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  navigate('/merch');
-                }}
-                className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
-              >
-                Merch
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMobileClubDropdownOpen((prev) => {
-                    const next = !prev;
-                    if (next) setIsMobileTeamsDropdownOpen(false);
-                    return next;
-                  });
-                }}
-                className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
+                onClick={() => setIsMobileClubDropdownOpen((prev) => !prev)}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
                 Klub {isMobileClubDropdownOpen ? '▲' : '▼'}
               </button>
 
               {isMobileClubDropdownOpen && (
-                <div className={`mx-2 mb-2 flex flex-col rounded-2xl p-2 ${theme === 'dark' ? 'border border-emerald-900/40 bg-white/5' : 'border border-[#e8dece] bg-white/80 shadow-sm'}`}>
+                <div className="flex flex-col bg-gray-50">
                   <button
                     type="button"
                     onClick={() => openClubPopup('filozofie')}
-                    className={`rounded-xl px-4 py-3 text-left transition ${theme === 'dark' ? 'text-slate-200 hover:bg-white/5' : 'text-gray-700 hover:bg-[#f8f4ed]'}`}
+                    className="px-8 py-3 text-left text-gray-700"
                   >
                     Filozofie
                   </button>
@@ -1733,7 +1471,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={() => openClubPopup('rodice')}
-                    className={`rounded-xl px-4 py-3 text-left transition ${theme === 'dark' ? 'text-slate-200 hover:bg-white/5' : 'text-gray-700 hover:bg-[#f8f4ed]'}`}
+                    className="px-8 py-3 text-left text-gray-700"
                   >
                     Pro rodiče
                   </button>
@@ -1741,7 +1479,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={() => openClubPopup('faq')}
-                    className={`rounded-xl px-4 py-3 text-left transition ${theme === 'dark' ? 'text-slate-200 hover:bg-white/5' : 'text-gray-700 hover:bg-[#f8f4ed]'}`}
+                    className="px-8 py-3 text-left text-gray-700"
                   >
                     FAQ
                   </button>
@@ -1749,7 +1487,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={() => openClubPopup('nabor')}
-                    className={`rounded-xl px-4 py-3 text-left transition ${theme === 'dark' ? 'text-slate-200 hover:bg-white/5' : 'text-gray-700 hover:bg-[#f8f4ed]'}`}
+                    className="px-8 py-3 text-left text-gray-700"
                   >
                     Nábor hráčů
                   </button>
@@ -1757,7 +1495,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={openRegistration}
-                    className={`rounded-xl px-4 py-3 text-left transition ${theme === 'dark' ? 'text-slate-200 hover:bg-white/5' : 'text-gray-700 hover:bg-[#f8f4ed]'}`}
+                    className="px-8 py-3 text-left text-gray-700"
                   >
                     Registrace hráče
                   </button>
@@ -1765,7 +1503,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={() => openClubPopup('podnety')}
-                    className={`rounded-xl px-4 py-3 text-left transition ${theme === 'dark' ? 'text-slate-200 hover:bg-white/5' : 'text-gray-700 hover:bg-[#f8f4ed]'}`}
+                    className="px-8 py-3 text-left text-gray-700"
                   >
                     Kniha podnětů
                   </button>
@@ -1775,7 +1513,7 @@ export default function AskLipuvkaWeb() {
               <button
                 type="button"
                 onClick={() => openClubPopup('kde-nas-najdete')}
-                className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
                 Kde nás najdete
               </button>
@@ -1783,7 +1521,7 @@ export default function AskLipuvkaWeb() {
               <button
                 type="button"
                 onClick={() => openClubPopup('partneri')}
-                className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
                 Partneři
               </button>
@@ -1791,56 +1529,10 @@ export default function AskLipuvkaWeb() {
               <button
                 type="button"
                 onClick={openTrainers}
-                className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
+                className="border-b px-5 py-4 text-left text-lg font-medium text-gray-800"
               >
                 Trenéři
               </button>
-
-              <div className="mt-auto px-2 pt-4">
-                <div
-                  className={`rounded-3xl p-4 shadow-sm ${
-                    theme === 'dark'
-                      ? 'border border-emerald-900/40 bg-gradient-to-br from-[#101816] to-[#0b1311]'
-                      : 'border border-[#e8dece] bg-white/85'
-                  }`}
-                >
-                  <div className={`mb-3 text-xs font-bold uppercase tracking-[0.18em] ${
-                    theme === 'dark' ? 'text-emerald-200/65' : 'text-gray-500'
-                  }`}>
-                    Zobrazení webu
-                  </div>
-
-                  <label className={`mb-3 flex items-center justify-between rounded-2xl px-3 py-2 text-sm font-semibold ${
-                    theme === 'dark' ? 'bg-white/5 text-slate-100' : 'bg-[#f8f4ed] text-gray-700'
-                  }`}>
-                    <span>Sezona</span>
-                    <select
-                      value={selectedSeason}
-                      onChange={(e) => handleSeasonChange(e.target.value)}
-                      className={`max-w-[9rem] bg-transparent text-right text-sm font-bold outline-none ${
-                        theme === 'dark' ? 'text-white' : 'text-green-700'
-                      }`}
-                      aria-label="Vybrat sezonu"
-                    >
-                      {seasonOptions.map((season) => (
-                        <option key={season} value={season}>
-                          {season}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={toggleTheme}
-                    className="theme-toggle-button w-full justify-center"
-                    aria-label={theme === 'light' ? 'Přepnout na tmavý režim' : 'Přepnout na světlý režim'}
-                  >
-                    <span>{theme === 'light' ? '🌙' : '☀️'}</span>
-                    <span>{theme === 'light' ? 'Tmavý režim' : 'Světlý režim'}</span>
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -1913,7 +1605,7 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <section id="novinky" className="mx-auto max-w-5xl px-6 py-14">
-        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}> 
+        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
           <div className="mb-2 flex flex-wrap items-center gap-3">
             <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
               {activeCategoryLabel}
@@ -1928,58 +1620,17 @@ export default function AskLipuvkaWeb() {
           {filteredNews.length > 0 ? (
             <div className="space-y-4">
               {filteredNews.map((item) => (
-                <div
-                  key={`${item.category}-${item.title}`}
-                  className="rounded-2xl border border-green-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
-                >
+                <div key={`${item.category}-${item.title}`} className="rounded-2xl bg-white p-5 shadow-sm">
                   <div className={`mb-2 text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
                     {item.date}
                   </div>
                   <h3 className="mb-2 text-xl font-bold text-gray-900">{item.title}</h3>
                   <p className="text-gray-700">{item.text}</p>
-
-                  {item.image && (
-                    <button
-                      type="button"
-                      onClick={() => setSelectedNewsImage(item.image)}
-                      className="group relative mt-4 block w-full overflow-hidden rounded-2xl border border-white/10 bg-black/10 p-2 text-left shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-2xl md:max-w-2xl"
-                      aria-label={`Zvětšit fotku novinky ${item.title}`}
-                    >
-                      <div className="relative overflow-hidden rounded-xl bg-black/20">
-                        <img
-                          src={item.image}
-                          alt={item.title}
-                          className="max-h-[420px] w-full object-contain transition duration-500 group-hover:scale-[1.03]"
-                          loading="lazy"
-                        />
-
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 opacity-0 transition duration-300 group-hover:bg-black/20 group-hover:opacity-100">
-                          <div className="flex items-center gap-2 rounded-full bg-white/90 px-4 py-2 text-sm font-bold text-gray-900 shadow-lg backdrop-blur">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-5 w-5"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                d="M21 21l-4.35-4.35m1.85-5.15a7 7 0 11-14 0 7 7 0 0114 0z"
-                              />
-                            </svg>
-                            Zvětšit
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  )}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-green-100 bg-white p-5 text-gray-600 shadow-sm">
+            <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
               Pro tuto kategorii zatím nejsou doplněné žádné novinky.
             </div>
           )}
@@ -2299,33 +1950,6 @@ export default function AskLipuvkaWeb() {
         </div>
       )}
 
-      {selectedNewsImage && (
-        <div
-          className="fixed inset-0 z-[65] flex items-center justify-center bg-black/90 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
-          onClick={() => setSelectedNewsImage(null)}
-        >
-          <div
-            className="relative flex max-h-full max-w-6xl items-center justify-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              type="button"
-              onClick={() => setSelectedNewsImage(null)}
-              className="absolute right-0 top-[-48px] z-20 text-3xl text-white"
-              aria-label="Zavřít fotku"
-            >
-              ×
-            </button>
-
-            <img
-              src={selectedNewsImage}
-              alt="Zvětšená fotka novinky"
-              className="max-h-[85vh] max-w-[92vw] rounded-2xl object-contain shadow-2xl"
-            />
-          </div>
-        </div>
-      )}
-
       {clubPopupContent && (
         <div
           className="fixed inset-0 z-50 overflow-y-auto bg-black/50 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
@@ -2455,14 +2079,8 @@ export default function AskLipuvkaWeb() {
                     Tady najdete odpovědi na to, co rodiče nejčastěji zajímá.
                   </p>
 
-                  <div className={`mb-8 overflow-hidden rounded-3xl p-1 shadow-sm ${
-                    theme === 'dark' ? 'bg-[#0d1715] ring-1 ring-emerald-900/50' : 'bg-white/60'
-                  }`}>
-                    <div className={`flex h-[130px] items-center justify-center rounded-[22px] ${
-                      theme === 'dark'
-                        ? 'bg-gradient-to-br from-[#10211d] via-[#122a25] to-[#0c1715]'
-                        : 'bg-gradient-to-br from-[#f2eadc] to-[#e8dcc6]'
-                    }`}>
+                  <div className="mb-8 overflow-hidden rounded-3xl bg-white/60 p-1 shadow-sm">
+                    <div className="flex h-[130px] items-center justify-center rounded-[22px] bg-gradient-to-br from-[#f2eadc] to-[#e8dcc6]">
                       <div className="flex flex-wrap items-center justify-center gap-4 text-4xl md:text-5xl">
                         <span>❓</span>
                         <span>❔</span>
@@ -2480,40 +2098,22 @@ export default function AskLipuvkaWeb() {
                       return (
                         <div
                           key={item.question}
-                          className={`overflow-hidden rounded-2xl border shadow-sm transition ${
-                            theme === 'dark'
-                              ? isOpen
-                                ? 'border-emerald-700/50 bg-[#10201c] shadow-[0_16px_40px_rgba(0,0,0,0.26)]'
-                                : 'border-emerald-950/60 bg-[#091310]'
-                              : 'border-[#e6dccd] bg-white'
-                          }`}
+                          className="overflow-hidden rounded-2xl border border-[#e6dccd] bg-white shadow-sm"
                         >
                           <button
                             type="button"
                             onClick={() => setOpenFaqIndex(isOpen ? null : index)}
-                            className={`flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition ${
-                              theme === 'dark'
-                                ? isOpen
-                                  ? 'bg-[#122722] text-white'
-                                  : 'text-white hover:bg-[#0f1d1a]'
-                                : isOpen
-                                  ? 'bg-[#faf7f2] text-gray-900'
-                                  : 'text-gray-900 hover:bg-[#faf7f2]'
-                            }`}
+                            className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-[#faf7f2]"
                           >
                             <div className="flex items-start gap-3">
-                              <span className={`mt-0.5 text-lg ${theme === 'dark' ? 'drop-shadow-[0_0_10px_rgba(248,113,113,0.25)]' : ''}`}>❓</span>
-                              <span className={`font-semibold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{item.question}</span>
+                              <span className="mt-0.5 text-lg">❓</span>
+                              <span className="font-semibold text-gray-900">{item.question}</span>
                             </div>
-                            <span className={`text-xl ${theme === 'dark' ? 'text-emerald-300' : 'text-green-700'}`}>{isOpen ? '−' : '+'}</span>
+                            <span className="text-xl text-green-700">{isOpen ? '−' : '+'}</span>
                           </button>
 
                           {isOpen && (
-                            <div className={`px-5 py-4 ${
-                              theme === 'dark'
-                                ? 'border-t border-emerald-800/40 bg-[#0b1714] text-slate-200'
-                                : 'border-t border-[#efe6d8] text-gray-700'
-                            }`}>
+                            <div className="border-t border-[#efe6d8] px-5 py-4 text-gray-700">
                               {item.answer}
                             </div>
                           )}
@@ -2522,11 +2122,7 @@ export default function AskLipuvkaWeb() {
                     })}
                   </div>
 
-                  <div className={`mt-10 rounded-2xl p-6 text-center shadow-sm ${
-                    theme === 'dark'
-                      ? 'border border-emerald-900/40 bg-[#0d1715]'
-                      : 'bg-white/70'
-                  }`}>
+                  <div className="mt-10 rounded-2xl bg-white/70 p-6 text-center shadow-sm">
                     <p className="text-gray-700">Nenašli jste odpověď?</p>
 
                     <p className="mt-2 text-sm text-gray-600">

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { db } from './firebase';
+import { auth, db, googleProvider } from './firebase';
 import {
   addDoc,
   collection,
@@ -11,6 +11,11 @@ import {
   setDoc,
   serverTimestamp,
 } from 'firebase/firestore';
+import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+
+const ALLOWED_ADMIN_EMAILS = [
+  'radek.manek86@gmail.com',
+];
 
 export default function Admin() {
   const categories = [
@@ -26,6 +31,10 @@ export default function Admin() {
   const getItemSeason = (item) => item?.season || ARCHIVE_SEASON;
 
   const [activeSection, setActiveSection] = useState('news');
+
+  const [authUser, setAuthUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState('');
 
   const [newsItems, setNewsItems] = useState([]);
   const [matches, setMatches] = useState([]);
@@ -371,9 +380,28 @@ export default function Admin() {
     }
   };
 
+  const isAllowedAdmin = Boolean(
+    authUser?.email && ALLOWED_ADMIN_EMAILS.includes(authUser.email.toLowerCase())
+  );
+
   useEffect(() => {
-    loadAllData();
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setAuthUser(user);
+      setAuthLoading(false);
+    });
+
+    return unsubscribe;
   }, []);
+
+  useEffect(() => {
+    if (!authLoading && isAllowedAdmin) {
+      loadAllData();
+    }
+
+    if (!authLoading && !authUser) {
+      setLoading(false);
+    }
+  }, [authLoading, isAllowedAdmin, authUser]);
 
   useEffect(() => {
     document.documentElement.classList.toggle('theme-dark', theme === 'dark');
@@ -1232,6 +1260,89 @@ export default function Admin() {
   const currentAlbum = matchForm.galleryAlbumId
     ? galleryAlbums.find((album) => album.id === matchForm.galleryAlbumId)
     : null;
+
+  const handleGoogleLogin = async () => {
+    try {
+      setAuthError('');
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      console.error('Chyba přihlášení:', error);
+      setAuthError('Přihlášení přes Google se nepovedlo. Zkus to prosím znovu.');
+    }
+  };
+
+  const handleGoogleLogout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error('Chyba odhlášení:', error);
+      setAuthError('Odhlášení se nepovedlo.');
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 text-gray-900">
+        <div className="rounded-3xl border border-green-100 bg-white p-8 text-center shadow-sm">
+          <div className="text-lg font-semibold text-gray-700">Kontroluji přihlášení…</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!authUser) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 text-gray-900">
+        <div className="w-full max-w-md rounded-3xl border border-green-100 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 text-2xl">🔐</div>
+          <h1 className="text-3xl font-black text-green-700">Admin ASK Lipůvka</h1>
+          <p className="mt-3 text-gray-600">Pro správu webu se přihlas Google účtem.</p>
+
+          {authError && (
+            <div className="mt-5 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
+              {authError}
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            className="mt-6 w-full rounded-xl bg-green-600 px-5 py-3 font-semibold text-white transition hover:bg-green-700"
+          >
+            Přihlásit přes Google
+          </button>
+
+          <a
+            href="/"
+            className="mt-4 inline-flex items-center justify-center rounded-xl border border-green-200 bg-green-50 px-5 py-3 font-semibold text-green-700 transition hover:bg-green-100"
+          >
+            ← Zpět na web
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAllowedAdmin) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 text-gray-900">
+        <div className="w-full max-w-lg rounded-3xl border border-red-100 bg-white p-8 text-center shadow-sm">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-2xl">⛔</div>
+          <h1 className="text-3xl font-black text-red-700">Nemáš přístup</h1>
+          <p className="mt-3 text-gray-600">
+            Přihlášený účet <span className="font-bold text-gray-900">{authUser.email}</span> není v seznamu povolených administrátorů.
+          </p>
+          <button
+            type="button"
+            onClick={handleGoogleLogout}
+            className="mt-6 rounded-xl bg-gray-900 px-5 py-3 font-semibold text-white transition hover:bg-black"
+          >
+            Odhlásit
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 md:px-6">
