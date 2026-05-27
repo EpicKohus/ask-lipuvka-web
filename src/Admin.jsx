@@ -3565,7 +3565,7 @@ L`}
                           </button>
                         </div>
                       </div>
-                    ))
+                      ))
                   ) : (
                     <div className={cardClass}>
                       <div className="text-gray-500">Zatím tu nejsou žádná alba.</div>
@@ -3693,7 +3693,22 @@ L`}
                           </button>
                         )}
                       </div>
-                    ))
+                      ))}
+
+                      {filteredAdminLogs.length > 5 && (
+                        <div className="pt-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => setShowAllAdminLogs((prev) => !prev)}
+                            className="rounded-xl border border-green-200 bg-green-50 px-5 py-3 font-semibold text-green-700 transition hover:bg-green-100"
+                          >
+                            {showAllAdminLogs
+                              ? 'Zobrazit méně'
+                              : `Zobrazit všechny změny (${filteredAdminLogs.length})`}
+                          </button>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className={cardClass}>
                       <div className="text-gray-500">
