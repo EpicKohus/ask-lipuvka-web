@@ -438,15 +438,6 @@ export default function Admin() {
     }
   }, [authLoading, authUser]);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle('theme-dark', theme === 'dark');
-    document.documentElement.style.colorScheme = theme;
-    localStorage.setItem('ask-lipuvka-theme', theme);
-
-    return () => {
-      document.documentElement.style.colorScheme = '';
-    };
-  }, [theme]);
 
   const newsByCategory = useMemo(() => {
     return categories.map((category) => ({
