@@ -54,11 +54,8 @@ export default function Admin() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === 'undefined') return 'light';
-    return localStorage.getItem('ask-lipuvka-theme') || 'light';
-  });
-
+  const [theme, setTheme] = useState('light')
+    
 
   const [matchListCategoryFilter, setMatchListCategoryFilter] = useState('all');
   const [matchListTimeFilter, setMatchListTimeFilter] = useState('future');
