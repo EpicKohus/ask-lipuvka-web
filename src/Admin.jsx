@@ -37,6 +37,8 @@ export default function Admin() {
   const [merchProducts, setMerchProducts] = useState([]);
   const [merchOrders, setMerchOrders] = useState([]);
   const [adminLogs, setAdminLogs] = useState([]);
+  const [logSectionFilter, setLogSectionFilter] = useState('all');
+  const [showOnlyMyLogs, setShowOnlyMyLogs] = useState(false);
   const [siteStats, setSiteStats] = useState({
     visitCount: 0,
     createdAt: null,
@@ -814,6 +816,10 @@ export default function Admin() {
           targetId: editingMerchProductId,
           targetTitle: payload.title,
           detail: `${payload.type} • ${payload.price} Kč`,
+          collectionName: 'merchProducts',
+          beforeData: merchProducts.find((product) => product.id === editingMerchProductId),
+          afterData: payload,
+          canRestore: true,
         });
       } else {
         const createdProduct = await addDoc(collection(db, 'merchProducts'), {
@@ -826,6 +832,9 @@ export default function Admin() {
           targetId: createdProduct.id,
           targetTitle: payload.title,
           detail: `${payload.type} • ${payload.price} Kč`,
+          collectionName: 'merchProducts',
+          afterData: payload,
+          canRestore: true,
         });
       }
 
@@ -872,6 +881,9 @@ export default function Admin() {
         targetId: productId,
         targetTitle: deletedProduct?.title || 'Merch produkt',
         detail: deletedProduct?.type || '',
+        collectionName: 'merchProducts',
+        beforeData: deletedProduct,
+        canRestore: true,
       });
       await loadAllData();
     } catch (error) {
@@ -895,6 +907,10 @@ export default function Admin() {
         targetId: product.id,
         targetTitle: product.title || 'Merch produkt',
         detail: product.active === false ? 'Zobrazeno na webu' : 'Skryto na webu',
+        collectionName: 'merchProducts',
+        beforeData: product,
+        afterData: { ...product, active: product.active === false },
+        canRestore: true,
       });
       await loadAllData();
     } catch (error) {
@@ -918,6 +934,10 @@ export default function Admin() {
         targetId: orderId,
         targetTitle: order?.name || order?.customerName || 'Objednávka',
         detail: `Nový stav: ${status}`,
+        collectionName: 'merchOrders',
+        beforeData: order,
+        afterData: { ...order, status },
+        canRestore: true,
       });
       await loadAllData();
     } catch (error) {
@@ -995,6 +1015,9 @@ export default function Admin() {
         targetId: orderId,
         targetTitle: deletedOrder?.name || deletedOrder?.customerName || 'Objednávka',
         detail: deletedOrder?.email || deletedOrder?.phone || '',
+        collectionName: 'merchOrders',
+        beforeData: deletedOrder,
+        canRestore: true,
       });
       await loadAllData();
     } catch (error) {
@@ -1094,7 +1117,34 @@ export default function Admin() {
     return String(value);
   };
 
-  const logAdminAction = async ({ action, section, targetId = '', targetTitle = '', detail = '' }) => {
+  const cleanFirestoreData = (value) => {
+    if (value === undefined) return null;
+    if (value === null) return null;
+    if (typeof value?.toDate === 'function') return value;
+    if (Array.isArray(value)) return value.map((item) => cleanFirestoreData(item));
+
+    if (typeof value === 'object') {
+      return Object.entries(value).reduce((acc, [key, item]) => {
+        if (key === 'id' || item === undefined) return acc;
+        acc[key] = cleanFirestoreData(item);
+        return acc;
+      }, {});
+    }
+
+    return value;
+  };
+
+  const logAdminAction = async ({
+    action,
+    section,
+    targetId = '',
+    targetTitle = '',
+    detail = '',
+    collectionName = '',
+    beforeData = null,
+    afterData = null,
+    canRestore = false,
+  }) => {
     try {
       await addDoc(collection(db, 'adminLogs'), {
         action,
@@ -1102,6 +1152,12 @@ export default function Admin() {
         targetId,
         targetTitle,
         detail,
+        collectionName,
+        beforeData: beforeData ? cleanFirestoreData(beforeData) : null,
+        afterData: null,
+        canRestore: Boolean(canRestore && collectionName && targetId),
+        restoredAt: null,
+        restoredBy: '',
         userEmail: authUser?.email || '',
         userName: adminName || authUser?.displayName || authUser?.email || '',
         userRole: adminRole || '',
@@ -1109,6 +1165,61 @@ export default function Admin() {
       });
     } catch (error) {
       console.error('Nepodařilo se zapsat admin log:', error);
+    }
+  };
+
+  const getRestoreLabel = (action) => {
+    if (String(action || '').startsWith('create_')) return 'Smazat vytvořenou položku';
+    if (String(action || '').startsWith('delete_')) return 'Obnovit smazanou položku';
+    return 'Vrátit změnu zpět';
+  };
+
+  const handleRestoreLogEntry = async (log) => {
+    if (!log?.canRestore || !log.collectionName || !log.targetId) return;
+    if (log.restoredAt) {
+      alert('Tahle změna už byla vrácena zpět.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Opravdu chceš provést: ${getRestoreLabel(log.action)}?`);
+    if (!confirmed) return;
+
+    try {
+      setSaving(true);
+      const targetRef = doc(db, log.collectionName, log.targetId);
+      const action = String(log.action || '');
+
+      if (action.startsWith('create_')) {
+        await deleteDoc(targetRef);
+      } else if (action.startsWith('delete_')) {
+        if (!log.beforeData) throw new Error('Chybí uložená původní data.');
+        await setDoc(targetRef, cleanFirestoreData(log.beforeData), { merge: true });
+      } else {
+        if (!log.beforeData) throw new Error('Chybí uložená původní data.');
+        await updateDoc(targetRef, cleanFirestoreData(log.beforeData));
+      }
+
+      await updateDoc(doc(db, 'adminLogs', log.id), {
+        restoredAt: serverTimestamp(),
+        restoredBy: authUser?.email || '',
+      });
+
+      await logAdminAction({
+        action: 'restore_change',
+        section: 'Historie změn',
+        targetId: log.targetId,
+        targetTitle: log.targetTitle || '',
+        detail: `${getRestoreLabel(log.action)} • původní akce: ${getLogActionLabel(log.action)}`,
+        collectionName: log.collectionName,
+      });
+
+      await loadAllData();
+      alert('Změna byla vrácena zpět.');
+    } catch (error) {
+      console.error('Nepodařilo se vrátit změnu:', error);
+      alert(`Nepodařilo se vrátit změnu: ${error?.message || error}`);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1148,6 +1259,8 @@ export default function Admin() {
         return 'Přidal startovací merch';
       case 'update_current_season':
         return 'Změnil aktuální sezonu';
+      case 'restore_change':
+        return 'Vrátil změnu zpět';
       default:
         return action || 'Akce';
     }
@@ -1185,6 +1298,10 @@ export default function Admin() {
           targetId: existingNews.id,
           targetTitle: payload.title,
           detail: getCategoryLabel(payload.category),
+          collectionName: 'news',
+          beforeData: existingNews,
+          afterData: payload,
+          canRestore: true,
         });
       } else {
         const createdNews = await addDoc(collection(db, 'news'), payload);
@@ -1194,6 +1311,9 @@ export default function Admin() {
           targetId: createdNews.id,
           targetTitle: payload.title,
           detail: getCategoryLabel(payload.category),
+          collectionName: 'news',
+          afterData: payload,
+          canRestore: true,
         });
       }
 
@@ -1233,6 +1353,9 @@ export default function Admin() {
         targetId: id,
         targetTitle: deletedNews?.title || 'Novinka',
         detail: deletedNews?.category ? getCategoryLabel(deletedNews.category) : '',
+        collectionName: 'news',
+        beforeData: deletedNews,
+        canRestore: true,
       });
       await loadAllData();
       alert('Novinka byla smazána.');
@@ -1283,6 +1406,10 @@ export default function Admin() {
           targetId: editingMatchId,
           targetTitle: payload.opponent,
           detail: `${payload.date} • ${getCategoryLabel(payload.category)}`,
+          collectionName: 'matches',
+          beforeData: matches.find((match) => match.id === editingMatchId),
+          afterData: payload,
+          canRestore: true,
         });
       } else {
         const createdMatch = await addDoc(collection(db, 'matches'), payload);
@@ -1292,6 +1419,9 @@ export default function Admin() {
           targetId: createdMatch.id,
           targetTitle: payload.opponent,
           detail: `${payload.date} • ${getCategoryLabel(payload.category)}`,
+          collectionName: 'matches',
+          afterData: payload,
+          canRestore: true,
         });
       }
 
@@ -1350,6 +1480,9 @@ export default function Admin() {
         targetId: id,
         targetTitle: deletedMatch?.opponent || 'Zápas',
         detail: deletedMatch?.date || '',
+        collectionName: 'matches',
+        beforeData: deletedMatch,
+        canRestore: true,
       });
       await loadAllData();
 
@@ -1406,6 +1539,10 @@ export default function Admin() {
           targetId: editingGalleryId,
           targetTitle: payload.title,
           detail: payload.type === 'team' ? getCategoryLabel(payload.category) : 'Společná galerie',
+          collectionName: 'gallery',
+          beforeData: galleryAlbums.find((album) => album.id === editingGalleryId),
+          afterData: payload,
+          canRestore: true,
         });
       } else {
         const createdGallery = await addDoc(collection(db, 'gallery'), {
@@ -1418,6 +1555,9 @@ export default function Admin() {
           targetId: createdGallery.id,
           targetTitle: payload.title,
           detail: payload.type === 'team' ? getCategoryLabel(payload.category) : 'Společná galerie',
+          collectionName: 'gallery',
+          afterData: { ...payload, createdAt: now },
+          canRestore: true,
         });
       }
 
@@ -1494,6 +1634,21 @@ export default function Admin() {
       .filter(Boolean)
       .join(', ');
   };
+
+  const logSections = useMemo(() => {
+    const sections = adminLogs
+      .map((log) => log.section)
+      .filter(Boolean);
+    return ['all', ...Array.from(new Set(sections))];
+  }, [adminLogs]);
+
+  const filteredAdminLogs = useMemo(() => {
+    return adminLogs.filter((log) => {
+      const sectionOk = logSectionFilter === 'all' || log.section === logSectionFilter;
+      const mineOk = !showOnlyMyLogs || log.userEmail === authUser?.email;
+      return sectionOk && mineOk;
+    });
+  }, [adminLogs, logSectionFilter, showOnlyMyLogs, authUser?.email]);
 
   const currentAlbum = matchForm.galleryAlbumId
     ? galleryAlbums.find((album) => album.id === matchForm.galleryAlbumId)
@@ -3423,22 +3578,49 @@ L`}
                   </div>
                   <h2 className="text-2xl font-bold text-green-700">Kdo co upravil</h2>
                   <p className="mt-3 leading-7 text-gray-600">
-                    Sem se automaticky zapisují úpravy novinek, zápasů, galerie, merche, objednávek a aktuální sezony.
+                    Sem se automaticky zapisují úpravy. Nově můžeš filtrovat typ změny, zobrazit jen svoje změny a u nových záznamů vrátit změnu zpět.
                   </p>
 
-                  <div className="mt-5 rounded-2xl border border-green-100 bg-white p-4 text-sm text-gray-700">
+                  <div className="mt-5 space-y-4 rounded-2xl border border-green-100 bg-white p-4 text-sm text-gray-700">
+                    <div>
+                      <label className={labelClass}>Filtr podle typu</label>
+                      <select
+                        value={logSectionFilter}
+                        onChange={(e) => setLogSectionFilter(e.target.value)}
+                        className={inputClass}
+                      >
+                        {logSections.map((section) => (
+                          <option key={section} value={section}>
+                            {section === 'all' ? 'Všechny změny' : section}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <label className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 font-semibold text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={showOnlyMyLogs}
+                        onChange={(e) => setShowOnlyMyLogs(e.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      Zobrazit jen moje změny
+                    </label>
+
+                    <div className="rounded-2xl bg-green-50 p-4">
                     <div className="font-bold text-gray-900">Aktuálně přihlášen:</div>
-                    <div className="mt-1">{adminName || authUser.email}</div>
-                    <div className="mt-1 text-gray-500">{authUser.email}</div>
-                    <div className="mt-2 inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
-                      {adminRole}
+                      <div className="mt-1">{adminName || authUser.email}</div>
+                      <div className="mt-1 text-gray-500">{authUser.email}</div>
+                      <div className="mt-2 inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                        {adminRole}
+                      </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  {adminLogs.length > 0 ? (
-                    adminLogs.map((log) => (
+                  {filteredAdminLogs.length > 0 ? (
+                    filteredAdminLogs.map((log) => (
                       <div key={log.id} className={cardClass}>
                         <div className="mb-3 flex flex-wrap items-center gap-2">
                           <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
@@ -3481,12 +3663,29 @@ L`}
                             </div>
                           )}
                         </div>
+
+                        {log.restoredAt && (
+                          <div className="mt-3 rounded-2xl border border-yellow-200 bg-yellow-50 p-4 text-sm font-semibold text-yellow-800">
+                            Tato změna už byla vrácena zpět.
+                          </div>
+                        )}
+
+                        {adminRole === 'owner' && log.canRestore && !log.restoredAt && (
+                          <button
+                            type="button"
+                            onClick={() => handleRestoreLogEntry(log)}
+                            disabled={saving}
+                            className="mt-4 rounded-xl border border-orange-300 bg-orange-50 px-4 py-3 text-sm font-bold text-orange-700 transition hover:bg-orange-100 disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-400"
+                          >
+                            {getRestoreLabel(log.action)}
+                          </button>
+                        )}
                       </div>
                     ))
                   ) : (
                     <div className={cardClass}>
                       <div className="text-gray-500">
-                        Zatím tu nejsou žádné záznamy. První se vytvoří po další úpravě v adminu.
+                        Pro vybraný filtr tu nejsou žádné záznamy. První se vytvoří po další úpravě v adminu.
                       </div>
                     </div>
                   )}
