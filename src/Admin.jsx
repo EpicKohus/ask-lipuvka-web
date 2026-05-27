@@ -15,8 +15,6 @@ import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 
 const ALLOWED_ADMIN_EMAILS = [
   'radek.manek86@gmail.com',
-  'radek.manek@email.cz',
-  'slavik.rade@gmail.com',
 ];
 
 export default function Admin() {
@@ -55,8 +53,11 @@ export default function Admin() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [theme, setTheme] = useState('light')
-    
+  const [theme, setTheme] = useState(() => {
+    if (typeof window === 'undefined') return 'light';
+    return localStorage.getItem('ask-lipuvka-theme') || 'light';
+  });
+
 
   const [matchListCategoryFilter, setMatchListCategoryFilter] = useState('all');
   const [matchListTimeFilter, setMatchListTimeFilter] = useState('future');
@@ -402,14 +403,15 @@ export default function Admin() {
     }
   }, [authLoading, isAllowedAdmin, authUser]);
 
-useEffect(() => {
-  document.documentElement.classList.toggle('theme-dark', false);
-  document.documentElement.style.colorScheme = 'light';
+  useEffect(() => {
+    document.documentElement.classList.toggle('theme-dark', theme === 'dark');
+    document.documentElement.style.colorScheme = theme;
+    localStorage.setItem('ask-lipuvka-theme', theme);
 
-  return () => {
-    document.documentElement.style.colorScheme = '';
-  };
-}, []);
+    return () => {
+      document.documentElement.style.colorScheme = '';
+    };
+  }, [theme]);
 
   const newsByCategory = useMemo(() => {
     return categories.map((category) => ({
