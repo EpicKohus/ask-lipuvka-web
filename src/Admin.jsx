@@ -10,6 +10,9 @@ import {
   updateDoc,
   setDoc,
   serverTimestamp,
+  query,
+  orderBy,
+  limit,
 } from 'firebase/firestore';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 
@@ -33,6 +36,7 @@ export default function Admin() {
   const [galleryAlbums, setGalleryAlbums] = useState([]);
   const [merchProducts, setMerchProducts] = useState([]);
   const [merchOrders, setMerchOrders] = useState([]);
+  const [adminLogs, setAdminLogs] = useState([]);
   const [siteStats, setSiteStats] = useState({
     visitCount: 0,
     createdAt: null,
@@ -357,6 +361,14 @@ export default function Admin() {
         ...item.data(),
       }));
 
+      const logsSnapshot = await getDocs(
+        query(collection(db, 'adminLogs'), orderBy('createdAt', 'desc'), limit(80))
+      );
+      const loadedAdminLogs = logsSnapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
+
       setNewsItems(loadedNews);
       setMatches(loadedMatches);
       setGalleryAlbums(loadedGallery);
@@ -368,6 +380,7 @@ export default function Admin() {
         updatedAt: visitsData?.updatedAt || null,
       });
       setDailyVisitStats(loadedDailyStats);
+      setAdminLogs(loadedAdminLogs);
     } catch (error) {
       console.error('Chyba při načítání admin dat:', error);
       alert('Nepodařilo se načíst data z Firebase.');
@@ -681,6 +694,13 @@ export default function Admin() {
         currentSeason,
         updatedAt: serverTimestamp(),
       }, { merge: true });
+      await logAdminAction({
+        action: 'update_current_season',
+        section: 'Nastavení',
+        targetId: 'season',
+        targetTitle: currentSeason,
+        detail: 'Aktuální sezona webu',
+      });
       setMatchListSeasonFilter(currentSeason);
       alert(`Aktuální sezona webu je nastavená na ${currentSeason}.`);
     } catch (error) {
@@ -788,10 +808,24 @@ export default function Admin() {
 
       if (editingMerchProductId) {
         await updateDoc(doc(db, 'merchProducts', editingMerchProductId), payload);
+        await logAdminAction({
+          action: 'update_merch_product',
+          section: 'Merch',
+          targetId: editingMerchProductId,
+          targetTitle: payload.title,
+          detail: `${payload.type} • ${payload.price} Kč`,
+        });
       } else {
-        await addDoc(collection(db, 'merchProducts'), {
+        const createdProduct = await addDoc(collection(db, 'merchProducts'), {
           ...payload,
           createdAt: serverTimestamp(),
+        });
+        await logAdminAction({
+          action: 'create_merch_product',
+          section: 'Merch',
+          targetId: createdProduct.id,
+          targetTitle: payload.title,
+          detail: `${payload.type} • ${payload.price} Kč`,
         });
       }
 
@@ -830,7 +864,15 @@ export default function Admin() {
 
     try {
       setSaving(true);
+      const deletedProduct = merchProducts.find((product) => product.id === productId);
       await deleteDoc(doc(db, 'merchProducts', productId));
+      await logAdminAction({
+        action: 'delete_merch_product',
+        section: 'Merch',
+        targetId: productId,
+        targetTitle: deletedProduct?.title || 'Merch produkt',
+        detail: deletedProduct?.type || '',
+      });
       await loadAllData();
     } catch (error) {
       console.error('Chyba při mazání merch produktu:', error);
@@ -847,6 +889,13 @@ export default function Admin() {
         active: product.active === false,
         updatedAt: serverTimestamp(),
       });
+      await logAdminAction({
+        action: 'toggle_merch_product',
+        section: 'Merch',
+        targetId: product.id,
+        targetTitle: product.title || 'Merch produkt',
+        detail: product.active === false ? 'Zobrazeno na webu' : 'Skryto na webu',
+      });
       await loadAllData();
     } catch (error) {
       console.error('Chyba při změně viditelnosti merch produktu:', error);
@@ -861,6 +910,14 @@ export default function Admin() {
       await updateDoc(doc(db, 'merchOrders', orderId), {
         status,
         updatedAt: serverTimestamp(),
+      });
+      const order = merchOrders.find((item) => item.id === orderId);
+      await logAdminAction({
+        action: 'update_merch_order',
+        section: 'Merch objednávky',
+        targetId: orderId,
+        targetTitle: order?.name || order?.customerName || 'Objednávka',
+        detail: `Nový stav: ${status}`,
       });
       await loadAllData();
     } catch (error) {
@@ -909,6 +966,13 @@ export default function Admin() {
         starterProducts.map((product) => addDoc(collection(db, 'merchProducts'), product))
       );
 
+      await logAdminAction({
+        action: 'create_starter_merch',
+        section: 'Merch',
+        targetTitle: 'Startovací produkty',
+        detail: 'Bílé tričko + bílo-černá kšiltovka',
+      });
+
       await loadAllData();
     } catch (error) {
       console.error('Chyba při vytvoření základních merch produktů:', error);
@@ -923,7 +987,15 @@ export default function Admin() {
     if (!confirmed) return;
 
     try {
+      const deletedOrder = merchOrders.find((item) => item.id === orderId);
       await deleteDoc(doc(db, 'merchOrders', orderId));
+      await logAdminAction({
+        action: 'delete_merch_order',
+        section: 'Merch objednávky',
+        targetId: orderId,
+        targetTitle: deletedOrder?.name || deletedOrder?.customerName || 'Objednávka',
+        detail: deletedOrder?.email || deletedOrder?.phone || '',
+      });
       await loadAllData();
     } catch (error) {
       console.error('Chyba při mazání merch objednávky:', error);
@@ -1007,6 +1079,80 @@ export default function Admin() {
     }));
   };
 
+
+  const formatLogDate = (value) => {
+    if (!value) return 'bez data';
+
+    if (typeof value?.toDate === 'function') {
+      return value.toDate().toLocaleString('cs-CZ');
+    }
+
+    if (value instanceof Date) {
+      return value.toLocaleString('cs-CZ');
+    }
+
+    return String(value);
+  };
+
+  const logAdminAction = async ({ action, section, targetId = '', targetTitle = '', detail = '' }) => {
+    try {
+      await addDoc(collection(db, 'adminLogs'), {
+        action,
+        section,
+        targetId,
+        targetTitle,
+        detail,
+        userEmail: authUser?.email || '',
+        userName: adminProfile?.name || authUser?.displayName || authUser?.email || '',
+        userRole: adminRole || '',
+        createdAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Nepodařilo se zapsat admin log:', error);
+    }
+  };
+
+  const getLogActionLabel = (action) => {
+    switch (action) {
+      case 'create_news':
+        return 'Přidal novinku';
+      case 'update_news':
+        return 'Upravil novinku';
+      case 'delete_news':
+        return 'Smazal novinku';
+      case 'create_match':
+        return 'Přidal zápas';
+      case 'update_match':
+        return 'Upravil zápas';
+      case 'delete_match':
+        return 'Smazal zápas';
+      case 'create_gallery':
+        return 'Přidal album';
+      case 'update_gallery':
+        return 'Upravil album';
+      case 'delete_gallery':
+        return 'Smazal album';
+      case 'create_merch_product':
+        return 'Přidal merch produkt';
+      case 'update_merch_product':
+        return 'Upravil merch produkt';
+      case 'delete_merch_product':
+        return 'Smazal merch produkt';
+      case 'toggle_merch_product':
+        return 'Změnil viditelnost merch produktu';
+      case 'update_merch_order':
+        return 'Změnil stav objednávky';
+      case 'delete_merch_order':
+        return 'Smazal objednávku';
+      case 'create_starter_merch':
+        return 'Přidal startovací merch';
+      case 'update_current_season':
+        return 'Změnil aktuální sezonu';
+      default:
+        return action || 'Akce';
+    }
+  };
+
   const handleSaveNews = async (e) => {
     e.preventDefault();
 
@@ -1033,8 +1179,22 @@ export default function Admin() {
 
       if (existingNews) {
         await updateDoc(doc(db, 'news', existingNews.id), payload);
+        await logAdminAction({
+          action: 'update_news',
+          section: 'Novinky',
+          targetId: existingNews.id,
+          targetTitle: payload.title,
+          detail: getCategoryLabel(payload.category),
+        });
       } else {
-        await addDoc(collection(db, 'news'), payload);
+        const createdNews = await addDoc(collection(db, 'news'), payload);
+        await logAdminAction({
+          action: 'create_news',
+          section: 'Novinky',
+          targetId: createdNews.id,
+          targetTitle: payload.title,
+          detail: getCategoryLabel(payload.category),
+        });
       }
 
       await loadAllData();
@@ -1065,7 +1225,15 @@ export default function Admin() {
     if (!confirmed) return;
 
     try {
+      const deletedNews = newsItems.find((item) => item.id === id);
       await deleteDoc(doc(db, 'news', id));
+      await logAdminAction({
+        action: 'delete_news',
+        section: 'Novinky',
+        targetId: id,
+        targetTitle: deletedNews?.title || 'Novinka',
+        detail: deletedNews?.category ? getCategoryLabel(deletedNews.category) : '',
+      });
       await loadAllData();
       alert('Novinka byla smazána.');
     } catch (error) {
@@ -1109,8 +1277,22 @@ export default function Admin() {
 
       if (editingMatchId) {
         await updateDoc(doc(db, 'matches', editingMatchId), payload);
+        await logAdminAction({
+          action: 'update_match',
+          section: 'Zápasy',
+          targetId: editingMatchId,
+          targetTitle: payload.opponent,
+          detail: `${payload.date} • ${getCategoryLabel(payload.category)}`,
+        });
       } else {
-        await addDoc(collection(db, 'matches'), payload);
+        const createdMatch = await addDoc(collection(db, 'matches'), payload);
+        await logAdminAction({
+          action: 'create_match',
+          section: 'Zápasy',
+          targetId: createdMatch.id,
+          targetTitle: payload.opponent,
+          detail: `${payload.date} • ${getCategoryLabel(payload.category)}`,
+        });
       }
 
       await loadAllData();
@@ -1160,7 +1342,15 @@ export default function Admin() {
     if (!confirmed) return;
 
     try {
+      const deletedMatch = matches.find((match) => match.id === id);
       await deleteDoc(doc(db, 'matches', id));
+      await logAdminAction({
+        action: 'delete_match',
+        section: 'Zápasy',
+        targetId: id,
+        targetTitle: deletedMatch?.opponent || 'Zápas',
+        detail: deletedMatch?.date || '',
+      });
       await loadAllData();
 
       if (editingMatchId === id) {
@@ -1210,10 +1400,24 @@ export default function Admin() {
 
       if (editingGalleryId) {
         await updateDoc(doc(db, 'gallery', editingGalleryId), payload);
+        await logAdminAction({
+          action: 'update_gallery',
+          section: 'Galerie',
+          targetId: editingGalleryId,
+          targetTitle: payload.title,
+          detail: payload.type === 'team' ? getCategoryLabel(payload.category) : 'Společná galerie',
+        });
       } else {
-        await addDoc(collection(db, 'gallery'), {
+        const createdGallery = await addDoc(collection(db, 'gallery'), {
           ...payload,
           createdAt: now,
+        });
+        await logAdminAction({
+          action: 'create_gallery',
+          section: 'Galerie',
+          targetId: createdGallery.id,
+          targetTitle: payload.title,
+          detail: payload.type === 'team' ? getCategoryLabel(payload.category) : 'Společná galerie',
         });
       }
 
@@ -1251,7 +1455,15 @@ export default function Admin() {
     if (!confirmed) return;
 
     try {
+      const deletedAlbum = galleryAlbums.find((album) => album.id === id);
       await deleteDoc(doc(db, 'gallery', id));
+      await logAdminAction({
+        action: 'delete_gallery',
+        section: 'Galerie',
+        targetId: id,
+        targetTitle: deletedAlbum?.title || 'Album',
+        detail: deletedAlbum?.type === 'team' ? getCategoryLabel(deletedAlbum.category) : 'Společná galerie',
+      });
       await loadAllData();
 
       if (editingGalleryId === id) {
@@ -1440,6 +1652,14 @@ export default function Admin() {
             className={sectionButtonClass(activeSection === 'stats')}
           >
             Statistiky
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('logs')}
+            className={sectionButtonClass(activeSection === 'logs')}
+          >
+            Historie změn
           </button>
         </div>
 
@@ -3194,6 +3414,86 @@ L`}
                 </div>
               </div>
             )}
+
+            {activeSection === 'logs' && (
+              <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+                <div className={cardSoftClass}>
+                  <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                    Historie změn
+                  </div>
+                  <h2 className="text-2xl font-bold text-green-700">Kdo co upravil</h2>
+                  <p className="mt-3 leading-7 text-gray-600">
+                    Sem se automaticky zapisují úpravy novinek, zápasů, galerie, merche, objednávek a aktuální sezony.
+                  </p>
+
+                  <div className="mt-5 rounded-2xl border border-green-100 bg-white p-4 text-sm text-gray-700">
+                    <div className="font-bold text-gray-900">Aktuálně přihlášen:</div>
+                    <div className="mt-1">{adminProfile?.name || authUser.email}</div>
+                    <div className="mt-1 text-gray-500">{authUser.email}</div>
+                    <div className="mt-2 inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                      {adminRole}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {adminLogs.length > 0 ? (
+                    adminLogs.map((log) => (
+                      <div key={log.id} className={cardClass}>
+                        <div className="mb-3 flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                            {log.section || 'Admin'}
+                          </span>
+                          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-700">
+                            {formatLogDate(log.createdAt)}
+                          </span>
+                        </div>
+
+                        <div className="text-lg font-black text-gray-900">
+                          {getLogActionLabel(log.action)}
+                        </div>
+
+                        {log.targetTitle && (
+                          <div className="mt-1 text-base font-semibold text-green-700">
+                            {log.targetTitle}
+                          </div>
+                        )}
+
+                        {log.detail && (
+                          <div className="mt-2 text-sm text-gray-600">
+                            {log.detail}
+                          </div>
+                        )}
+
+                        <div className="mt-4 rounded-2xl bg-gray-50 p-4 text-sm text-gray-700">
+                          <div>
+                            <span className="font-semibold">Uživatel:</span>{' '}
+                            {log.userName || log.userEmail || 'neznámý'}
+                          </div>
+                          {log.userEmail && (
+                            <div className="mt-1">
+                              <span className="font-semibold">Email:</span> {log.userEmail}
+                            </div>
+                          )}
+                          {log.userRole && (
+                            <div className="mt-1">
+                              <span className="font-semibold">Role:</span> {log.userRole}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className={cardClass}>
+                      <div className="text-gray-500">
+                        Zatím tu nejsou žádné záznamy. První se vytvoří po další úpravě v adminu.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
           </>
         )}
       </div>
