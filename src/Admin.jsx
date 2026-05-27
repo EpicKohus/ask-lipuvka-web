@@ -1103,7 +1103,7 @@ export default function Admin() {
         targetTitle,
         detail,
         userEmail: authUser?.email || '',
-        userName: adminProfile?.name || authUser?.displayName || authUser?.email || '',
+        userName: adminName || authUser?.displayName || authUser?.email || '',
         userRole: adminRole || '',
         createdAt: serverTimestamp(),
       });
@@ -3428,7 +3428,7 @@ L`}
 
                   <div className="mt-5 rounded-2xl border border-green-100 bg-white p-4 text-sm text-gray-700">
                     <div className="font-bold text-gray-900">Aktuálně přihlášen:</div>
-                    <div className="mt-1">{adminProfile?.name || authUser.email}</div>
+                    <div className="mt-1">{adminName || authUser.email}</div>
                     <div className="mt-1 text-gray-500">{authUser.email}</div>
                     <div className="mt-2 inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
                       {adminRole}
