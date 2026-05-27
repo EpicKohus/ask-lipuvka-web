@@ -16,6 +16,7 @@ import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 const ALLOWED_ADMIN_EMAILS = [
   'radek.manek86@gmail.com',
   'radek.manek@email.cz',
+  'slavik.rade@gmail.com',
 ];
 
 export default function Admin() {
@@ -401,15 +402,14 @@ export default function Admin() {
     }
   }, [authLoading, isAllowedAdmin, authUser]);
 
-  useEffect(() => {
-    document.documentElement.classList.toggle('theme-dark', theme === 'dark');
-    document.documentElement.style.colorScheme = theme;
-    localStorage.setItem('ask-lipuvka-theme', theme);
+useEffect(() => {
+  document.documentElement.classList.toggle('theme-dark', false);
+  document.documentElement.style.colorScheme = 'light';
 
-    return () => {
-      document.documentElement.style.colorScheme = '';
-    };
-  }, [theme]);
+  return () => {
+    document.documentElement.style.colorScheme = '';
+  };
+}, []);
 
   const newsByCategory = useMemo(() => {
     return categories.map((category) => ({
