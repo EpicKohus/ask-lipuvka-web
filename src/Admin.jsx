@@ -39,6 +39,7 @@ export default function Admin() {
   const [adminLogs, setAdminLogs] = useState([]);
   const [logSectionFilter, setLogSectionFilter] = useState('all');
   const [showOnlyMyLogs, setShowOnlyMyLogs] = useState(false);
+  const [showAllAdminLogs, setShowAllAdminLogs] = useState(false);
   const [siteStats, setSiteStats] = useState({
     visitCount: 0,
     createdAt: null,
@@ -1649,6 +1650,10 @@ export default function Admin() {
       return sectionOk && mineOk;
     });
   }, [adminLogs, logSectionFilter, showOnlyMyLogs, authUser?.email]);
+
+  const visibleAdminLogs = useMemo(() => {
+    return showAllAdminLogs ? filteredAdminLogs : filteredAdminLogs.slice(0, 5);
+  }, [filteredAdminLogs, showAllAdminLogs]);
 
   const currentAlbum = matchForm.galleryAlbumId
     ? galleryAlbums.find((album) => album.id === matchForm.galleryAlbumId)
@@ -3560,7 +3565,22 @@ L`}
                           </button>
                         </div>
                       </div>
-                    ))
+                      ))}
+
+                      {filteredAdminLogs.length > 5 && (
+                        <div className="pt-2 text-center">
+                          <button
+                            type="button"
+                            onClick={() => setShowAllAdminLogs((prev) => !prev)}
+                            className="rounded-xl border border-green-200 bg-green-50 px-5 py-3 font-semibold text-green-700 transition hover:bg-green-100"
+                          >
+                            {showAllAdminLogs
+                              ? 'Zobrazit méně'
+                              : `Zobrazit všechny změny (${filteredAdminLogs.length})`}
+                          </button>
+                        </div>
+                      )}
+                    </>
                   ) : (
                     <div className={cardClass}>
                       <div className="text-gray-500">Zatím tu nejsou žádná alba.</div>
@@ -3586,7 +3606,10 @@ L`}
                       <label className={labelClass}>Filtr podle typu</label>
                       <select
                         value={logSectionFilter}
-                        onChange={(e) => setLogSectionFilter(e.target.value)}
+                        onChange={(e) => {
+                          setLogSectionFilter(e.target.value);
+                          setShowAllAdminLogs(false);
+                        }}
                         className={inputClass}
                       >
                         {logSections.map((section) => (
@@ -3601,7 +3624,10 @@ L`}
                       <input
                         type="checkbox"
                         checked={showOnlyMyLogs}
-                        onChange={(e) => setShowOnlyMyLogs(e.target.checked)}
+                        onChange={(e) => {
+                          setShowOnlyMyLogs(e.target.checked);
+                          setShowAllAdminLogs(false);
+                        }}
                         className="h-4 w-4"
                       />
                       Zobrazit jen moje změny
@@ -3620,7 +3646,8 @@ L`}
 
                 <div className="space-y-4">
                   {filteredAdminLogs.length > 0 ? (
-                    filteredAdminLogs.map((log) => (
+                    <>
+                      {visibleAdminLogs.map((log) => (
                       <div key={log.id} className={cardClass}>
                         <div className="mb-3 flex flex-wrap items-center gap-2">
                           <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
