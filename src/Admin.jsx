@@ -15,6 +15,7 @@ import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 
 const ALLOWED_ADMIN_EMAILS = [
   'radek.manek86@gmail.com',
+  'radek.manek@email.cz',
 ];
 
 export default function Admin() {
