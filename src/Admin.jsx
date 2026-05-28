@@ -1749,7 +1749,7 @@ export default function Admin() {
     <div className="min-h-screen bg-gray-50 px-4 py-8 text-gray-900 md:px-6">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8 rounded-3xl border border-green-100 bg-white p-6 shadow-sm md:p-8">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="grid gap-5 lg:grid-cols-[1fr_minmax(280px,430px)_auto] lg:items-center">
             <div>
               <div className="mb-2 inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
                 Admin panel
@@ -1762,42 +1762,42 @@ export default function Admin() {
               </p>
             </div>
 
-            <div className="flex w-full flex-col gap-3 md:w-auto md:items-end">
+            <div className="rounded-2xl border border-green-100 bg-green-50/70 p-4 lg:justify-self-center">
+              <div className="mb-2 text-xs font-bold uppercase tracking-wide text-green-700">
+                Aktuální sezona na webu
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <select
+                  value={currentSeason}
+                  onChange={(e) => setCurrentSeason(e.target.value)}
+                  className="min-h-[46px] flex-1 rounded-xl border border-green-100 bg-white px-4 py-3 text-base font-semibold text-gray-900 outline-none transition focus:border-green-400 focus:ring-2 focus:ring-green-100"
+                >
+                  {seasonOptions.map((season) => (
+                    <option key={season} value={season}>{season}</option>
+                  ))}
+                </select>
+
+                <button
+                  type="button"
+                  onClick={handleSaveCurrentSeason}
+                  disabled={savingCurrentSeason}
+                  className="rounded-xl bg-green-600 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {savingCurrentSeason ? 'Ukládám…' : 'Uložit'}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-gray-600">
+                Výchozí sezona pro návštěvníky webu.
+              </p>
+            </div>
+
+            <div className="flex lg:justify-end">
               <a
                 href="/"
                 className="inline-flex items-center justify-center rounded-xl border border-green-200 bg-green-50 px-5 py-3 font-semibold text-green-700 transition hover:bg-green-100"
               >
                 ← Zpět na web
               </a>
-
-              <div className="w-full rounded-2xl border border-green-100 bg-green-50/70 p-4 md:w-[420px]">
-                <div className="mb-2 text-xs font-bold uppercase tracking-wide text-green-700">
-                  Aktuální sezona na webu
-                </div>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <select
-                    value={currentSeason}
-                    onChange={(e) => setCurrentSeason(e.target.value)}
-                    className="min-h-[48px] flex-1 rounded-xl border border-green-100 bg-white px-4 py-3 text-base font-semibold text-gray-900 outline-none transition focus:border-green-400 focus:ring-2 focus:ring-green-100"
-                  >
-                    {seasonOptions.map((season) => (
-                      <option key={season} value={season}>{season}</option>
-                    ))}
-                  </select>
-
-                  <button
-                    type="button"
-                    onClick={handleSaveCurrentSeason}
-                    disabled={savingCurrentSeason}
-                    className="rounded-xl bg-green-600 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {savingCurrentSeason ? 'Ukládám…' : 'Uložit'}
-                  </button>
-                </div>
-                <p className="mt-2 text-xs text-gray-600">
-                  Tady jen přepneš výchozí sezonu, která se ukáže návštěvníkům po otevření webu.
-                </p>
-              </div>
             </div>
           </div>
         </div>
@@ -3560,22 +3560,7 @@ L`}
                           </button>
                         </div>
                       </div>
-                      ))}
-
-                      {filteredAdminLogs.length > 5 && (
-                        <div className="pt-2 text-center">
-                          <button
-                            type="button"
-                            onClick={() => setShowAllAdminLogs((prev) => !prev)}
-                            className="rounded-xl border border-green-200 bg-green-50 px-5 py-3 font-semibold text-green-700 transition hover:bg-green-100"
-                          >
-                            {showAllAdminLogs
-                              ? 'Zobrazit méně'
-                              : `Zobrazit všechny změny (${filteredAdminLogs.length})`}
-                          </button>
-                        </div>
-                      )}
-                    </>
+                      ))
                   ) : (
                     <div className={cardClass}>
                       <div className="text-gray-500">Zatím tu nejsou žádná alba.</div>
@@ -3703,8 +3688,23 @@ L`}
                           </button>
                         )}
                       </div>
-                    ))
-                  ) : (
+                    ))}
+
+                    {filteredAdminLogs.length > 5 && (
+                      <div className="pt-2 text-center">
+                        <button
+                          type="button"
+                          onClick={() => setShowAllAdminLogs((prev) => !prev)}
+                          className="rounded-xl border border-green-200 bg-green-50 px-5 py-3 font-semibold text-green-700 transition hover:bg-green-100"
+                        >
+                          {showAllAdminLogs
+                            ? 'Zobrazit méně'
+                            : `Zobrazit všechny změny (${filteredAdminLogs.length})`}
+                        </button>
+                      </div>
+                    )}
+                  </>
+                ) : (
                     <div className={cardClass}>
                       <div className="text-gray-500">
                         Pro vybraný filtr tu nejsou žádné záznamy. První se vytvoří po další úpravě v adminu.
