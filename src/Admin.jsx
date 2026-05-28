@@ -37,6 +37,14 @@ export default function Admin() {
   const [merchProducts, setMerchProducts] = useState([]);
   const [merchOrders, setMerchOrders] = useState([]);
   const [adminLogs, setAdminLogs] = useState([]);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [editingAdminEmail, setEditingAdminEmail] = useState('');
+  const [adminUserForm, setAdminUserForm] = useState({
+    email: '',
+    name: '',
+    role: 'editor',
+    active: true,
+  });
   const [logSectionFilter, setLogSectionFilter] = useState('all');
   const [showOnlyMyLogs, setShowOnlyMyLogs] = useState(false);
   const [showAllAdminLogs, setShowAllAdminLogs] = useState(false);
@@ -372,6 +380,18 @@ export default function Admin() {
         ...item.data(),
       }));
 
+      let loadedAdminUsers = [];
+      try {
+        const adminUsersSnapshot = await getDocs(collection(db, 'adminUsers'));
+        loadedAdminUsers = adminUsersSnapshot.docs.map((item) => ({
+          id: item.id,
+          email: item.id,
+          ...item.data(),
+        }));
+      } catch (adminUsersError) {
+        console.warn('Správu adminů může načíst jen owner. Ostatní admin nechávám běžet:', adminUsersError);
+      }
+
       setNewsItems(loadedNews);
       setMatches(loadedMatches);
       setGalleryAlbums(loadedGallery);
@@ -384,6 +404,7 @@ export default function Admin() {
       });
       setDailyVisitStats(loadedDailyStats);
       setAdminLogs(loadedAdminLogs);
+      setAdminUsers(loadedAdminUsers);
     } catch (error) {
       console.error('Chyba při načítání admin dat:', error);
       alert('Nepodařilo se načíst data z Firebase.');
@@ -1618,6 +1639,122 @@ export default function Admin() {
     }
   };
 
+
+  const resetAdminUserForm = () => {
+    setEditingAdminEmail('');
+    setAdminUserForm({
+      email: '',
+      name: '',
+      role: 'editor',
+      active: true,
+    });
+  };
+
+  const handleEditAdminUser = (adminUser) => {
+    setEditingAdminEmail(adminUser.email || adminUser.id || '');
+    setAdminUserForm({
+      email: adminUser.email || adminUser.id || '',
+      name: adminUser.name || '',
+      role: adminUser.role || 'editor',
+      active: adminUser.active !== false,
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSaveAdminUser = async (event) => {
+    event.preventDefault();
+    if (adminRole !== 'owner') {
+      alert('Správu adminů může měnit jen owner.');
+      return;
+    }
+
+    const email = adminUserForm.email.trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      alert('Zadej platný e-mail Google účtu.');
+      return;
+    }
+
+    const name = adminUserForm.name.trim() || email;
+    const role = adminUserForm.role === 'owner' ? 'owner' : 'editor';
+    const active = Boolean(adminUserForm.active);
+
+    try {
+      setSaving(true);
+      const adminRef = doc(db, 'adminUsers', email);
+      const beforeSnapshot = await getDoc(adminRef);
+      const beforeData = beforeSnapshot.exists() ? beforeSnapshot.data() : null;
+
+      await setDoc(adminRef, {
+        name,
+        role,
+        active,
+        updatedAt: serverTimestamp(),
+        updatedBy: authUser?.email || '',
+        createdAt: beforeData?.createdAt || serverTimestamp(),
+      }, { merge: true });
+
+      await logAdminAction({
+        action: beforeData ? 'update_admin_user' : 'create_admin_user',
+        section: 'Správa adminů',
+        targetId: email,
+        targetTitle: name,
+        detail: `${email} • role: ${role} • ${active ? 'aktivní' : 'vypnutý'}`,
+        collectionName: 'adminUsers',
+        beforeData,
+        canRestore: Boolean(beforeData),
+      });
+
+      resetAdminUserForm();
+      await loadAllData();
+      alert(beforeData ? 'Admin byl upraven.' : 'Admin byl přidán.');
+    } catch (error) {
+      console.error('Nepodařilo se uložit admina:', error);
+      alert(`Nepodařilo se uložit admina: ${error?.message || error}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteAdminUser = async (adminUser) => {
+    if (adminRole !== 'owner') {
+      alert('Správu adminů může měnit jen owner.');
+      return;
+    }
+
+    const email = (adminUser.email || adminUser.id || '').trim().toLowerCase();
+    if (!email) return;
+
+    if (email === authUser?.email?.toLowerCase()) {
+      alert('Sám sebe radši nemaž. Kdyby se to povedlo, mohl by ses odstřihnout od adminu.');
+      return;
+    }
+
+    const confirmed = window.confirm(`Opravdu chceš odebrat admin přístup pro ${email}?`);
+    if (!confirmed) return;
+
+    try {
+      setSaving(true);
+      await deleteDoc(doc(db, 'adminUsers', email));
+      await logAdminAction({
+        action: 'delete_admin_user',
+        section: 'Správa adminů',
+        targetId: email,
+        targetTitle: adminUser.name || email,
+        detail: `${email} • přístup odebrán`,
+        collectionName: 'adminUsers',
+        beforeData: adminUser,
+        canRestore: true,
+      });
+      await loadAllData();
+      alert('Admin přístup byl odebrán.');
+    } catch (error) {
+      console.error('Nepodařilo se odebrat admina:', error);
+      alert(`Nepodařilo se odebrat admina: ${error?.message || error}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const getCategoryLabel = (categoryId) =>
     categories.find((category) => category.id === categoryId)?.label || categoryId;
 
@@ -1661,6 +1798,7 @@ export default function Admin() {
 
   const isAdminAllowed = Boolean(adminRole && ['owner', 'editor', 'viewer'].includes(adminRole));
   const canEdit = Boolean(adminRole && ['owner', 'editor'].includes(adminRole));
+  const canManageAdmins = adminRole === 'owner';
 
   const handleGoogleLogin = async () => {
     try {
@@ -1850,6 +1988,16 @@ export default function Admin() {
           >
             Historie změn
           </button>
+
+          {canManageAdmins && (
+            <button
+              type="button"
+              onClick={() => setActiveSection('adminUsers')}
+              className={sectionButtonClass(activeSection === 'adminUsers')}
+            >
+              Správa adminů
+            </button>
+          )}
         </div>
 
         {loading ? (
@@ -3564,6 +3712,156 @@ L`}
                   ) : (
                     <div className={cardClass}>
                       <div className="text-gray-500">Zatím tu nejsou žádná alba.</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+
+            {activeSection === 'adminUsers' && canManageAdmins && (
+              <div className="grid gap-8 xl:grid-cols-[0.9fr_1.1fr]">
+                <div className={cardSoftClass}>
+                  <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                    Správa adminů
+                  </div>
+                  <h2 className="text-2xl font-bold text-green-700">
+                    Kdo může upravovat web
+                  </h2>
+                  <p className="mt-3 leading-7 text-gray-600">
+                    Tady přidáš další Google účet, nastavíš mu roli editor/owner nebo mu přístup vypneš.
+                  </p>
+
+                  <form onSubmit={handleSaveAdminUser} className="mt-6 space-y-4 rounded-2xl border border-green-100 bg-white p-4">
+                    <div>
+                      <label className={labelClass}>Google e-mail</label>
+                      <input
+                        value={adminUserForm.email}
+                        onChange={(e) => setAdminUserForm((prev) => ({ ...prev, email: e.target.value }))}
+                        disabled={Boolean(editingAdminEmail)}
+                        className={inputClass}
+                        placeholder="napriklad@email.cz"
+                      />
+                      {editingAdminEmail && (
+                        <p className="mt-2 text-xs text-gray-500">
+                          E-mail se u existujícího admina nemění. Když je špatně, smaž ho a založ znovu.
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Jméno v adminu</label>
+                      <input
+                        value={adminUserForm.name}
+                        onChange={(e) => setAdminUserForm((prev) => ({ ...prev, name: e.target.value }))}
+                        className={inputClass}
+                        placeholder="Třeba Radek / Slávik"
+                      />
+                    </div>
+
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Role</label>
+                        <select
+                          value={adminUserForm.role}
+                          onChange={(e) => setAdminUserForm((prev) => ({ ...prev, role: e.target.value }))}
+                          className={inputClass}
+                        >
+                          <option value="editor">editor</option>
+                          <option value="owner">owner</option>
+                        </select>
+                      </div>
+
+                      <label className="mt-7 flex items-center gap-3 rounded-xl border border-green-100 bg-green-50 px-4 py-3 font-semibold text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={adminUserForm.active}
+                          onChange={(e) => setAdminUserForm((prev) => ({ ...prev, active: e.target.checked }))}
+                          className="h-4 w-4"
+                        />
+                        Aktivní přístup
+                      </label>
+                    </div>
+
+                    <div className="flex flex-wrap gap-3 pt-2">
+                      <button
+                        type="submit"
+                        disabled={saving}
+                        className="rounded-xl bg-green-600 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {editingAdminEmail ? 'Uložit admina' : 'Přidat admina'}
+                      </button>
+
+                      {editingAdminEmail && (
+                        <button
+                          type="button"
+                          onClick={resetAdminUserForm}
+                          className="rounded-xl border border-gray-200 bg-white px-5 py-3 font-semibold text-gray-700 transition hover:bg-gray-50"
+                        >
+                          Zrušit úpravu
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+
+                <div className="space-y-4">
+                  {adminUsers.length > 0 ? (
+                    adminUsers
+                      .slice()
+                      .sort((a, b) => String(a.email || a.id).localeCompare(String(b.email || b.id)))
+                      .map((adminUser) => {
+                        const email = adminUser.email || adminUser.id || '';
+                        const isMe = email.toLowerCase() === authUser?.email?.toLowerCase();
+                        return (
+                          <div key={email} className={cardClass}>
+                            <div className="flex flex-wrap items-start justify-between gap-4">
+                              <div>
+                                <div className="text-lg font-black text-gray-900">
+                                  {adminUser.name || email}
+                                </div>
+                                <div className="mt-1 text-sm text-gray-600">{email}</div>
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                  <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                                    {adminUser.role || 'editor'}
+                                  </span>
+                                  <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${adminUser.active === false ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}`}>
+                                    {adminUser.active === false ? 'vypnuto' : 'aktivní'}
+                                  </span>
+                                  {isMe && (
+                                    <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-yellow-800">
+                                      ty
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <div className="flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditAdminUser(adminUser)}
+                                  className="rounded-xl border border-green-200 bg-green-50 px-4 py-2 text-sm font-bold text-green-700 transition hover:bg-green-100"
+                                >
+                                  Upravit
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteAdminUser(adminUser)}
+                                  disabled={isMe || saving}
+                                  className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-bold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                >
+                                  Odebrat
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })
+                  ) : (
+                    <div className={cardClass}>
+                      <div className="text-gray-500">
+                        Zatím tu nevidím žádné adminy. Pokud jsi owner, zkontroluj kolekci adminUsers ve Firebase.
+                      </div>
                     </div>
                   )}
                 </div>
