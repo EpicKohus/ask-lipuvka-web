@@ -42,6 +42,7 @@ export default function AskLipuvkaWeb() {
   const [currentSeason, setCurrentSeason] = useState(DEFAULT_CURRENT_SEASON);
   const [selectedSeason, setSelectedSeason] = useState(DEFAULT_CURRENT_SEASON);
   const [seasonTeams, setSeasonTeams] = useState(null);
+  const [seasonTeamsLoaded, setSeasonTeamsLoaded] = useState(false);
   const CURRENT_SEASON = selectedSeason;
   const getItemSeason = (item) => item?.season || ARCHIVE_SEASON;
   const getSeasonDocId = (season) => String(season || DEFAULT_CURRENT_SEASON).replace(/\//g, '-');
@@ -122,10 +123,14 @@ export default function AskLipuvkaWeb() {
   }), []);
 
   const visibleCategories = useMemo(() => {
+    // Dokud se nenačte nastavení týmů z Firebase, necháme všechny kategorie viditelné.
+    // Jinak se po F5 nové týmy na chvilku schovaly a aktivní tým skočil zpět na předpřípravku.
+    if (!seasonTeamsLoaded) return categories;
+
     const activeTeams = seasonTeams || defaultSeasonTeams;
     const visible = categories.filter((category) => activeTeams[category.id] !== false);
     return visible.length > 0 ? visible : categories.slice(0, 3);
-  }, [seasonTeams, defaultSeasonTeams]);
+  }, [seasonTeams, seasonTeamsLoaded, defaultSeasonTeams]);
 
   const faqItems = [
     {
@@ -519,6 +524,7 @@ export default function AskLipuvkaWeb() {
   }, [allAvailableNews, allAvailableMatches, firebaseGallery, currentSeason]);
 
   const handleSeasonChange = async (value) => {
+    setSeasonTeamsLoaded(false);
     setSelectedSeason(value);
     setShowAllTeamAlbums(false);
 
@@ -531,6 +537,8 @@ export default function AskLipuvkaWeb() {
     } catch (error) {
       console.warn('Nepodařilo se načíst týmy pro vybranou sezonu:', error);
       setSeasonTeams(defaultSeasonTeams);
+    } finally {
+      setSeasonTeamsLoaded(true);
     }
   };
 
@@ -816,9 +824,10 @@ export default function AskLipuvkaWeb() {
   };
 
   useEffect(() => {
+    if (!seasonTeamsLoaded) return;
     if (visibleCategories.some((category) => category.id === activeCategory)) return;
     setActiveCategory(visibleCategories[0]?.id || 'mladsi-pripravka');
-  }, [visibleCategories, activeCategory]);
+  }, [visibleCategories, activeCategory, seasonTeamsLoaded]);
 
   useEffect(() => {
     const loadVisits = async () => {
@@ -936,6 +945,8 @@ export default function AskLipuvkaWeb() {
         } catch (seasonTeamsError) {
           console.warn('Nepodařilo se načíst týmy v sezoně:', seasonTeamsError);
           setSeasonTeams(defaultSeasonTeams);
+        } finally {
+          setSeasonTeamsLoaded(true);
         }
 
         const newsSnapshot = await getDocs(collection(db, 'news'));
