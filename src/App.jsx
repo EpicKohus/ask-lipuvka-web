@@ -35,6 +35,7 @@ export default function AskLipuvkaWeb() {
   const [firebaseNews, setFirebaseNews] = useState([]);
   const [firebaseMatches, setFirebaseMatches] = useState([]);
   const [firebaseGallery, setFirebaseGallery] = useState([]);
+  const [firebaseTrainings, setFirebaseTrainings] = useState([]);
   const [siteDataReady, setSiteDataReady] = useState(false);
 
   const DEFAULT_CURRENT_SEASON = '2025/26';
@@ -519,6 +520,69 @@ export default function AskLipuvkaWeb() {
     };
   };
 
+  const weekdayLabels = {
+    1: 'Pondělí',
+    2: 'Úterý',
+    3: 'Středa',
+    4: 'Čtvrtek',
+    5: 'Pátek',
+    6: 'Sobota',
+    7: 'Neděle',
+  };
+
+  const getWeekdayLabel = (weekday) => weekdayLabels[String(weekday)] || weekday;
+
+  const getCategoryLabel = (categoryId) => {
+    const cat = categories.find((c) => c.id === categoryId);
+    return cat?.label || categoryId || '';
+  };
+
+  const getNextTrainingDate = (weekday) => {
+    const targetDay = Number(weekday) === 7 ? 0 : Number(weekday);
+    const today = new Date();
+    const result = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    let diff = targetDay - result.getDay();
+    if (diff < 0) diff += 7;
+    result.setDate(result.getDate() + diff);
+    return result;
+  };
+
+  const parseTrainingTime = (value) => {
+    const [hours, minutes] = String(value || '').split(':').map(Number);
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+    return { hours, minutes };
+  };
+
+  const buildTrainingGoogleCalendarUrl = (training) => {
+    const firstDate = getNextTrainingDate(training.weekday);
+    const startTime = parseTrainingTime(training.timeFrom);
+    const endTime = parseTrainingTime(training.timeTo) || startTime;
+    const start = new Date(firstDate);
+    const end = new Date(firstDate);
+
+    if (startTime) start.setHours(startTime.hours, startTime.minutes, 0, 0);
+    if (endTime) end.setHours(endTime.hours, endTime.minutes, 0, 0);
+    if (end <= start) end.setTime(start.getTime() + 90 * 60 * 1000);
+
+    const dates = `${formatCalendarDate(start)}T${padCalendarNumber(start.getHours())}${padCalendarNumber(start.getMinutes())}00/${formatCalendarDate(end)}T${padCalendarNumber(end.getHours())}${padCalendarNumber(end.getMinutes())}00`;
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: `Trénink ASK Lipůvka – ${getCategoryShortLabel(training.category)}`,
+      dates,
+      ctz: 'Europe/Prague',
+      details: [
+        `Tým: ${getCategoryLabel(training.category)}`,
+        `Den: ${getWeekdayLabel(training.weekday)}`,
+        `Čas: ${training.timeFrom}–${training.timeTo}`,
+        training.note ? `Poznámka / místo: ${training.note}` : '',
+      ].filter(Boolean).join('\n'),
+      location: training.note || 'Lipůvka',
+      recur: 'RRULE:FREQ=WEEKLY',
+    });
+
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  };
+
   const buildGoogleCalendarUrl = (match) => {
     const matchDate = parseMatchDate(match.date);
     const firstTime = parseFirstMatchTime(match.time);
@@ -571,9 +635,10 @@ export default function AskLipuvkaWeb() {
     allAvailableNews.forEach((item) => seasons.push(getItemSeason(item)));
     allAvailableMatches.forEach((item) => seasons.push(getItemSeason(item)));
     firebaseGallery.forEach((item) => seasons.push(getItemSeason(item)));
+    firebaseTrainings.forEach((item) => seasons.push(getItemSeason(item)));
 
     return [...new Set(seasons.filter(Boolean))].sort((a, b) => b.localeCompare(a, 'cs'));
-  }, [allAvailableNews, allAvailableMatches, firebaseGallery, currentSeason]);
+  }, [allAvailableNews, allAvailableMatches, firebaseGallery, firebaseTrainings, currentSeason]);
 
   const handleSeasonChange = async (value) => {
     setSelectedSeason(value);
@@ -599,6 +664,31 @@ export default function AskLipuvkaWeb() {
   const availableMatches = useMemo(() => {
     return allAvailableMatches.filter((match) => getItemSeason(match) === CURRENT_SEASON);
   }, [allAvailableMatches, CURRENT_SEASON]);
+
+  const availableTrainings = useMemo(() => {
+    return firebaseTrainings
+      .filter((training) => getItemSeason(training) === CURRENT_SEASON && training.active !== false)
+      .filter((training) => visibleCategories.some((category) => category.id === training.category))
+      .sort((a, b) => {
+        const weekdayCompare = Number(a.weekday || 0) - Number(b.weekday || 0);
+        if (weekdayCompare !== 0) return weekdayCompare;
+        return String(a.timeFrom || '').localeCompare(String(b.timeFrom || ''), 'cs');
+      });
+  }, [firebaseTrainings, CURRENT_SEASON, visibleCategories]);
+
+  const activeCategoryTrainings = useMemo(() => {
+    return availableTrainings.filter((training) => training.category === activeCategory);
+  }, [availableTrainings, activeCategory]);
+
+  const calendarMatches = useMemo(() => {
+    return availableMatches
+      .filter((match) => visibleCategories.some((category) => category.id === match.category))
+      .sort((a, b) => parseMatchDate(a.date) - parseMatchDate(b.date));
+  }, [availableMatches, visibleCategories]);
+
+  const upcomingCalendarMatches = useMemo(() => {
+    return calendarMatches.filter((match) => parseMatchDate(match.date) >= todayStart).slice(0, 12);
+  }, [calendarMatches, todayStart]);
 
   const availableGallery = useMemo(() => {
     return firebaseGallery.filter((album) => getItemSeason(album) === CURRENT_SEASON);
@@ -1014,9 +1104,16 @@ export default function AskLipuvkaWeb() {
           ...item.data(),
         }));
 
+        const trainingsSnapshot = await getDocs(collection(db, 'trainings'));
+        const loadedTrainings = trainingsSnapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+
         setFirebaseNews(loadedNews);
         setFirebaseMatches(loadedMatches);
         setFirebaseGallery(loadedGallery);
+        setFirebaseTrainings(loadedTrainings);
       } catch (error) {
         console.error('Firebase chyba:', error);
       } finally {
@@ -1596,6 +1693,7 @@ export default function AskLipuvkaWeb() {
             <nav className="flex items-center gap-6 text-sm">
               <a href="#novinky" className="hover:text-green-600">Novinky</a>
               <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
+              <a href="#kalendar" className="hover:text-green-600">Kalendář</a>
 
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
@@ -1845,6 +1943,14 @@ export default function AskLipuvkaWeb() {
                 className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
               >
                 Zápasy
+              </a>
+
+              <a
+                href="#kalendar"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
+              >
+                Kalendář
               </a>
 
               <button
@@ -2177,6 +2283,110 @@ export default function AskLipuvkaWeb() {
         </div>
       </section>
 
+      <section id="kalendar" className="mx-auto max-w-6xl px-6 py-14">
+        <div className={`rounded-3xl border p-8 shadow-sm ${theme === 'dark' ? 'border-emerald-900/45 bg-[#0d1715] text-slate-100' : 'border-green-100 bg-green-50/60 text-gray-900'}`}>
+          <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">
+                Kalendář
+              </div>
+              <h2 className={theme === 'dark' ? 'text-3xl font-black text-white' : 'text-3xl font-black text-green-700'}>
+                Tréninky a zápasy
+              </h2>
+              <p className={`mt-2 ${mutedTextClass}`}>
+                Přehled pravidelných tréninků a nejbližších zápasů v sezoně {CURRENT_SEASON}.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+            <div className={`rounded-3xl border p-5 ${theme === 'dark' ? 'border-emerald-900/45 bg-[#111f1c]' : 'border-green-100 bg-white'}`}>
+              <h3 className={theme === 'dark' ? 'mb-4 text-2xl font-bold text-white' : 'mb-4 text-2xl font-bold text-gray-900'}>
+                Pravidelné tréninky
+              </h3>
+
+              {availableTrainings.length > 0 ? (
+                <div className="space-y-3">
+                  {availableTrainings.map((training) => {
+                    const categoryStyle = getCategoryStyle(training.category);
+                    return (
+                      <div key={training.id} className={`rounded-2xl border p-4 ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-gray-100 bg-gray-50'}`}>
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${categoryStyle.badge}`}>
+                            {getCategoryShortLabel(training.category)}
+                          </span>
+                          <span className={`font-bold ${mainTextClass}`}>{getCategoryLabel(training.category)}</span>
+                        </div>
+                        <div className={`text-sm font-semibold ${mutedTextClass}`}>
+                          {getWeekdayLabel(training.weekday)} · {training.timeFrom}–{training.timeTo}
+                        </div>
+                        {training.note && <div className={`mt-1 text-sm ${softMutedTextClass}`}>{training.note}</div>}
+                        <a
+                          href={buildTrainingGoogleCalendarUrl(training)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-flex items-center rounded-full bg-white/90 px-3 py-2 text-xs font-bold text-gray-700 shadow-sm transition hover:scale-[1.03]"
+                        >
+                          📅 Přidat do Google kalendáře
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={`rounded-2xl p-5 ${mutedBoxThemeClass}`}>
+                  Tréninky zatím nejsou v adminu doplněné.
+                </div>
+              )}
+            </div>
+
+            <div className={`rounded-3xl border p-5 ${theme === 'dark' ? 'border-emerald-900/45 bg-[#111f1c]' : 'border-green-100 bg-white'}`}>
+              <h3 className={theme === 'dark' ? 'mb-4 text-2xl font-bold text-white' : 'mb-4 text-2xl font-bold text-gray-900'}>
+                Nejbližší zápasy / akce
+              </h3>
+
+              {upcomingCalendarMatches.length > 0 ? (
+                <div className="space-y-3">
+                  {upcomingCalendarMatches.map((match) => {
+                    const categoryStyle = getCategoryStyle(match.category);
+                    return (
+                      <div key={match.id || `${match.date}-${match.opponent}`} className={`rounded-2xl border p-4 ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-gray-100 bg-gray-50'}`}>
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${categoryStyle.badge}`}>
+                            {getCategoryShortLabel(match.category)}
+                          </span>
+                          <span className={`font-bold ${mainTextClass}`}>
+                            {match.home ? `ASK Lipůvka vs. ${match.opponent}` : `${match.opponent} vs. ASK Lipůvka`}
+                          </span>
+                        </div>
+                        <div className={`text-sm font-semibold ${mutedTextClass}`}>
+                          {match.date} · {match.time || 'čas bude doplněn'}
+                        </div>
+                        <div className={`mt-1 text-sm ${softMutedTextClass}`}>
+                          {match.home ? 'Lipůvka' : match.venue || 'místo bude doplněno'}
+                        </div>
+                        <a
+                          href={buildGoogleCalendarUrl(match)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 inline-flex items-center rounded-full bg-white/90 px-3 py-2 text-xs font-bold text-gray-700 shadow-sm transition hover:scale-[1.03]"
+                        >
+                          📅 Přidat do Google kalendáře
+                        </a>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className={`rounded-2xl p-5 ${mutedBoxThemeClass}`}>
+                  Nejbližší zápasy zatím nejsou doplněné.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="zapasy" className="mx-auto max-w-5xl px-6 py-14">
         <div className="mb-3 flex flex-wrap items-center gap-3">
           <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
@@ -2253,32 +2463,20 @@ export default function AskLipuvkaWeb() {
           <h2 className={`mb-4 text-3xl font-bold ${activeCategoryStyle.text}`}>Kdy trénujeme</h2>
 
           <div className={`rounded-2xl p-6 text-lg shadow-sm ${cardThemeClass}`}>
-            {activeCategory === 'predpripravka' && (
-              <>
-                <div className={`mb-2 font-bold ${mainTextClass}`}>Předpřípravka (U7)</div>
-                <div className={mutedTextClass}>Čtvrtek 17:00–18:00</div>
-              </>
-            )}
-
-            {activeCategory === 'mladsi-pripravka' && (
-              <>
-                <div className={`mb-2 font-bold ${mainTextClass}`}>Mladší přípravka (U9)</div>
-                <div className={mutedTextClass}>Úterý a čtvrtek 16:30–18:00</div>
-              </>
-            )}
-
-            {activeCategory === 'starsi-pripravka' && (
-              <>
-                <div className={`mb-2 font-bold ${mainTextClass}`}>Starší přípravka (U11)</div>
-                <div className={mutedTextClass}>Středa 17:00–18:00</div>
-              </>
-            )}
-
-            {!['predpripravka', 'mladsi-pripravka', 'starsi-pripravka'].includes(activeCategory) && (
-              <>
-                <div className={`mb-2 font-bold ${mainTextClass}`}>{activeCategoryLabel}</div>
-                <div className={mutedTextClass}>Tréninky budou doplněny.</div>
-              </>
+            <div className={`mb-3 font-bold ${mainTextClass}`}>{activeCategoryLabel}</div>
+            {activeCategoryTrainings.length > 0 ? (
+              <div className="space-y-3">
+                {activeCategoryTrainings.map((training) => (
+                  <div key={training.id} className={`rounded-2xl p-4 ${softCardThemeClass}`}>
+                    <div className={`font-bold ${mainTextClass}`}>
+                      {getWeekdayLabel(training.weekday)} {training.timeFrom}–{training.timeTo}
+                    </div>
+                    {training.note && <div className={`mt-1 text-sm ${mutedTextClass}`}>{training.note}</div>}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className={mutedTextClass}>Tréninky budou doplněny.</div>
             )}
           </div>
         </div>

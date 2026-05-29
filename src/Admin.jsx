@@ -39,10 +39,21 @@ export default function Admin() {
       return acc;
     }, {});
 
+  const weekdayOptions = [
+    { value: '1', label: 'Pondělí' },
+    { value: '2', label: 'Úterý' },
+    { value: '3', label: 'Středa' },
+    { value: '4', label: 'Čtvrtek' },
+    { value: '5', label: 'Pátek' },
+    { value: '6', label: 'Sobota' },
+    { value: '7', label: 'Neděle' },
+  ];
+
   const [activeSection, setActiveSection] = useState('news');
 
   const [newsItems, setNewsItems] = useState([]);
   const [matches, setMatches] = useState([]);
+  const [trainings, setTrainings] = useState([]);
   const [galleryAlbums, setGalleryAlbums] = useState([]);
   const [merchProducts, setMerchProducts] = useState([]);
   const [merchOrders, setMerchOrders] = useState([]);
@@ -97,6 +108,17 @@ export default function Admin() {
   });
 
   const [editingMatchId, setEditingMatchId] = useState(null);
+  const [editingTrainingId, setEditingTrainingId] = useState(null);
+  const [trainingForm, setTrainingForm] = useState({
+    season: CURRENT_SEASON,
+    category: 'mladsi-pripravka',
+    weekday: '2',
+    timeFrom: '',
+    timeTo: '',
+    note: '',
+    active: true,
+  });
+
   const [matchForm, setMatchForm] = useState({
     season: CURRENT_SEASON,
     category: 'mladsi-pripravka',
@@ -301,6 +323,19 @@ export default function Admin() {
     });
   };
 
+  const resetTrainingForm = () => {
+    setEditingTrainingId(null);
+    setTrainingForm({
+      season: CURRENT_SEASON,
+      category: 'mladsi-pripravka',
+      weekday: '2',
+      timeFrom: '',
+      timeTo: '',
+      note: '',
+      active: true,
+    });
+  };
+
   const resetGalleryForm = () => {
     setEditingGalleryId(null);
     setGalleryForm({
@@ -329,6 +364,12 @@ export default function Admin() {
 
       const matchesSnapshot = await getDocs(collection(db, 'matches'));
       const loadedMatches = matchesSnapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
+
+      const trainingsSnapshot = await getDocs(collection(db, 'trainings'));
+      const loadedTrainings = trainingsSnapshot.docs.map((item) => ({
         id: item.id,
         ...item.data(),
       }));
@@ -426,6 +467,7 @@ export default function Admin() {
 
       setNewsItems(loadedNews);
       setMatches(loadedMatches);
+      setTrainings(loadedTrainings);
       setGalleryAlbums(loadedGallery);
       setMerchProducts(loadedMerchProducts);
       setMerchOrders(loadedMerchOrders);
@@ -521,6 +563,20 @@ export default function Admin() {
   const sortedMatches = useMemo(() => {
     return [...matches].sort((a, b) => parseMatchDate(a) - parseMatchDate(b));
   }, [matches]);
+
+
+  const sortedTrainings = useMemo(() => {
+    return [...trainings].sort((a, b) => {
+      const seasonCompare = String(b.season || '').localeCompare(String(a.season || ''), 'cs');
+      if (seasonCompare !== 0) return seasonCompare;
+      const weekdayCompare = Number(a.weekday || 0) - Number(b.weekday || 0);
+      if (weekdayCompare !== 0) return weekdayCompare;
+      return String(a.timeFrom || '').localeCompare(String(b.timeFrom || ''), 'cs');
+    });
+  }, [trainings]);
+
+  const getWeekdayLabel = (weekday) =>
+    weekdayOptions.find((item) => String(item.value) === String(weekday))?.label || weekday;
 
   const filteredMatches = useMemo(() => {
     const today = new Date();
@@ -854,6 +910,119 @@ export default function Admin() {
 
       return next;
     });
+  };
+
+  const handleTrainingChange = (field, value) => {
+    setTrainingForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleSaveTraining = async (e) => {
+    e.preventDefault();
+
+    if (!trainingForm.timeFrom.trim() || !trainingForm.timeTo.trim() || !trainingForm.note.trim()) {
+      alert('Vyplň čas od, čas do a poznámku / místo tréninku.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const payload = {
+        season: trainingForm.season || CURRENT_SEASON,
+        category: trainingForm.category,
+        weekday: String(trainingForm.weekday),
+        timeFrom: trainingForm.timeFrom.trim(),
+        timeTo: trainingForm.timeTo.trim(),
+        note: trainingForm.note.trim(),
+        active: Boolean(trainingForm.active),
+      };
+
+      if (editingTrainingId) {
+        await updateDoc(doc(db, 'trainings', editingTrainingId), payload);
+        await logAdminAction({
+          action: 'update_training',
+          section: 'Tréninky',
+          targetId: editingTrainingId,
+          targetTitle: getCategoryLabel(payload.category),
+          detail: `${getWeekdayLabel(payload.weekday)} ${payload.timeFrom}–${payload.timeTo} • ${payload.note}`,
+          collectionName: 'trainings',
+          beforeData: trainings.find((training) => training.id === editingTrainingId),
+          afterData: payload,
+          canRestore: true,
+        });
+      } else {
+        const createdTraining = await addDoc(collection(db, 'trainings'), payload);
+        await logAdminAction({
+          action: 'create_training',
+          section: 'Tréninky',
+          targetId: createdTraining.id,
+          targetTitle: getCategoryLabel(payload.category),
+          detail: `${getWeekdayLabel(payload.weekday)} ${payload.timeFrom}–${payload.timeTo} • ${payload.note}`,
+          collectionName: 'trainings',
+          afterData: payload,
+          canRestore: true,
+        });
+      }
+
+      await loadAllData();
+      resetTrainingForm();
+      alert(editingTrainingId ? 'Trénink byl upraven.' : 'Trénink byl přidán.');
+    } catch (error) {
+      console.error('Chyba při ukládání tréninku:', error);
+      alert(`Nepodařilo se uložit trénink: ${error?.message || error}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditTraining = (training) => {
+    setEditingTrainingId(training.id);
+    setTrainingForm({
+      season: getItemSeason(training),
+      category: training.category || 'mladsi-pripravka',
+      weekday: String(training.weekday || '2'),
+      timeFrom: training.timeFrom || '',
+      timeTo: training.timeTo || '',
+      note: training.note || training.place || '',
+      active: training.active !== false,
+    });
+    setActiveSection('trainings');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteTraining = async (trainingId) => {
+    const confirmed = window.confirm('Opravdu chceš smazat tento trénink?');
+    if (!confirmed) return;
+
+    try {
+      const deletedTraining = trainings.find((training) => training.id === trainingId);
+      await deleteDoc(doc(db, 'trainings', trainingId));
+      await logAdminAction({
+        action: 'delete_training',
+        section: 'Tréninky',
+        targetId: trainingId,
+        targetTitle: deletedTraining?.category ? getCategoryLabel(deletedTraining.category) : 'Trénink',
+        detail: deletedTraining
+          ? `${getWeekdayLabel(deletedTraining.weekday)} ${deletedTraining.timeFrom || ''}–${deletedTraining.timeTo || ''}`
+          : '',
+        collectionName: 'trainings',
+        beforeData: deletedTraining,
+        canRestore: true,
+      });
+      await loadAllData();
+
+      if (editingTrainingId === trainingId) {
+        resetTrainingForm();
+      }
+
+      alert('Trénink byl smazán.');
+    } catch (error) {
+      console.error('Chyba při mazání tréninku:', error);
+      alert('Nepodařilo se smazat trénink.');
+    }
   };
 
   const handleGalleryChange = (field, value) => {
@@ -1348,6 +1517,12 @@ export default function Admin() {
         return 'Upravil zápas';
       case 'delete_match':
         return 'Smazal zápas';
+      case 'create_training':
+        return 'Přidal trénink';
+      case 'update_training':
+        return 'Upravil trénink';
+      case 'delete_training':
+        return 'Smazal trénink';
       case 'create_gallery':
         return 'Přidal album';
       case 'update_gallery':
@@ -2044,6 +2219,14 @@ export default function Admin() {
             className={sectionButtonClass(activeSection === 'matches')}
           >
             Zápasy
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('trainings')}
+            className={sectionButtonClass(activeSection === 'trainings')}
+          >
+            Tréninky
           </button>
 
           <button
@@ -3518,6 +3701,176 @@ L`}
                         })}
                       </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'trainings' && (
+              <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
+                <div className={cardSoftClass}>
+                  <div className="mb-6">
+                    <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                      Pravidelné tréninky
+                    </div>
+                    <h2 className="text-2xl font-bold text-green-700">
+                      {editingTrainingId ? 'Upravit trénink' : 'Přidat trénink'}
+                    </h2>
+                    <p className="mt-2 text-sm text-gray-600">
+                      Místo nedáváme jako výběr. Napiš ho volně do poznámky, třeba „tělocvična Lipůvka“ nebo „tráva ASK“.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleSaveTraining} className="space-y-5">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Sezona</label>
+                        <select
+                          value={trainingForm.season}
+                          onChange={(e) => handleTrainingChange('season', e.target.value)}
+                          className={inputClass}
+                        >
+                          {seasonOptions.map((season) => (
+                            <option key={season} value={season}>
+                              {season}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Tým</label>
+                        <select
+                          value={trainingForm.category}
+                          onChange={(e) => handleTrainingChange('category', e.target.value)}
+                          className={inputClass}
+                        >
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.id}>
+                              {category.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <div>
+                        <label className={labelClass}>Den</label>
+                        <select
+                          value={trainingForm.weekday}
+                          onChange={(e) => handleTrainingChange('weekday', e.target.value)}
+                          className={inputClass}
+                        >
+                          {weekdayOptions.map((day) => (
+                            <option key={day.value} value={day.value}>
+                              {day.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Čas od</label>
+                        <input
+                          type="time"
+                          value={trainingForm.timeFrom}
+                          onChange={(e) => handleTrainingChange('timeFrom', e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Čas do</label>
+                        <input
+                          type="time"
+                          value={trainingForm.timeTo}
+                          onChange={(e) => handleTrainingChange('timeTo', e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Poznámka / místo</label>
+                      <textarea
+                        rows="3"
+                        value={trainingForm.note}
+                        onChange={(e) => handleTrainingChange('note', e.target.value)}
+                        className={inputClass}
+                        placeholder="např. tělocvična Lipůvka, tráva ASK, hala..."
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-3 rounded-2xl bg-white p-4 text-sm font-semibold text-gray-700 shadow-sm">
+                      <input
+                        type="checkbox"
+                        checked={trainingForm.active}
+                        onChange={(e) => handleTrainingChange('active', e.target.checked)}
+                        className="h-5 w-5 accent-green-600"
+                      />
+                      Zobrazit na webu
+                    </label>
+
+                    <div className="flex flex-wrap gap-3">
+                      <button type="submit" disabled={saving} className={greenButtonClass}>
+                        {saving ? 'Ukládám…' : editingTrainingId ? 'Uložit změny' : 'Přidat trénink'}
+                      </button>
+
+                      {editingTrainingId && (
+                        <button type="button" onClick={resetTrainingForm} className={outlineButtonClass}>
+                          Zrušit úpravu
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+
+                <div className={cardClass}>
+                  <div className="mb-5">
+                    <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                      Uložené tréninky
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900">Přehled</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    {sortedTrainings.length > 0 ? (
+                      sortedTrainings.map((training) => (
+                        <div key={training.id} className="rounded-2xl border border-green-100 bg-green-50/70 p-4">
+                          <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <div className="text-lg font-bold text-gray-900">
+                                {getCategoryLabel(training.category)}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                {getItemSeason(training)} · {getWeekdayLabel(training.weekday)} · {training.timeFrom}–{training.timeTo}
+                              </div>
+                            </div>
+                            <span className={`rounded-full px-3 py-1 text-xs font-bold ${training.active === false ? 'bg-gray-200 text-gray-600' : 'bg-green-100 text-green-700'}`}>
+                              {training.active === false ? 'Skryté' : 'Zobrazené'}
+                            </span>
+                          </div>
+
+                          <div className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-gray-700">
+                            {training.note || 'bez poznámky'}
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <button type="button" onClick={() => handleEditTraining(training)} className={outlineButtonClass}>
+                              Upravit
+                            </button>
+                            <button type="button" onClick={() => handleDeleteTraining(training.id)} className={dangerButtonClass}>
+                              Smazat
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+                        Zatím nejsou uložené žádné tréninky.
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
