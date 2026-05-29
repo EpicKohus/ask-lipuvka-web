@@ -623,119 +623,6 @@ export default function AskLipuvkaWeb() {
   const activeCategoryShortLabel = activeCategoryData?.shortLabel || '';
   const activeCategoryImage = activeCategoryData?.image || '/field.png';
 
-  const getCalendarDateObject = (dateValue) => {
-    if (!dateValue) return new Date(0);
-
-    if (typeof dateValue === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-      return new Date(`${dateValue}T00:00:00`);
-    }
-
-    if (typeof dateValue === 'string' && dateValue.includes('.')) {
-      return parseMatchDate(dateValue);
-    }
-
-    const parsed = new Date(dateValue);
-    return Number.isNaN(parsed.getTime()) ? new Date(0) : parsed;
-  };
-
-  const formatCalendarDate = (dateValue) => {
-    const date = getCalendarDateObject(dateValue);
-    if (date.getTime() === 0) return dateValue || '';
-    return date.toLocaleDateString('cs-CZ', {
-      weekday: 'short',
-      day: 'numeric',
-      month: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const getCalendarTimeText = (event) => {
-    if (event.startTime && event.endTime) return `${event.startTime}–${event.endTime}`;
-    if (event.startTime) return event.startTime;
-    if (event.time) return event.time;
-    return 'Čas bude doplněn';
-  };
-
-  const getFirstTime = (value) => {
-    if (!value || typeof value !== 'string') return '';
-    const match = value.match(/\d{1,2}:\d{2}/);
-    return match ? match[0] : '';
-  };
-
-  const toGoogleDate = (dateValue, timeValue, minutesToAdd = 0) => {
-    const date = getCalendarDateObject(dateValue);
-    if (date.getTime() === 0) return '';
-
-    const time = getFirstTime(timeValue);
-    if (!time) {
-      const y = date.getFullYear();
-      const m = String(date.getMonth() + 1).padStart(2, '0');
-      const d = String(date.getDate()).padStart(2, '0');
-      return `${y}${m}${d}`;
-    }
-
-    const [hours, minutes] = time.split(':').map(Number);
-    const withTime = new Date(date.getFullYear(), date.getMonth(), date.getDate(), hours || 0, minutes || 0, 0);
-    if (minutesToAdd) {
-      withTime.setMinutes(withTime.getMinutes() + minutesToAdd);
-    }
-    const y = withTime.getFullYear();
-    const m = String(withTime.getMonth() + 1).padStart(2, '0');
-    const d = String(withTime.getDate()).padStart(2, '0');
-    const h = String(withTime.getHours()).padStart(2, '0');
-    const min = String(withTime.getMinutes()).padStart(2, '0');
-    return `${y}${m}${d}T${h}${min}00`;
-  };
-
-  const getNextGoogleDay = (dateValue) => {
-    const date = getCalendarDateObject(dateValue);
-    if (date.getTime() === 0) return '';
-    date.setDate(date.getDate() + 1);
-    return toGoogleDate(date.toISOString().slice(0, 10), '');
-  };
-
-  const buildGoogleCalendarLink = (event) => {
-    const start = toGoogleDate(event.date, event.startTime || event.time);
-    if (!start) return '#';
-
-    const hasTime = Boolean(getFirstTime(event.startTime || event.time));
-    const end = hasTime
-      ? event.endTime
-        ? toGoogleDate(event.date, event.endTime)
-        : toGoogleDate(event.date, event.startTime || event.time, 90)
-      : getNextGoogleDay(event.date);
-
-    const text = encodeURIComponent(event.title || 'ASK Lipůvka mládež');
-    const details = encodeURIComponent(event.description || 'Akce ASK Lipůvka mládež');
-    const location = encodeURIComponent(event.venue || '');
-    const dates = `${start}/${end || start}`;
-
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${dates}&details=${details}&location=${location}&ctz=Europe/Prague`;
-  };
-
-  const getMatchCalendarLink = (match) => {
-    const shortLabel = getCategoryShortLabel(match.category);
-    const homeTeam = 'ASK Lipůvka';
-    const awayTeam = match.opponent || 'Soupeř';
-    const title = `${shortLabel ? `${shortLabel} – ` : ''}${match.home ? `${homeTeam} vs ${awayTeam}` : `${awayTeam} vs ${homeTeam}`}`;
-    const description = [
-      match.home ? 'Domácí zápas' : 'Venkovní zápas',
-      match.category ? getCategoryLabel(match.category) : '',
-      match.time ? `Čas: ${match.time}` : '',
-      match.venue ? `Místo: ${match.venue}` : '',
-    ]
-      .filter(Boolean)
-      .join('\n');
-
-    return buildGoogleCalendarLink({
-      title,
-      date: match.date,
-      startTime: getFirstTime(match.time) || '17:00',
-      venue: match.venue || '',
-      description,
-    });
-  };
-
   const selectedPhoto =
     selectedAlbum && selectedPhotoIndex !== null
       ? selectedAlbum.photos?.[selectedPhotoIndex]
@@ -1373,19 +1260,6 @@ export default function AskLipuvkaWeb() {
             >
               Fotky
             </button>
-          </div>
-        )}
-
-        {!isPlayed && (
-          <div className="mt-4 flex flex-wrap items-center justify-start gap-3 md:justify-center">
-            <a
-              href={getMatchCalendarLink(m)}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center justify-center rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-400"
-            >
-              Přidat do Google kalendáře
-            </a>
           </div>
         )}
       </div>
