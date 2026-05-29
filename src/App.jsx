@@ -35,7 +35,6 @@ export default function AskLipuvkaWeb() {
   const [firebaseNews, setFirebaseNews] = useState([]);
   const [firebaseMatches, setFirebaseMatches] = useState([]);
   const [firebaseGallery, setFirebaseGallery] = useState([]);
-  const [siteDataReady, setSiteDataReady] = useState(false);
 
   const DEFAULT_CURRENT_SEASON = '2025/26';
   const NEXT_SEASON = '2026/27';
@@ -123,11 +122,10 @@ export default function AskLipuvkaWeb() {
   }), []);
 
   const visibleCategories = useMemo(() => {
-    if (!siteDataReady) return [];
     const activeTeams = seasonTeams || defaultSeasonTeams;
     const visible = categories.filter((category) => activeTeams[category.id] !== false);
     return visible.length > 0 ? visible : categories.slice(0, 3);
-  }, [seasonTeams, defaultSeasonTeams, siteDataReady]);
+  }, [seasonTeams, defaultSeasonTeams]);
 
   const faqItems = [
     {
@@ -503,14 +501,12 @@ export default function AskLipuvkaWeb() {
   };
 
   const allAvailableNews = useMemo(() => {
-    if (!siteDataReady) return [];
     return firebaseNews.length > 0 ? firebaseNews : newsItems;
-  }, [firebaseNews, siteDataReady]);
+  }, [firebaseNews]);
 
   const allAvailableMatches = useMemo(() => {
-    if (!siteDataReady) return [];
     return firebaseMatches.length > 0 ? firebaseMatches : matches;
-  }, [firebaseMatches, siteDataReady]);
+  }, [firebaseMatches]);
 
   const seasonOptions = useMemo(() => {
     const seasons = [currentSeason, DEFAULT_CURRENT_SEASON, NEXT_SEASON];
@@ -811,10 +807,9 @@ export default function AskLipuvkaWeb() {
   };
 
   useEffect(() => {
-    if (!siteDataReady) return;
     if (visibleCategories.some((category) => category.id === activeCategory)) return;
     setActiveCategory(visibleCategories[0]?.id || 'mladsi-pripravka');
-  }, [visibleCategories, activeCategory, siteDataReady]);
+  }, [visibleCategories, activeCategory]);
 
   useEffect(() => {
     const loadVisits = async () => {
@@ -957,8 +952,6 @@ export default function AskLipuvkaWeb() {
         setFirebaseGallery(loadedGallery);
       } catch (error) {
         console.error('Firebase chyba:', error);
-      } finally {
-        setSiteDataReady(true);
       }
     };
 
@@ -1175,8 +1168,10 @@ export default function AskLipuvkaWeb() {
         key={m.id || `${m.date}-${m.opponent}`}
         className={`rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
           isToday
-            ? 'border-green-500 bg-green-50 ring-2 ring-green-300 shadow-lg'
-            : categoryStyle.light
+            ? theme === 'dark'
+              ? 'border-green-500 bg-green-950/40 ring-2 ring-green-600/40 shadow-lg shadow-black/30'
+              : 'border-green-500 bg-green-50 ring-2 ring-green-300 shadow-lg'
+            : categoryPanelThemeClass(categoryStyle)
         }`}
       >
         <button
@@ -1187,7 +1182,7 @@ export default function AskLipuvkaWeb() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex flex-wrap items-center gap-2 text-lg font-bold text-gray-900">
+                <div className={`flex flex-wrap items-center gap-2 text-lg font-bold ${mainTextClass}`}>
                   <span>
                     {m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
                   </span>
@@ -1203,7 +1198,7 @@ export default function AskLipuvkaWeb() {
                 )}
               </div>
 
-              <div className="mt-1 text-sm text-gray-500">
+              <div className={`mt-1 text-sm ${softMutedTextClass}`}>
                 {m.date} • {m.time} • {m.home ? 'Domácí zápas' : 'Venkovní zápas'}
                 {!m.home && m.venue ? ` • ${m.venue}` : ''}
               </div>
@@ -1212,7 +1207,13 @@ export default function AskLipuvkaWeb() {
             <div className="flex items-center gap-3">
               <span
                 className={`rounded-full px-3 py-1 text-sm font-semibold ${
-                  m.home ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'
+                  theme === 'dark'
+                    ? m.home
+                      ? 'bg-green-500/15 text-green-200 ring-1 ring-green-500/20'
+                      : 'bg-red-500/15 text-red-200 ring-1 ring-red-500/20'
+                    : m.home
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-red-100 text-red-600'
                 }`}
               >
                 {m.home ? 'Domácí' : 'Venkovní'}
@@ -1221,12 +1222,12 @@ export default function AskLipuvkaWeb() {
               {showResult && (
                 <div className="flex flex-col gap-2 text-right">
                   {firstPlayedResult && (
-                    <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
+                    <span className={`rounded-full px-3 py-1 text-sm font-semibold ${theme === 'dark' ? 'bg-white/10 text-slate-200' : 'bg-gray-100 text-gray-700'}`}>
                       {label1}: {firstPlayedResult}
                     </span>
                   )}
                   {secondPlayedResult && (
-                    <span className="rounded-full bg-gray-100 px-3 py-1 text-sm font-semibold text-gray-700">
+                    <span className={`rounded-full px-3 py-1 text-sm font-semibold ${theme === 'dark' ? 'bg-white/10 text-slate-200' : 'bg-gray-100 text-gray-700'}`}>
                       {label2}: {secondPlayedResult}
                     </span>
                   )}
@@ -1270,7 +1271,7 @@ export default function AskLipuvkaWeb() {
       : 'Klikni na detail zápasu a zobraz si výsledek, report i fotky.';
 
     return (
-      <div className={`mb-6 overflow-hidden rounded-3xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${activeCategoryStyle.light}`}>
+      <div className={`mb-6 overflow-hidden rounded-3xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${categoryPanelThemeClass(activeCategoryStyle)}`}>
         <button
           type="button"
           onClick={() => m.id && navigate(`/zapas/${m.id}`)}
@@ -1325,47 +1326,47 @@ export default function AskLipuvkaWeb() {
               </div>
             </div>
 
-            <div className="flex flex-col justify-between rounded-[1.35rem] bg-white/82 p-5 shadow-sm ring-1 ring-white/70 md:p-6">
+            <div className={`flex flex-col justify-between rounded-[1.35rem] p-5 shadow-sm ring-1 md:p-6 ${theme === 'dark' ? 'bg-white/5 ring-emerald-900/45' : 'bg-white/82 ring-white/70'}`}>
               <div>
                 <div className="mb-4 flex flex-wrap items-center gap-3">
                   <span className={`rounded-full px-3 py-1 text-sm font-bold ${categoryStyle.softBadge}`}>
                     Odehráno
                   </span>
-                  <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-gray-600 shadow-sm">
+                  <span className={`rounded-full px-3 py-1 text-sm font-semibold shadow-sm ${theme === 'dark' ? 'bg-white/10 text-slate-300' : 'bg-white text-gray-600'}`}>
                     Klikni kamkoliv pro detail zápasu
                   </span>
                 </div>
 
-                <p className="leading-7 text-gray-700">
+                <p className={`leading-7 ${mutedTextClass}`}>
                   {articlePreview}
                 </p>
               </div>
 
               <div className="mt-5 grid gap-3 sm:grid-cols-2">
                 {firstPlayedResult && (
-                  <div className="rounded-2xl border border-green-200 bg-green-50 p-4 shadow-sm">
-                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                  <div className={`rounded-2xl border p-4 shadow-sm ${theme === 'dark' ? 'border-green-500/20 bg-green-500/10' : 'border-green-200 bg-green-50'}`}>
+                    <div className={`mb-1 text-xs font-bold uppercase tracking-wide ${theme === 'dark' ? 'text-green-300' : 'text-green-700'}`}>
                       {label1}
                     </div>
-                    <div className="text-2xl font-black text-gray-900 md:text-3xl">
+                    <div className={`text-2xl font-black md:text-3xl ${mainTextClass}`}>
                       {firstPlayedResult}
                     </div>
                   </div>
                 )}
 
                 {secondPlayedResult && (
-                  <div className="rounded-2xl border border-green-200 bg-green-50 p-4 shadow-sm">
-                    <div className="mb-1 text-xs font-bold uppercase tracking-wide text-green-700">
+                  <div className={`rounded-2xl border p-4 shadow-sm ${theme === 'dark' ? 'border-green-500/20 bg-green-500/10' : 'border-green-200 bg-green-50'}`}>
+                    <div className={`mb-1 text-xs font-bold uppercase tracking-wide ${theme === 'dark' ? 'text-green-300' : 'text-green-700'}`}>
                       {label2}
                     </div>
-                    <div className="text-2xl font-black text-gray-900 md:text-3xl">
+                    <div className={`text-2xl font-black md:text-3xl ${mainTextClass}`}>
                       {secondPlayedResult}
                     </div>
                   </div>
                 )}
 
                 {!firstPlayedResult && !secondPlayedResult && (
-                  <div className="rounded-2xl border border-green-200 bg-green-50 p-4 text-sm font-semibold text-gray-700 shadow-sm sm:col-span-2">
+                  <div className={`rounded-2xl border p-4 text-sm font-semibold shadow-sm sm:col-span-2 ${theme === 'dark' ? 'border-green-500/20 bg-green-500/10 text-slate-200' : 'border-green-200 bg-green-50 text-gray-700'}`}>
                     Výsledek je v detailu zápasu.
                   </div>
                 )}
@@ -1461,12 +1462,32 @@ export default function AskLipuvkaWeb() {
     );
   };
 
-  if (!siteDataReady) {
-    return <div className="app-loading" style={{ minHeight: '100vh', background: '#07140f' }} />;
-  }
+  const categoryPanelThemeClass = (style) =>
+    theme === 'dark'
+      ? 'border-emerald-900/50 bg-[#0d1715] text-slate-100 shadow-black/30'
+      : style.light;
+
+  const cardThemeClass =
+    theme === 'dark'
+      ? 'border border-emerald-900/45 bg-[#111f1c] text-slate-100 shadow-black/20'
+      : 'border border-green-100 bg-white text-gray-900 shadow-sm';
+
+  const softCardThemeClass =
+    theme === 'dark'
+      ? 'border border-emerald-900/45 bg-white/5 text-slate-200 shadow-black/20'
+      : 'border border-green-100 bg-white text-gray-600 shadow-sm';
+
+  const mutedBoxThemeClass =
+    theme === 'dark'
+      ? 'border border-emerald-900/45 bg-white/5 text-slate-300'
+      : 'bg-gray-100 text-gray-600';
+
+  const mainTextClass = theme === 'dark' ? 'text-slate-100' : 'text-gray-900';
+  const mutedTextClass = theme === 'dark' ? 'text-slate-300' : 'text-gray-700';
+  const softMutedTextClass = theme === 'dark' ? 'text-slate-400' : 'text-gray-500';
 
   return (
-    <div className="min-h-screen bg-white text-gray-900">
+    <div className={theme === 'dark' ? 'min-h-screen bg-[#07110f] text-slate-100' : 'min-h-screen bg-white text-gray-900'}>
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; }
@@ -1484,7 +1505,7 @@ export default function AskLipuvkaWeb() {
         }
       `}</style>
 
-      <header className="sticky top-0 z-20 border-b bg-white/90 backdrop-blur">
+      <header className={theme === 'dark' ? 'sticky top-0 z-20 border-b border-emerald-900/40 bg-[#07110f]/92 backdrop-blur' : 'sticky top-0 z-20 border-b bg-white/90 backdrop-blur'}>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <a href="#top" className="flex items-center gap-3">
             <img src="/logo.png" alt="logo" className="h-10 w-10 rounded-full" />
@@ -1514,13 +1535,13 @@ export default function AskLipuvkaWeb() {
               </button>
 
               {isTeamsDropdownOpen && (
-                <div className="absolute left-0 top-full mt-2 min-w-[220px] rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+                <div className={theme === 'dark' ? 'absolute left-0 top-full mt-2 min-w-[220px] rounded-2xl border border-emerald-900/45 bg-[#0d1715] p-2 shadow-xl' : 'absolute left-0 top-full mt-2 min-w-[220px] rounded-2xl border border-gray-200 bg-white p-2 shadow-xl'}>
                   {visibleCategories.map((category) => (
                     <button
                       key={category.id}
                       type="button"
                       onClick={() => selectTeam(category.id)}
-                      className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                      className={theme === 'dark' ? 'block w-full rounded-xl px-4 py-3 text-left text-slate-200 hover:bg-white/5' : 'block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100'}
                     >
                       {category.shortLabel} – {category.label}
                     </button>
@@ -1557,11 +1578,11 @@ export default function AskLipuvkaWeb() {
               </button>
 
               {isClubDropdownOpen && (
-                <div className="absolute left-0 top-full mt-2 min-w-[230px] rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
+                <div className={theme === 'dark' ? 'absolute left-0 top-full mt-2 min-w-[230px] rounded-2xl border border-emerald-900/45 bg-[#0d1715] p-2 shadow-xl' : 'absolute left-0 top-full mt-2 min-w-[230px] rounded-2xl border border-gray-200 bg-white p-2 shadow-xl'}>
                   <button
                     type="button"
                     onClick={() => openClubPopup('filozofie')}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                    className={theme === 'dark' ? 'block w-full rounded-xl px-4 py-3 text-left text-slate-200 hover:bg-white/5' : 'block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100'}
                   >
                     Filozofie
                   </button>
@@ -1569,7 +1590,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={() => openClubPopup('rodice')}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                    className={theme === 'dark' ? 'block w-full rounded-xl px-4 py-3 text-left text-slate-200 hover:bg-white/5' : 'block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100'}
                   >
                     Pro rodiče
                   </button>
@@ -1577,7 +1598,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={() => openClubPopup('faq')}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                    className={theme === 'dark' ? 'block w-full rounded-xl px-4 py-3 text-left text-slate-200 hover:bg-white/5' : 'block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100'}
                   >
                     FAQ
                   </button>
@@ -1585,7 +1606,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={() => openClubPopup('nabor')}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                    className={theme === 'dark' ? 'block w-full rounded-xl px-4 py-3 text-left text-slate-200 hover:bg-white/5' : 'block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100'}
                   >
                     Nábor hráčů
                   </button>
@@ -1593,7 +1614,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={openRegistration}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                    className={theme === 'dark' ? 'block w-full rounded-xl px-4 py-3 text-left text-slate-200 hover:bg-white/5' : 'block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100'}
                   >
                     Registrace hráče
                   </button>
@@ -1601,7 +1622,7 @@ export default function AskLipuvkaWeb() {
                   <button
                     type="button"
                     onClick={() => openClubPopup('podnety')}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                    className={theme === 'dark' ? 'block w-full rounded-xl px-4 py-3 text-left text-slate-200 hover:bg-white/5' : 'block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100'}
                   >
                     Kniha podnětů
                   </button>
@@ -1967,7 +1988,9 @@ export default function AskLipuvkaWeb() {
                   className={`flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition ${
                     isActive
                       ? `${categoryStyle.button} shadow-lg`
-                      : 'bg-white text-gray-800 hover:scale-105'
+                      : theme === 'dark'
+                        ? 'bg-white/10 text-white ring-1 ring-white/15 hover:scale-105 hover:bg-white/15'
+                        : 'bg-white text-gray-800 hover:scale-105'
                   }`}
                 >
                   {category.label}
@@ -2003,7 +2026,7 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <section id="novinky" className="mx-auto max-w-5xl px-6 py-14">
-        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}> 
+        <div className={`rounded-3xl border p-8 shadow-sm ${categoryPanelThemeClass(activeCategoryStyle)}`}> 
           <div className="mb-2 flex flex-wrap items-center gap-3">
             <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
               {activeCategoryLabel}
@@ -2020,13 +2043,13 @@ export default function AskLipuvkaWeb() {
               {filteredNews.map((item) => (
                 <div
                   key={`${item.category}-${item.title}`}
-                  className="rounded-2xl border border-green-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  className={`rounded-2xl p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${cardThemeClass}`}
                 >
                   <div className={`mb-2 text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
                     {item.date}
                   </div>
-                  <h3 className="mb-2 text-xl font-bold text-gray-900">{item.title}</h3>
-                  <p className="text-gray-700">{item.text}</p>
+                  <h3 className={`mb-2 text-xl font-bold ${mainTextClass}`}>{item.title}</h3>
+                  <p className={mutedTextClass}>{item.text}</p>
 
                   {item.image && (
                     <button
@@ -2069,7 +2092,7 @@ export default function AskLipuvkaWeb() {
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-green-100 bg-white p-5 text-gray-600 shadow-sm">
+            <div className={`rounded-2xl p-5 ${softCardThemeClass}`}>
               Pro tuto kategorii zatím nejsou doplněné žádné novinky.
             </div>
           )}
@@ -2102,7 +2125,7 @@ export default function AskLipuvkaWeb() {
           {upcomingMatches.length > 0 ? (
             upcomingMatches.map((m) => renderMatchCard(m, Boolean(m.result1 || m.result2)))
           ) : (
-            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+            <div className={`rounded-2xl p-5 ${mutedBoxThemeClass}`}>
               V následujících 14 dnech nejsou pro tuto kategorii naplánované žádné zápasy.
             </div>
           )}
@@ -2132,14 +2155,14 @@ export default function AskLipuvkaWeb() {
             )}
           </>
         ) : (
-          <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+          <div className={`rounded-2xl p-5 ${mutedBoxThemeClass}`}>
             Pro tuto kategorii zatím nejsou žádné odehrané zápasy.
           </div>
         )}
       </section>
 
       <section className="mx-auto max-w-5xl px-6 pb-14">
-        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
+        <div className={`rounded-3xl border p-8 shadow-sm ${categoryPanelThemeClass(activeCategoryStyle)}`}>
           <div className="mb-2 flex flex-wrap items-center gap-3">
             <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
               {activeCategoryLabel}
@@ -2151,32 +2174,32 @@ export default function AskLipuvkaWeb() {
 
           <h2 className={`mb-4 text-3xl font-bold ${activeCategoryStyle.text}`}>Kdy trénujeme</h2>
 
-          <div className="rounded-2xl bg-white p-6 text-lg shadow-sm">
+          <div className={`rounded-2xl p-6 text-lg shadow-sm ${cardThemeClass}`}>
             {activeCategory === 'predpripravka' && (
               <>
-                <div className="mb-2 font-bold text-gray-900">Předpřípravka (U7)</div>
-                <div className="text-gray-700">Čtvrtek 17:00–18:00</div>
+                <div className={`mb-2 font-bold ${mainTextClass}`}>Předpřípravka (U7)</div>
+                <div className={mutedTextClass}>Čtvrtek 17:00–18:00</div>
               </>
             )}
 
             {activeCategory === 'mladsi-pripravka' && (
               <>
-                <div className="mb-2 font-bold text-gray-900">Mladší přípravka (U9)</div>
-                <div className="text-gray-700">Úterý a čtvrtek 16:30–18:00</div>
+                <div className={`mb-2 font-bold ${mainTextClass}`}>Mladší přípravka (U9)</div>
+                <div className={mutedTextClass}>Úterý a čtvrtek 16:30–18:00</div>
               </>
             )}
 
             {activeCategory === 'starsi-pripravka' && (
               <>
-                <div className="mb-2 font-bold text-gray-900">Starší přípravka (U11)</div>
-                <div className="text-gray-700">Středa 17:00–18:00</div>
+                <div className={`mb-2 font-bold ${mainTextClass}`}>Starší přípravka (U11)</div>
+                <div className={mutedTextClass}>Středa 17:00–18:00</div>
               </>
             )}
 
             {!['predpripravka', 'mladsi-pripravka', 'starsi-pripravka'].includes(activeCategory) && (
               <>
-                <div className="mb-2 font-bold text-gray-900">{activeCategoryLabel}</div>
-                <div className="text-gray-700">Tréninky budou doplněny.</div>
+                <div className={`mb-2 font-bold ${mainTextClass}`}>{activeCategoryLabel}</div>
+                <div className={mutedTextClass}>Tréninky budou doplněny.</div>
               </>
             )}
           </div>
@@ -2184,7 +2207,7 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <section className="mx-auto max-w-5xl px-6 pb-14">
-        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
+        <div className={`rounded-3xl border p-8 shadow-sm ${categoryPanelThemeClass(activeCategoryStyle)}`}>
           <div className="mb-2 flex flex-wrap items-center gap-3">
             <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
               {activeCategoryLabel}
@@ -2207,15 +2230,15 @@ export default function AskLipuvkaWeb() {
                       type="button"
                       key={album.id}
                       onClick={() => openTeamAlbum(album)}
-                      className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                      className={`overflow-hidden rounded-2xl text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${theme === 'dark' ? 'border border-emerald-900/45 bg-[#111f1c] text-slate-100' : 'border border-gray-200 bg-white text-gray-900'}`}
                     >
                       {renderAlbumCover(album)}
                       <div className="p-5">
-                        <div className="text-xl font-bold text-gray-900">{album.title}</div>
+                        <div className={`text-xl font-bold ${mainTextClass}`}>{album.title}</div>
                         {linkedMatch?.date && (
-                          <div className="mt-1 text-sm text-gray-500">{linkedMatch.date}</div>
+                          <div className={`mt-1 text-sm ${softMutedTextClass}`}>{linkedMatch.date}</div>
                         )}
-                        <div className="mt-1 text-sm text-gray-500">
+                        <div className={`mt-1 text-sm ${softMutedTextClass}`}>
                           {album.photos?.length || 0} položek
                         </div>
                       </div>
@@ -2237,7 +2260,7 @@ export default function AskLipuvkaWeb() {
               )}
             </>
           ) : (
-            <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
+            <div className={`rounded-2xl p-5 ${softCardThemeClass}`}>
               Pro tuto kategorii zatím nejsou doplněná žádná alba.
             </div>
           )}
@@ -2275,12 +2298,12 @@ export default function AskLipuvkaWeb() {
                         setSelectedAlbum(album);
                         setSelectedPhotoIndex(null);
                       }}
-                      className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
+                      className={`overflow-hidden rounded-2xl text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${theme === 'dark' ? 'border border-emerald-900/45 bg-[#111f1c] text-slate-100' : 'border border-gray-200 bg-white text-gray-900'}`}
                     >
                       {renderAlbumCover(album)}
                       <div className="p-5">
-                        <div className="text-xl font-bold text-gray-900">{album.title}</div>
-                        <div className="mt-1 text-sm text-gray-500">
+                        <div className={`text-xl font-bold ${mainTextClass}`}>{album.title}</div>
+                        <div className={`mt-1 text-sm ${softMutedTextClass}`}>
                           {album.photos?.length || 0} položek
                         </div>
                       </div>
@@ -2288,7 +2311,7 @@ export default function AskLipuvkaWeb() {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+                <div className={`rounded-2xl p-5 ${mutedBoxThemeClass}`}>
                   Ve společné galerii zatím nejsou žádná alba.
                 </div>
               )}
@@ -2533,7 +2556,7 @@ export default function AskLipuvkaWeb() {
 
                     <div className="rounded-2xl bg-gray-50 p-6">
                       <h3 className="mb-3 text-xl font-bold text-green-600">Důležité</h3>
-                      <p className="leading-7 text-gray-700">
+                      <p className={`leading-7 ${mutedTextClass}`}>
                         Každé dítě se vyvíjí jiným tempem. Naším cílem není pouze vyhrávat,
                         ale především vychovat děti, které mají vztah ke sportu, pohybu a týmové spolupráci.
                       </p>
@@ -2624,7 +2647,7 @@ export default function AskLipuvkaWeb() {
                       ? 'border border-emerald-900/40 bg-[#0d1715]'
                       : 'bg-white/70'
                   }`}>
-                    <p className="text-gray-700">Nenašli jste odpověď?</p>
+                    <p className={mutedTextClass}>Nenašli jste odpověď?</p>
 
                     <p className="mt-2 text-sm text-gray-600">
                       Klidně nám napište nebo zavolejte.
@@ -2893,7 +2916,7 @@ export default function AskLipuvkaWeb() {
                   </div>
 
                   <div className="mt-10 text-center">
-                    <p className="text-gray-700">
+                    <p className={mutedTextClass}>
                       Chcete podpořit mládež ASK Lipůvka?
                     </p>
 
@@ -3050,7 +3073,7 @@ export default function AskLipuvkaWeb() {
                   <span className={`rounded-full px-3 py-1 text-sm font-bold ${activeCategoryStyle.softBadge}`}>
                     {activeCategoryShortLabel}
                   </span>
-                  <span className="text-sm text-gray-500">Kompletní přehled zápasů vybrané kategorie</span>
+                  <span className={`text-sm ${softMutedTextClass}`}>Kompletní přehled zápasů vybrané kategorie</span>
                 </div>
 
                 <div className="space-y-4">
@@ -3072,7 +3095,7 @@ export default function AskLipuvkaWeb() {
                           className={`group w-full rounded-2xl border p-5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
                             isToday
                               ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
-                              : categoryStyle.light
+                              : categoryPanelThemeClass(categoryStyle)
                           }`}
                         >
                           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -3096,7 +3119,7 @@ export default function AskLipuvkaWeb() {
                                 )}
                               </div>
 
-                              <div className="mt-1 text-sm text-gray-500">{m.date} • {m.time}</div>
+                              <div className={`mt-1 text-sm ${softMutedTextClass}`}>{m.date} • {m.time}</div>
 
                               <div className="mt-2 text-sm font-medium text-gray-700">
                                 Hraje se: {m.home ? 'Lipůvka' : m.venue || 'bude doplněno'}
@@ -3154,7 +3177,7 @@ export default function AskLipuvkaWeb() {
                       );
                     })
                   ) : (
-                    <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+                    <div className={`rounded-2xl p-5 ${mutedBoxThemeClass}`}>
                       Pro tuto kategorii zatím není rozpis doplněný.
                     </div>
                   )}
@@ -3311,7 +3334,7 @@ export default function AskLipuvkaWeb() {
                 {team.management.map((person) => (
                   <div
                     key={person.name}
-                    className="rounded-2xl bg-gray-100 p-5 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                    className={`rounded-2xl p-5 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg ${theme === 'dark' ? 'border border-emerald-900/45 bg-white/5 text-slate-100' : 'bg-gray-100 text-gray-900'}`}
                   >
                     <img
                       src={person.photo}
@@ -3320,9 +3343,9 @@ export default function AskLipuvkaWeb() {
                     />
 
                     <div className="text-lg font-bold">{person.name}</div>
-                    <div className="text-sm text-gray-600">{person.role}</div>
+                    <div className={`text-sm ${softMutedTextClass}`}>{person.role}</div>
                     {person.subrole && (
-                      <div className="text-sm text-gray-500">{person.subrole}</div>
+                      <div className={`text-sm ${softMutedTextClass}`}>{person.subrole}</div>
                     )}
 
                     {person.licence && (
@@ -3361,7 +3384,7 @@ export default function AskLipuvkaWeb() {
                   return (
                     <div
                       key={person.name}
-                      className="rounded-2xl bg-gray-100 p-5 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg"
+                      className={`rounded-2xl p-5 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg ${theme === 'dark' ? 'border border-emerald-900/45 bg-white/5 text-slate-100' : 'bg-gray-100 text-gray-900'}`}
                     >
                       <img
                         src={person.photo}
@@ -3372,7 +3395,7 @@ export default function AskLipuvkaWeb() {
                       <div className="text-lg font-bold">{person.name}</div>
 
                       <div className="mt-1 flex items-center justify-center gap-2">
-                        <div className="text-sm text-gray-600">{person.role}</div>
+                        <div className={`text-sm ${softMutedTextClass}`}>{person.role}</div>
 
                         {person.category && (
                           <span
@@ -3407,23 +3430,23 @@ export default function AskLipuvkaWeb() {
       )}
 
       <section className="mx-auto max-w-5xl px-6 pb-6">
-        <div className="text-center text-sm text-gray-500">
+        <div className={`text-center text-sm ${softMutedTextClass}`}>
           Návštěvnost webu:{' '}
-          <span className="font-semibold text-gray-700">
+          <span className={`font-semibold ${mutedTextClass}`}>
             {visitCount !== null ? visitCount.toLocaleString('cs-CZ') : '...'}
           </span>
         </div>
       </section>
 
       <section className="mx-auto max-w-5xl px-6 pb-10">
-        <div className="rounded-2xl bg-gray-50 p-6 text-center shadow-sm">
-          <h3 className="mb-3 text-xl font-bold text-gray-800">Mládežnické týmy ASK Lipůvka</h3>
+        <div className={`rounded-2xl p-6 text-center shadow-sm ${theme === 'dark' ? 'border border-emerald-900/45 bg-[#0d1715] text-slate-100' : 'bg-gray-50 text-gray-900'}`}>
+          <h3 className={`mb-3 text-xl font-bold ${mainTextClass}`}>Mládežnické týmy ASK Lipůvka</h3>
 
-          <p className="text-gray-700">
+          <p className={mutedTextClass}>
             Mládežnický fotbal ASK Lipůvka zahrnuje předpřípravku (U7), mladší přípravku (U9) a starší přípravku (U11). Mladší přípravka se účastní soutěží a od příští sezony budeme mít dva týmy v soutěžích U9 a U11.
           </p>
 
-          <div className="mt-3 text-sm text-gray-600">
+          <div className={`mt-3 text-sm ${softMutedTextClass}`}>
             Předpřípravka U7 • Mladší přípravka U9 • Starší přípravka U11
           </div>
         </div>
