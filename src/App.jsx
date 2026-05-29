@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { db } from './firebase';
 import { collection, doc, getDocs, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 
 export default function AskLipuvkaWeb() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isCalendarPage = location.pathname === '/kalendar';
 
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isTrainersOpen, setIsTrainersOpen] = useState(false);
@@ -67,6 +69,9 @@ export default function AskLipuvkaWeb() {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), today.getDate());
   }, []);
+
+  const [calendarView, setCalendarView] = useState('month');
+  const [calendarCursorDate, setCalendarCursorDate] = useState(todayStart);
 
   const categories = [
     {
@@ -1628,6 +1633,283 @@ export default function AskLipuvkaWeb() {
     );
   };
 
+  const formatReadableDate = (date) =>
+    date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  const formatShortDate = (date) =>
+    date.toLocaleDateString('cs-CZ', { day: 'numeric', month: 'numeric' });
+
+  const getMonday = (date) => {
+    const result = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const day = result.getDay() || 7;
+    result.setDate(result.getDate() - day + 1);
+    return result;
+  };
+
+  const getCalendarRange = () => {
+    if (calendarView === 'day') {
+      const start = new Date(calendarCursorDate.getFullYear(), calendarCursorDate.getMonth(), calendarCursorDate.getDate());
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+      return { start, end };
+    }
+
+    if (calendarView === 'week') {
+      const start = getMonday(calendarCursorDate);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 7);
+      return { start, end };
+    }
+
+    const start = new Date(calendarCursorDate.getFullYear(), calendarCursorDate.getMonth(), 1);
+    const end = new Date(calendarCursorDate.getFullYear(), calendarCursorDate.getMonth() + 1, 1);
+    return { start, end };
+  };
+
+  const calendarRange = getCalendarRange();
+
+  const getTrainingDateTime = (date, timeValue) => {
+    const time = parseTrainingTime(timeValue) || { hours: 17, minutes: 0 };
+    const result = new Date(date);
+    result.setHours(time.hours, time.minutes, 0, 0);
+    return result;
+  };
+
+  const buildTrainingOccurrenceGoogleCalendarUrl = (event) => {
+    const start = event.start;
+    const end = event.end;
+    const dates = `${formatCalendarDate(start)}T${padCalendarNumber(start.getHours())}${padCalendarNumber(start.getMinutes())}00/${formatCalendarDate(end)}T${padCalendarNumber(end.getHours())}${padCalendarNumber(end.getMinutes())}00`;
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: event.title,
+      dates,
+      ctz: 'Europe/Prague',
+      details: [
+        `Tým: ${event.teamLabel}`,
+        event.note ? `Poznámka / místo: ${event.note}` : '',
+      ].filter(Boolean).join('\n'),
+      location: event.note || 'Lipůvka',
+    });
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  };
+
+  const calendarEvents = useMemo(() => {
+    const events = [];
+    const rangeStart = calendarRange.start;
+    const rangeEnd = calendarRange.end;
+
+    calendarMatches.forEach((match) => {
+      const start = parseMatchDate(match.date);
+      if (start < rangeStart || start >= rangeEnd) return;
+      const firstTime = parseFirstMatchTime(match.time);
+      if (firstTime) start.setHours(firstTime.hours, firstTime.minutes, 0, 0);
+      const end = new Date(start.getTime() + 90 * 60 * 1000);
+      const categoryStyle = getCategoryStyle(match.category);
+      events.push({
+        id: `match-${match.id || match.date}-${match.opponent}`,
+        type: 'match',
+        title: match.home ? `ASK Lipůvka – ${match.opponent}` : `${match.opponent} – ASK Lipůvka`,
+        category: match.category,
+        teamLabel: getCategoryShortLabel(match.category),
+        date: new Date(start.getFullYear(), start.getMonth(), start.getDate()),
+        start,
+        end,
+        time: match.time || 'čas bude doplněn',
+        note: match.home ? 'Lipůvka' : match.venue || '',
+        badge: categoryStyle.badge,
+        button: categoryStyle.button,
+        googleUrl: buildGoogleCalendarUrl(match),
+        match,
+      });
+    });
+
+    availableTrainings.forEach((training) => {
+      const target = Number(training.weekday) === 7 ? 0 : Number(training.weekday);
+      if (!Number.isFinite(target)) return;
+      const current = new Date(rangeStart);
+      current.setHours(0, 0, 0, 0);
+      while (current < rangeEnd) {
+        if (current.getDay() === target) {
+          const start = getTrainingDateTime(current, training.timeFrom);
+          const end = getTrainingDateTime(current, training.timeTo);
+          if (end <= start) end.setTime(start.getTime() + 90 * 60 * 1000);
+          const categoryStyle = getCategoryStyle(training.category);
+          const event = {
+            id: `training-${training.id}-${formatCalendarDate(current)}`,
+            type: 'training',
+            title: `Trénink ${getCategoryShortLabel(training.category)}`,
+            category: training.category,
+            teamLabel: getCategoryShortLabel(training.category),
+            date: new Date(current.getFullYear(), current.getMonth(), current.getDate()),
+            start,
+            end,
+            time: `${training.timeFrom}–${training.timeTo}`,
+            note: training.note || '',
+            badge: categoryStyle.softBadge,
+            button: categoryStyle.button,
+          };
+          event.googleUrl = buildTrainingOccurrenceGoogleCalendarUrl(event);
+          events.push(event);
+        }
+        current.setDate(current.getDate() + 1);
+      }
+    });
+
+    return events.sort((a, b) => a.start - b.start || a.title.localeCompare(b.title, 'cs'));
+  }, [calendarMatches, availableTrainings, calendarView, calendarCursorDate]);
+
+  const calendarTitle = useMemo(() => {
+    if (calendarView === 'day') return formatReadableDate(calendarCursorDate);
+    if (calendarView === 'week') {
+      const start = getMonday(calendarCursorDate);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      return `${formatShortDate(start)} – ${formatReadableDate(end)}`;
+    }
+    return calendarCursorDate.toLocaleDateString('cs-CZ', { month: 'long', year: 'numeric' });
+  }, [calendarView, calendarCursorDate]);
+
+  const moveCalendar = (direction) => {
+    setCalendarCursorDate((current) => {
+      const next = new Date(current);
+      if (calendarView === 'day') next.setDate(next.getDate() + direction);
+      if (calendarView === 'week') next.setDate(next.getDate() + direction * 7);
+      if (calendarView === 'month') next.setMonth(next.getMonth() + direction);
+      return next;
+    });
+  };
+
+  const monthGridDays = useMemo(() => {
+    const first = new Date(calendarCursorDate.getFullYear(), calendarCursorDate.getMonth(), 1);
+    const start = getMonday(first);
+    const days = [];
+    for (let i = 0; i < 42; i += 1) {
+      const day = new Date(start);
+      day.setDate(start.getDate() + i);
+      days.push(day);
+    }
+    return days;
+  }, [calendarCursorDate]);
+
+  const getEventsForDay = (date) => calendarEvents.filter((event) => isSameDay(event.date, date));
+
+  const calendarDayNames = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
+
+  const renderEventPill = (event, compact = false) => (
+    <div key={event.id} className={`rounded-xl border p-2 text-left ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-green-100 bg-white/85'}`}>
+      <div className="mb-1 flex flex-wrap items-center gap-1">
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${event.badge}`}>
+          {event.teamLabel}
+        </span>
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${event.type === 'training' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+          {event.type === 'training' ? 'Trénink' : 'Zápas'}
+        </span>
+      </div>
+      <div className={`font-bold ${compact ? 'text-xs' : 'text-sm'} ${mainTextClass}`}>{event.title}</div>
+      <div className={`text-xs ${softMutedTextClass}`}>{event.time}</div>
+      {event.note && !compact && <div className={`mt-1 text-xs ${softMutedTextClass}`}>{event.note}</div>}
+      {!compact && (
+        <a href={event.googleUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-gray-700 shadow-sm">
+          📅 Přidat do Google kalendáře
+        </a>
+      )}
+    </div>
+  );
+
+  const renderCalendarPage = () => (
+    <main className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
+      <div className={`rounded-3xl border p-5 shadow-sm md:p-8 ${theme === 'dark' ? 'border-emerald-900/45 bg-[#0d1715]' : 'border-green-100 bg-green-50/60'}`}>
+        <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">Kalendář</div>
+            <h1 className={theme === 'dark' ? 'text-3xl font-black text-white md:text-4xl' : 'text-3xl font-black text-green-700 md:text-4xl'}>
+              Tréninky a zápasy
+            </h1>
+            <p className={`mt-2 max-w-2xl ${mutedTextClass}`}>
+              Samostatná stránka s měsíčním, týdenním a denním přehledem. Tréninky se berou z adminu a zápasy z rozpisu.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {[
+              ['month', 'Měsíc'],
+              ['week', 'Týden'],
+              ['day', 'Den'],
+            ].map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setCalendarView(id)}
+                className={`rounded-full px-4 py-2 text-sm font-bold transition ${calendarView === id ? 'bg-green-600 text-white shadow-sm' : theme === 'dark' ? 'bg-white/10 text-slate-200 hover:bg-white/15' : 'bg-white text-gray-700 hover:bg-green-50'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-2">
+            <button type="button" onClick={() => moveCalendar(-1)} className={`rounded-xl px-4 py-2 font-bold ${theme === 'dark' ? 'bg-white/10 text-white' : 'bg-white text-gray-800'}`}>←</button>
+            <button type="button" onClick={() => setCalendarCursorDate(todayStart)} className={`rounded-xl px-4 py-2 font-bold ${theme === 'dark' ? 'bg-white/10 text-white' : 'bg-white text-gray-800'}`}>Dnes</button>
+            <button type="button" onClick={() => moveCalendar(1)} className={`rounded-xl px-4 py-2 font-bold ${theme === 'dark' ? 'bg-white/10 text-white' : 'bg-white text-gray-800'}`}>→</button>
+          </div>
+          <h2 className={`text-xl font-black capitalize md:text-2xl ${mainTextClass}`}>{calendarTitle}</h2>
+        </div>
+
+        {calendarView === 'month' && (
+          <div className={`overflow-hidden rounded-3xl border ${theme === 'dark' ? 'border-emerald-900/45' : 'border-green-100'}`}>
+            <div className={`grid grid-cols-7 ${theme === 'dark' ? 'bg-white/5' : 'bg-green-100/70'}`}>
+              {calendarDayNames.map((day) => (
+                <div key={day} className={`p-2 text-center text-xs font-black uppercase tracking-wide ${softMutedTextClass}`}>{day}</div>
+              ))}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-7">
+              {monthGridDays.map((day) => {
+                const dayEvents = getEventsForDay(day);
+                const inMonth = day.getMonth() === calendarCursorDate.getMonth();
+                return (
+                  <div key={day.toISOString()} className={`min-h-[150px] border p-2 ${theme === 'dark' ? 'border-emerald-900/25 bg-[#0b1512]' : 'border-green-50 bg-white'} ${!inMonth ? 'opacity-45' : ''}`}>
+                    <div className={`mb-2 text-sm font-black ${mainTextClass}`}>{day.getDate()}.</div>
+                    <div className="space-y-2">
+                      {dayEvents.slice(0, 4).map((event) => renderEventPill(event, true))}
+                      {dayEvents.length > 4 && <div className={`text-xs font-bold ${softMutedTextClass}`}>+ {dayEvents.length - 4} další</div>}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {calendarView !== 'month' && (
+          <div className="space-y-4">
+            {(calendarView === 'week'
+              ? Array.from({ length: 7 }, (_, index) => {
+                  const day = getMonday(calendarCursorDate);
+                  day.setDate(day.getDate() + index);
+                  return day;
+                })
+              : [calendarCursorDate]
+            ).map((day) => {
+              const dayEvents = getEventsForDay(day);
+              return (
+                <div key={day.toISOString()} className={`rounded-3xl border p-4 ${theme === 'dark' ? 'border-emerald-900/45 bg-[#111f1c]' : 'border-green-100 bg-white'}`}>
+                  <h3 className={`mb-3 text-lg font-black capitalize ${mainTextClass}`}>{day.toLocaleDateString('cs-CZ', { weekday: 'long', day: 'numeric', month: 'long' })}</h3>
+                  {dayEvents.length > 0 ? (
+                    <div className="grid gap-3 md:grid-cols-2">{dayEvents.map((event) => renderEventPill(event))}</div>
+                  ) : (
+                    <div className={`rounded-2xl p-4 ${mutedBoxThemeClass}`}>Žádný trénink ani zápas.</div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </main>
+  );
+
   const categoryPanelThemeClass = (style) =>
     theme === 'dark'
       ? 'border-emerald-900/50 bg-[#0d1715] text-slate-100 shadow-black/30'
@@ -1658,6 +1940,37 @@ export default function AskLipuvkaWeb() {
         className="app-loading"
         style={{ minHeight: '100vh', background: theme === 'dark' ? '#07110f' : '#ffffff' }}
       />
+    );
+  }
+
+  if (isCalendarPage) {
+    return (
+      <div className={theme === 'dark' ? 'min-h-screen bg-[#07110f] text-slate-100' : 'min-h-screen bg-white text-gray-900'}>
+        <header className={theme === 'dark' ? 'sticky top-0 z-20 border-b border-emerald-900/40 bg-[#07110f]/92 backdrop-blur' : 'sticky top-0 z-20 border-b bg-white/90 backdrop-blur'}>
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+            <button type="button" onClick={() => navigate('/')} className="flex items-center gap-3">
+              <img src="/logo.png" alt="logo" className="h-10 w-10 rounded-full" />
+              <div className="text-lg font-bold text-green-600 md:text-xl">ASK Lipůvka – mládež</div>
+            </button>
+            <div className="flex items-center gap-3">
+              <button type="button" onClick={() => navigate('/')} className={`rounded-xl px-4 py-2 text-sm font-bold ${theme === 'dark' ? 'bg-white/10 text-white' : 'bg-green-50 text-green-700'}`}>
+                Zpět na web
+              </button>
+              <button
+                type="button"
+                onClick={toggleTheme}
+                className={`rounded-full px-3 py-2 text-sm font-semibold transition ${theme === 'dark' ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+              >
+                {theme === 'dark' ? '☀️' : '🌙'}
+              </button>
+            </div>
+          </div>
+        </header>
+        {renderCalendarPage()}
+        <footer className={`py-8 text-center ${softMutedTextClass}`}>
+          © {new Date().getFullYear()} ASK Lipůvka mládež
+        </footer>
+      </div>
     );
   }
 
@@ -1693,7 +2006,7 @@ export default function AskLipuvkaWeb() {
             <nav className="flex items-center gap-6 text-sm">
               <a href="#novinky" className="hover:text-green-600">Novinky</a>
               <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
-              <a href="#kalendar" className="hover:text-green-600">Kalendář</a>
+              <button type="button" onClick={() => navigate('/kalendar')} className="hover:text-green-600">Kalendář</button>
 
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
@@ -1945,13 +2258,16 @@ export default function AskLipuvkaWeb() {
                 Zápasy
               </a>
 
-              <a
-                href="#kalendar"
-                onClick={() => setIsMobileMenuOpen(false)}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  navigate('/kalendar');
+                }}
                 className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
               >
                 Kalendář
-              </a>
+              </button>
 
               <button
                 type="button"
@@ -2280,110 +2596,6 @@ export default function AskLipuvkaWeb() {
               Pro tuto kategorii zatím nejsou doplněné žádné novinky.
             </div>
           )}
-        </div>
-      </section>
-
-      <section id="kalendar" className="mx-auto max-w-6xl px-6 py-14">
-        <div className={`rounded-3xl border p-8 shadow-sm ${theme === 'dark' ? 'border-emerald-900/45 bg-[#0d1715] text-slate-100' : 'border-green-100 bg-green-50/60 text-gray-900'}`}>
-          <div className="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-            <div>
-              <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">
-                Kalendář
-              </div>
-              <h2 className={theme === 'dark' ? 'text-3xl font-black text-white' : 'text-3xl font-black text-green-700'}>
-                Tréninky a zápasy
-              </h2>
-              <p className={`mt-2 ${mutedTextClass}`}>
-                Přehled pravidelných tréninků a nejbližších zápasů v sezoně {CURRENT_SEASON}.
-              </p>
-            </div>
-          </div>
-
-          <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
-            <div className={`rounded-3xl border p-5 ${theme === 'dark' ? 'border-emerald-900/45 bg-[#111f1c]' : 'border-green-100 bg-white'}`}>
-              <h3 className={theme === 'dark' ? 'mb-4 text-2xl font-bold text-white' : 'mb-4 text-2xl font-bold text-gray-900'}>
-                Pravidelné tréninky
-              </h3>
-
-              {availableTrainings.length > 0 ? (
-                <div className="space-y-3">
-                  {availableTrainings.map((training) => {
-                    const categoryStyle = getCategoryStyle(training.category);
-                    return (
-                      <div key={training.id} className={`rounded-2xl border p-4 ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-gray-100 bg-gray-50'}`}>
-                        <div className="mb-2 flex flex-wrap items-center gap-2">
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${categoryStyle.badge}`}>
-                            {getCategoryShortLabel(training.category)}
-                          </span>
-                          <span className={`font-bold ${mainTextClass}`}>{getCategoryLabel(training.category)}</span>
-                        </div>
-                        <div className={`text-sm font-semibold ${mutedTextClass}`}>
-                          {getWeekdayLabel(training.weekday)} · {training.timeFrom}–{training.timeTo}
-                        </div>
-                        {training.note && <div className={`mt-1 text-sm ${softMutedTextClass}`}>{training.note}</div>}
-                        <a
-                          href={buildTrainingGoogleCalendarUrl(training)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-3 inline-flex items-center rounded-full bg-white/90 px-3 py-2 text-xs font-bold text-gray-700 shadow-sm transition hover:scale-[1.03]"
-                        >
-                          📅 Přidat do Google kalendáře
-                        </a>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className={`rounded-2xl p-5 ${mutedBoxThemeClass}`}>
-                  Tréninky zatím nejsou v adminu doplněné.
-                </div>
-              )}
-            </div>
-
-            <div className={`rounded-3xl border p-5 ${theme === 'dark' ? 'border-emerald-900/45 bg-[#111f1c]' : 'border-green-100 bg-white'}`}>
-              <h3 className={theme === 'dark' ? 'mb-4 text-2xl font-bold text-white' : 'mb-4 text-2xl font-bold text-gray-900'}>
-                Nejbližší zápasy / akce
-              </h3>
-
-              {upcomingCalendarMatches.length > 0 ? (
-                <div className="space-y-3">
-                  {upcomingCalendarMatches.map((match) => {
-                    const categoryStyle = getCategoryStyle(match.category);
-                    return (
-                      <div key={match.id || `${match.date}-${match.opponent}`} className={`rounded-2xl border p-4 ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-gray-100 bg-gray-50'}`}>
-                        <div className="mb-2 flex flex-wrap items-center gap-2">
-                          <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${categoryStyle.badge}`}>
-                            {getCategoryShortLabel(match.category)}
-                          </span>
-                          <span className={`font-bold ${mainTextClass}`}>
-                            {match.home ? `ASK Lipůvka vs. ${match.opponent}` : `${match.opponent} vs. ASK Lipůvka`}
-                          </span>
-                        </div>
-                        <div className={`text-sm font-semibold ${mutedTextClass}`}>
-                          {match.date} · {match.time || 'čas bude doplněn'}
-                        </div>
-                        <div className={`mt-1 text-sm ${softMutedTextClass}`}>
-                          {match.home ? 'Lipůvka' : match.venue || 'místo bude doplněno'}
-                        </div>
-                        <a
-                          href={buildGoogleCalendarUrl(match)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-3 inline-flex items-center rounded-full bg-white/90 px-3 py-2 text-xs font-bold text-gray-700 shadow-sm transition hover:scale-[1.03]"
-                        >
-                          📅 Přidat do Google kalendáře
-                        </a>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className={`rounded-2xl p-5 ${mutedBoxThemeClass}`}>
-                  Nejbližší zápasy zatím nejsou doplněné.
-                </div>
-              )}
-            </div>
-          </div>
         </div>
       </section>
 
