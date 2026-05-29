@@ -31,6 +31,7 @@ export default function Admin() {
   const NEXT_SEASON = '2026/27';
   const ARCHIVE_SEASON = '2025/26';
   const seasonOptions = [CURRENT_SEASON, NEXT_SEASON];
+  const calendarTypeOptions = ['Zápas', 'Turnaj', 'Trénink', 'Soustředění', 'Schůzka', 'Klubová akce', 'Ostatní'];
   const getItemSeason = (item) => item?.season || ARCHIVE_SEASON;
   const getSeasonDocId = (season) => String(season || CURRENT_SEASON).replace(/\//g, '-');
   const getDefaultSeasonTeams = () =>
@@ -44,6 +45,7 @@ export default function Admin() {
   const [newsItems, setNewsItems] = useState([]);
   const [matches, setMatches] = useState([]);
   const [galleryAlbums, setGalleryAlbums] = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState([]);
   const [merchProducts, setMerchProducts] = useState([]);
   const [merchOrders, setMerchOrders] = useState([]);
   const [adminLogs, setAdminLogs] = useState([]);
@@ -131,6 +133,20 @@ export default function Admin() {
     fromNumber: '1',
     toNumber: '',
     coverNumber: '1',
+  });
+
+  const [editingCalendarEventId, setEditingCalendarEventId] = useState(null);
+  const [calendarForm, setCalendarForm] = useState({
+    season: CURRENT_SEASON,
+    category: 'mladsi-pripravka',
+    type: 'Trénink',
+    title: '',
+    date: '',
+    startTime: '',
+    endTime: '',
+    venue: 'Lipůvka',
+    description: '',
+    visible: true,
   });
 
 
@@ -317,6 +333,22 @@ export default function Admin() {
     });
   };
 
+  const resetCalendarEventForm = () => {
+    setEditingCalendarEventId(null);
+    setCalendarForm({
+      season: CURRENT_SEASON,
+      category: 'mladsi-pripravka',
+      type: 'Trénink',
+      title: '',
+      date: '',
+      startTime: '',
+      endTime: '',
+      venue: 'Lipůvka',
+      description: '',
+      visible: true,
+    });
+  };
+
   const loadAllData = async () => {
     try {
       setLoading(true);
@@ -338,6 +370,17 @@ export default function Admin() {
         id: item.id,
         ...item.data(),
       }));
+
+      let loadedCalendarEvents = [];
+      try {
+        const calendarSnapshot = await getDocs(collection(db, 'calendarEvents'));
+        loadedCalendarEvents = calendarSnapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+      } catch (calendarError) {
+        console.warn('Kalendář akcí se nepodařilo načíst. Ostatní admin nechávám běžet:', calendarError);
+      }
 
       let loadedMerchProducts = [];
       let loadedMerchOrders = [];
@@ -427,6 +470,7 @@ export default function Admin() {
       setNewsItems(loadedNews);
       setMatches(loadedMatches);
       setGalleryAlbums(loadedGallery);
+      setCalendarEvents(loadedCalendarEvents);
       setMerchProducts(loadedMerchProducts);
       setMerchOrders(loadedMerchOrders);
       setSiteStats({
@@ -572,6 +616,25 @@ export default function Admin() {
       return a.title.localeCompare(b.title, 'cs');
     });
   }, [galleryAlbums, matches]);
+
+  const parseCalendarEventDate = (event) => {
+    if (!event?.date) return new Date(0);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(event.date)) return new Date(`${event.date}T00:00:00`);
+    const parsed = new Date(event.date);
+    return Number.isNaN(parsed.getTime()) ? new Date(0) : parsed;
+  };
+
+  const formatCalendarAdminDate = (dateValue) => {
+    if (!dateValue) return 'bez data';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+      return new Date(`${dateValue}T00:00:00`).toLocaleDateString('cs-CZ');
+    }
+    return dateValue;
+  };
+
+  const sortedCalendarEvents = useMemo(() => {
+    return [...calendarEvents].sort((a, b) => parseCalendarEventDate(a) - parseCalendarEventDate(b));
+  }, [calendarEvents]);
 
 
   const sortedMerchProducts = useMemo(() => {
@@ -826,6 +889,13 @@ export default function Admin() {
 
   const handleNewsChange = (field, value) => {
     setNewsForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const handleCalendarChange = (field, value) => {
+    setCalendarForm((prev) => ({
       ...prev,
       [field]: value,
     }));
@@ -1368,6 +1438,12 @@ export default function Admin() {
         return 'Smazal objednávku';
       case 'create_starter_merch':
         return 'Přidal startovací merch';
+      case 'create_calendar_event':
+        return 'Přidal akci do kalendáře';
+      case 'update_calendar_event':
+        return 'Upravil akci v kalendáři';
+      case 'delete_calendar_event':
+        return 'Smazal akci z kalendáře';
       case 'update_current_season':
         return 'Změnil aktuální sezonu';
       case 'restore_change':
@@ -1473,6 +1549,116 @@ export default function Admin() {
     } catch (error) {
       console.error(error);
       alert('Nepodařilo se smazat novinku.');
+    }
+  };
+
+  const handleSaveCalendarEvent = async (e) => {
+    e.preventDefault();
+
+    if (!calendarForm.title.trim() || !calendarForm.date.trim()) {
+      alert('Vyplň název akce a datum.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const payload = {
+        season: calendarForm.season || CURRENT_SEASON,
+        category: calendarForm.category || 'mladsi-pripravka',
+        type: calendarForm.type || 'Ostatní',
+        title: calendarForm.title.trim(),
+        date: calendarForm.date,
+        startTime: calendarForm.startTime,
+        endTime: calendarForm.endTime,
+        venue: calendarForm.venue.trim(),
+        description: calendarForm.description.trim(),
+        visible: Boolean(calendarForm.visible),
+        updatedAt: serverTimestamp(),
+      };
+
+      if (editingCalendarEventId) {
+        const beforeEvent = calendarEvents.find((event) => event.id === editingCalendarEventId);
+        await updateDoc(doc(db, 'calendarEvents', editingCalendarEventId), payload);
+        await logAdminAction({
+          action: 'update_calendar_event',
+          section: 'Kalendář',
+          targetId: editingCalendarEventId,
+          targetTitle: payload.title,
+          detail: `${payload.type} • ${getCategoryLabel(payload.category)}`,
+          collectionName: 'calendarEvents',
+          beforeData: beforeEvent,
+          afterData: payload,
+          canRestore: true,
+        });
+      } else {
+        const createdEvent = await addDoc(collection(db, 'calendarEvents'), {
+          ...payload,
+          createdAt: serverTimestamp(),
+        });
+        await logAdminAction({
+          action: 'create_calendar_event',
+          section: 'Kalendář',
+          targetId: createdEvent.id,
+          targetTitle: payload.title,
+          detail: `${payload.type} • ${getCategoryLabel(payload.category)}`,
+          collectionName: 'calendarEvents',
+          afterData: payload,
+          canRestore: true,
+        });
+      }
+
+      resetCalendarEventForm();
+      await loadAllData();
+      alert('Akce v kalendáři byla uložena.');
+    } catch (error) {
+      console.error(error);
+      alert('Nepodařilo se uložit akci v kalendáři.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditCalendarEvent = (event) => {
+    setEditingCalendarEventId(event.id);
+    setCalendarForm({
+      season: getItemSeason(event),
+      category: event.category || 'mladsi-pripravka',
+      type: event.type || 'Ostatní',
+      title: event.title || '',
+      date: event.date || '',
+      startTime: event.startTime || '',
+      endTime: event.endTime || '',
+      venue: event.venue || '',
+      description: event.description || '',
+      visible: event.visible !== false,
+    });
+    setActiveSection('calendar');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteCalendarEvent = async (id) => {
+    const confirmed = window.confirm('Opravdu chceš smazat tuto akci z kalendáře?');
+    if (!confirmed) return;
+
+    try {
+      const deletedEvent = calendarEvents.find((event) => event.id === id);
+      await deleteDoc(doc(db, 'calendarEvents', id));
+      await logAdminAction({
+        action: 'delete_calendar_event',
+        section: 'Kalendář',
+        targetId: id,
+        targetTitle: deletedEvent?.title || 'Akce v kalendáři',
+        detail: deletedEvent?.category ? getCategoryLabel(deletedEvent.category) : '',
+        collectionName: 'calendarEvents',
+        beforeData: deletedEvent,
+        canRestore: true,
+      });
+      await loadAllData();
+      alert('Akce byla smazána.');
+    } catch (error) {
+      console.error(error);
+      alert('Nepodařilo se smazat akci v kalendáři.');
     }
   };
 
@@ -2044,6 +2230,14 @@ export default function Admin() {
             className={sectionButtonClass(activeSection === 'matches')}
           >
             Zápasy
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('calendar')}
+            className={sectionButtonClass(activeSection === 'calendar')}
+          >
+            Kalendář
           </button>
 
           <button
@@ -3519,6 +3713,204 @@ L`}
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'calendar' && (
+              <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
+                <div className={cardSoftClass}>
+                  <div className="mb-6 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                        Kalendář akcí
+                      </div>
+                      <h2 className="text-2xl font-bold text-green-700">
+                        {editingCalendarEventId ? 'Upravit akci' : 'Přidat akci'}
+                      </h2>
+                    </div>
+
+                    {editingCalendarEventId && (
+                      <button type="button" onClick={resetCalendarEventForm} className={outlineButtonClass}>
+                        Zrušit editaci
+                      </button>
+                    )}
+                  </div>
+
+                  <form onSubmit={handleSaveCalendarEvent} className="space-y-5">
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Sezona</label>
+                        <select
+                          value={calendarForm.season}
+                          onChange={(e) => handleCalendarChange('season', e.target.value)}
+                          className={inputClass}
+                        >
+                          {seasonOptions.map((season) => (
+                            <option key={season} value={season}>{season}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Tým</label>
+                        <select
+                          value={calendarForm.category}
+                          onChange={(e) => handleCalendarChange('category', e.target.value)}
+                          className={inputClass}
+                        >
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.id}>{category.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Typ akce</label>
+                        <select
+                          value={calendarForm.type}
+                          onChange={(e) => handleCalendarChange('type', e.target.value)}
+                          className={inputClass}
+                        >
+                          {calendarTypeOptions.map((type) => (
+                            <option key={type} value={type}>{type}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Datum</label>
+                        <input
+                          type="date"
+                          value={calendarForm.date}
+                          onChange={(e) => handleCalendarChange('date', e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Název akce</label>
+                      <input
+                        type="text"
+                        value={calendarForm.title}
+                        onChange={(e) => handleCalendarChange('title', e.target.value)}
+                        placeholder="Např. U13 – Turnaj Blansko"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div className="grid gap-5 md:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Čas od</label>
+                        <input
+                          type="time"
+                          value={calendarForm.startTime}
+                          onChange={(e) => handleCalendarChange('startTime', e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Čas do</label>
+                        <input
+                          type="time"
+                          value={calendarForm.endTime}
+                          onChange={(e) => handleCalendarChange('endTime', e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Místo</label>
+                      <input
+                        type="text"
+                        value={calendarForm.venue}
+                        onChange={(e) => handleCalendarChange('venue', e.target.value)}
+                        placeholder="Např. Hřiště Lipůvka"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Popis</label>
+                      <textarea
+                        rows="5"
+                        value={calendarForm.description}
+                        onChange={(e) => handleCalendarChange('description', e.target.value)}
+                        placeholder="Doplňující informace pro rodiče"
+                        className={inputClass}
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-3 rounded-2xl border border-green-100 bg-white p-4 text-sm font-semibold text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={calendarForm.visible}
+                        onChange={(e) => handleCalendarChange('visible', e.target.checked)}
+                        className="h-5 w-5 rounded border-gray-300 text-green-600 focus:ring-green-500"
+                      />
+                      Zobrazit na webu
+                    </label>
+
+                    <button type="submit" disabled={saving || !canEdit} className={greenButtonClass}>
+                      {saving ? 'Ukládám…' : editingCalendarEventId ? 'Uložit změny akce' : 'Přidat akci'}
+                    </button>
+                  </form>
+                </div>
+
+                <div className="space-y-5">
+                  <div className={cardClass}>
+                    <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                      Přehled akcí
+                    </div>
+                    <p className="text-sm text-gray-600">
+                      Zápasy se do kalendáře na webu berou automaticky ze sekce Zápasy. Tady přidávej hlavně tréninky, turnaje, soustředění, schůzky a klubové akce.
+                    </p>
+                  </div>
+
+                  {sortedCalendarEvents.length > 0 ? (
+                    sortedCalendarEvents.map((event) => (
+                      <div key={event.id} className={cardClass}>
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+                            {event.type || 'Akce'}
+                          </span>
+                          {!event.visible && (
+                            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold text-gray-600">
+                              Skryté
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-lg font-bold text-gray-900">{event.title}</div>
+                        <div className="mt-1 text-sm text-gray-600">
+                          {formatCalendarAdminDate(event.date)}
+                          {event.startTime ? ` · ${event.startTime}${event.endTime ? `–${event.endTime}` : ''}` : ''}
+                        </div>
+                        <div className="mt-1 text-sm text-gray-500">
+                          {getItemSeason(event)} · {getCategoryLabel(event.category)}{event.venue ? ` · ${event.venue}` : ''}
+                        </div>
+                        {event.description && (
+                          <p className="mt-3 text-sm leading-6 text-gray-700">{event.description}</p>
+                        )}
+                        <div className="mt-4 flex flex-wrap gap-3">
+                          <button type="button" onClick={() => handleEditCalendarEvent(event)} className={outlineButtonClass}>
+                            Upravit
+                          </button>
+                          <button type="button" onClick={() => handleDeleteCalendarEvent(event.id)} className={dangerButtonClass}>
+                            Smazat
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className={cardClass}>
+                      <div className="text-sm text-gray-500">Zatím není uložená žádná akce v kalendáři.</div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
