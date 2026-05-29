@@ -41,8 +41,10 @@ export default function AskLipuvkaWeb() {
   const ARCHIVE_SEASON = '2025/26';
   const [currentSeason, setCurrentSeason] = useState(DEFAULT_CURRENT_SEASON);
   const [selectedSeason, setSelectedSeason] = useState(DEFAULT_CURRENT_SEASON);
+  const [seasonTeams, setSeasonTeams] = useState(null);
   const CURRENT_SEASON = selectedSeason;
   const getItemSeason = (item) => item?.season || ARCHIVE_SEASON;
+  const getSeasonDocId = (season) => String(season || DEFAULT_CURRENT_SEASON).replace(/\//g, '-');
 
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
@@ -83,7 +85,47 @@ export default function AskLipuvkaWeb() {
       shortLabel: 'U11',
       image: '/tym-u11.jpg',
     },
+    {
+      id: 'mladsi-zaci',
+      label: 'Mladší žáci',
+      shortLabel: 'U13',
+      image: '/field.png',
+    },
+    {
+      id: 'starsi-zaci',
+      label: 'Starší žáci',
+      shortLabel: 'U15',
+      image: '/field.png',
+    },
+    {
+      id: 'mladsi-dorost',
+      label: 'Mladší dorost',
+      shortLabel: 'U17',
+      image: '/field.png',
+    },
+    {
+      id: 'starsi-dorost',
+      label: 'Starší dorost',
+      shortLabel: 'U19',
+      image: '/field.png',
+    },
   ];
+
+  const defaultSeasonTeams = useMemo(() => ({
+    predpripravka: true,
+    'mladsi-pripravka': true,
+    'starsi-pripravka': true,
+    'mladsi-zaci': false,
+    'starsi-zaci': false,
+    'mladsi-dorost': false,
+    'starsi-dorost': false,
+  }), []);
+
+  const visibleCategories = useMemo(() => {
+    const activeTeams = seasonTeams || defaultSeasonTeams;
+    const visible = categories.filter((category) => activeTeams[category.id] !== false);
+    return visible.length > 0 ? visible : categories.slice(0, 3);
+  }, [seasonTeams, defaultSeasonTeams]);
 
   const faqItems = [
     {
@@ -476,22 +518,33 @@ export default function AskLipuvkaWeb() {
     return [...new Set(seasons.filter(Boolean))].sort((a, b) => b.localeCompare(a, 'cs'));
   }, [allAvailableNews, allAvailableMatches, firebaseGallery, currentSeason]);
 
-  const handleSeasonChange = (value) => {
+  const handleSeasonChange = async (value) => {
     setSelectedSeason(value);
     setShowAllTeamAlbums(false);
+
+    try {
+      const seasonTeamsSnapshot = await getDoc(doc(db, 'seasonTeams', getSeasonDocId(value)));
+      setSeasonTeams({
+        ...defaultSeasonTeams,
+        ...(seasonTeamsSnapshot.exists() ? seasonTeamsSnapshot.data()?.teams || {} : {}),
+      });
+    } catch (error) {
+      console.warn('Nepodařilo se načíst týmy pro vybranou sezonu:', error);
+      setSeasonTeams(defaultSeasonTeams);
+    }
   };
 
   const availableNews = useMemo(() => {
     return allAvailableNews.filter((item) => getItemSeason(item) === CURRENT_SEASON);
-  }, [allAvailableNews]);
+  }, [allAvailableNews, CURRENT_SEASON]);
 
   const availableMatches = useMemo(() => {
     return allAvailableMatches.filter((match) => getItemSeason(match) === CURRENT_SEASON);
-  }, [allAvailableMatches]);
+  }, [allAvailableMatches, CURRENT_SEASON]);
 
   const availableGallery = useMemo(() => {
     return firebaseGallery.filter((album) => getItemSeason(album) === CURRENT_SEASON);
-  }, [firebaseGallery]);
+  }, [firebaseGallery, CURRENT_SEASON]);
 
   const archiveMatches = useMemo(() => {
     return allAvailableMatches
@@ -501,7 +554,7 @@ export default function AskLipuvkaWeb() {
 
   const archiveNews = useMemo(() => {
     return allAvailableNews.filter((item) => getItemSeason(item) === ARCHIVE_SEASON);
-  }, [allAvailableNews]);
+  }, [allAvailableNews, CURRENT_SEASON]);
 
   const archiveGalleryAlbums = useMemo(() => {
     return firebaseGallery.filter((album) => getItemSeason(album) === ARCHIVE_SEASON);
@@ -606,6 +659,42 @@ export default function AskLipuvkaWeb() {
           button: 'bg-orange-500 text-white hover:bg-orange-600',
           buttonOutline: 'border-orange-500 text-orange-600 hover:bg-orange-50',
         };
+      case 'mladsi-zaci':
+        return {
+          badge: 'bg-purple-600 text-white',
+          softBadge: 'bg-purple-100 text-purple-700',
+          light: 'bg-purple-50 border-purple-200',
+          text: 'text-purple-600',
+          button: 'bg-purple-600 text-white hover:bg-purple-700',
+          buttonOutline: 'border-purple-500 text-purple-600 hover:bg-purple-50',
+        };
+      case 'starsi-zaci':
+        return {
+          badge: 'bg-red-600 text-white',
+          softBadge: 'bg-red-100 text-red-700',
+          light: 'bg-red-50 border-red-200',
+          text: 'text-red-600',
+          button: 'bg-red-600 text-white hover:bg-red-700',
+          buttonOutline: 'border-red-500 text-red-600 hover:bg-red-50',
+        };
+      case 'mladsi-dorost':
+        return {
+          badge: 'bg-indigo-600 text-white',
+          softBadge: 'bg-indigo-100 text-indigo-700',
+          light: 'bg-indigo-50 border-indigo-200',
+          text: 'text-indigo-600',
+          button: 'bg-indigo-600 text-white hover:bg-indigo-700',
+          buttonOutline: 'border-indigo-500 text-indigo-600 hover:bg-indigo-50',
+        };
+      case 'starsi-dorost':
+        return {
+          badge: 'bg-rose-600 text-white',
+          softBadge: 'bg-rose-100 text-rose-700',
+          light: 'bg-rose-50 border-rose-200',
+          text: 'text-rose-600',
+          button: 'bg-rose-600 text-white hover:bg-rose-700',
+          buttonOutline: 'border-rose-500 text-rose-600 hover:bg-rose-50',
+        };
       default:
         return {
           badge: 'bg-gray-500 text-white',
@@ -626,7 +715,7 @@ export default function AskLipuvkaWeb() {
 
   const getMatchAlbum = (match) => {
     if (!match?.galleryAlbumId) return null;
-    return firebaseGallery.find((album) => album.id === match.galleryAlbumId) || null;
+    return availableGallery.find((album) => album.id === match.galleryAlbumId) || null;
   };
 
   const openMatchPhotoReport = (match) => {
@@ -716,6 +805,11 @@ export default function AskLipuvkaWeb() {
     setSelectedPhotoIndex(null);
     setIsGalleryOpen(true);
   };
+
+  useEffect(() => {
+    if (visibleCategories.some((category) => category.id === activeCategory)) return;
+    setActiveCategory(visibleCategories[0]?.id || 'mladsi-pripravka');
+  }, [visibleCategories, activeCategory]);
 
   useEffect(() => {
     const loadVisits = async () => {
@@ -810,6 +904,31 @@ export default function AskLipuvkaWeb() {
   useEffect(() => {
     const loadFirebaseData = async () => {
       try {
+        let loadedCurrentSeason = DEFAULT_CURRENT_SEASON;
+        try {
+          const seasonSnapshot = await getDoc(doc(db, 'siteSettings', 'season'));
+          loadedCurrentSeason = seasonSnapshot.exists()
+            ? seasonSnapshot.data()?.currentSeason || DEFAULT_CURRENT_SEASON
+            : DEFAULT_CURRENT_SEASON;
+          setCurrentSeason(loadedCurrentSeason);
+          setSelectedSeason(loadedCurrentSeason);
+        } catch (seasonError) {
+          console.warn('Nepodařilo se načíst aktuální sezonu, používám výchozí 2025/26:', seasonError);
+          setCurrentSeason(DEFAULT_CURRENT_SEASON);
+          setSelectedSeason(DEFAULT_CURRENT_SEASON);
+        }
+
+        try {
+          const seasonTeamsSnapshot = await getDoc(doc(db, 'seasonTeams', getSeasonDocId(loadedCurrentSeason)));
+          setSeasonTeams({
+            ...defaultSeasonTeams,
+            ...(seasonTeamsSnapshot.exists() ? seasonTeamsSnapshot.data()?.teams || {} : {}),
+          });
+        } catch (seasonTeamsError) {
+          console.warn('Nepodařilo se načíst týmy v sezoně:', seasonTeamsError);
+          setSeasonTeams(defaultSeasonTeams);
+        }
+
         const newsSnapshot = await getDocs(collection(db, 'news'));
         const loadedNews = newsSnapshot.docs.map((item) => ({
           id: item.id,
@@ -828,22 +947,6 @@ export default function AskLipuvkaWeb() {
           ...item.data(),
         }));
 
-        try {
-          const seasonSnapshot = await getDoc(doc(db, 'siteSettings', 'season'));
-          const savedCurrentSeason = seasonSnapshot.exists()
-            ? seasonSnapshot.data()?.currentSeason
-            : DEFAULT_CURRENT_SEASON;
-
-          if (savedCurrentSeason) {
-            setCurrentSeason(savedCurrentSeason);
-            setSelectedSeason(savedCurrentSeason);
-          }
-        } catch (seasonError) {
-          console.warn('Nepodařilo se načíst aktuální sezonu, používám výchozí 2025/26:', seasonError);
-          setCurrentSeason(DEFAULT_CURRENT_SEASON);
-          setSelectedSeason(DEFAULT_CURRENT_SEASON);
-        }
-
         setFirebaseNews(loadedNews);
         setFirebaseMatches(loadedMatches);
         setFirebaseGallery(loadedGallery);
@@ -853,7 +956,7 @@ export default function AskLipuvkaWeb() {
     };
 
     loadFirebaseData();
-  }, []);
+  }, [defaultSeasonTeams]);
 
   useEffect(() => {
     const handleEsc = (event) => {
@@ -1401,29 +1504,16 @@ export default function AskLipuvkaWeb() {
 
               {isTeamsDropdownOpen && (
                 <div className="absolute left-0 top-full mt-2 min-w-[220px] rounded-2xl border border-gray-200 bg-white p-2 shadow-xl">
-                  <button
-                    type="button"
-                    onClick={() => selectTeam('predpripravka')}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
-                  >
-                    U7 – Předpřípravka
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => selectTeam('mladsi-pripravka')}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
-                  >
-                    U9 – Mladší přípravka
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => selectTeam('starsi-pripravka')}
-                    className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
-                  >
-                    U11 – Starší přípravka
-                  </button>
+                  {visibleCategories.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      onClick={() => selectTeam(category.id)}
+                      className="block w-full rounded-xl px-4 py-3 text-left text-gray-800 hover:bg-gray-100"
+                    >
+                      {category.shortLabel} – {category.label}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -1663,27 +1753,16 @@ export default function AskLipuvkaWeb() {
 
               {isMobileTeamsDropdownOpen && (
                 <div className={`mx-2 mb-2 flex flex-col rounded-2xl p-2 ${theme === 'dark' ? 'border border-emerald-900/40 bg-white/5' : 'border border-[#e8dece] bg-white/80 shadow-sm'}`}>
-                  <button
-                    type="button"
-                    onClick={() => selectTeam('predpripravka')}
-                    className={`rounded-xl px-4 py-3 text-left transition ${theme === 'dark' ? 'text-slate-200 hover:bg-white/5' : 'text-gray-700 hover:bg-[#f8f4ed]'}`}
-                  >
-                    U7 – Předpřípravka
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => selectTeam('mladsi-pripravka')}
-                    className={`rounded-xl px-4 py-3 text-left transition ${theme === 'dark' ? 'text-slate-200 hover:bg-white/5' : 'text-gray-700 hover:bg-[#f8f4ed]'}`}
-                  >
-                    U9 – Mladší přípravka
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => selectTeam('starsi-pripravka')}
-                    className={`rounded-xl px-4 py-3 text-left transition ${theme === 'dark' ? 'text-slate-200 hover:bg-white/5' : 'text-gray-700 hover:bg-[#f8f4ed]'}`}
-                  >
-                    U11 – Starší přípravka
-                  </button>
+                  {visibleCategories.map((category) => (
+                    <button
+                      key={category.id}
+                      type="button"
+                      onClick={() => selectTeam(category.id)}
+                      className={`rounded-xl px-4 py-3 text-left transition ${theme === 'dark' ? 'text-slate-200 hover:bg-white/5' : 'text-gray-700 hover:bg-[#f8f4ed]'}`}
+                    >
+                      {category.shortLabel} – {category.label}
+                    </button>
+                  ))}
                 </div>
               )}
 
@@ -1865,7 +1944,7 @@ export default function AskLipuvkaWeb() {
           </p>
 
           <div className="flex flex-wrap justify-center gap-3">
-            {categories.map((category) => {
+            {visibleCategories.map((category) => {
               const isActive = activeCategory === category.id;
               const categoryStyle = getCategoryStyle(category.id);
 
@@ -2080,6 +2159,13 @@ export default function AskLipuvkaWeb() {
               <>
                 <div className="mb-2 font-bold text-gray-900">Starší přípravka (U11)</div>
                 <div className="text-gray-700">Středa 17:00–18:00</div>
+              </>
+            )}
+
+            {!['predpripravka', 'mladsi-pripravka', 'starsi-pripravka'].includes(activeCategory) && (
+              <>
+                <div className="mb-2 font-bold text-gray-900">{activeCategoryLabel}</div>
+                <div className="text-gray-700">Tréninky budou doplněny.</div>
               </>
             )}
           </div>

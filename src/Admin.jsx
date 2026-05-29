@@ -18,9 +18,13 @@ import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
 
 export default function Admin() {
   const categories = [
-    { id: 'predpripravka', label: 'Předpřípravka (U7)', shortLabel: 'U7' },
-    { id: 'mladsi-pripravka', label: 'Mladší přípravka (U9)', shortLabel: 'U9' },
-    { id: 'starsi-pripravka', label: 'Starší přípravka (U11)', shortLabel: 'U11' },
+    { id: 'predpripravka', label: 'Předpřípravka (U7)', shortLabel: 'U7', color: 'blue' },
+    { id: 'mladsi-pripravka', label: 'Mladší přípravka (U9)', shortLabel: 'U9', color: 'green' },
+    { id: 'starsi-pripravka', label: 'Starší přípravka (U11)', shortLabel: 'U11', color: 'orange' },
+    { id: 'mladsi-zaci', label: 'Mladší žáci (U13)', shortLabel: 'U13', color: 'purple' },
+    { id: 'starsi-zaci', label: 'Starší žáci (U15)', shortLabel: 'U15', color: 'red' },
+    { id: 'mladsi-dorost', label: 'Mladší dorost (U17)', shortLabel: 'U17', color: 'indigo' },
+    { id: 'starsi-dorost', label: 'Starší dorost (U19)', shortLabel: 'U19', color: 'rose' },
   ];
 
   const CURRENT_SEASON = '2025/26';
@@ -28,6 +32,12 @@ export default function Admin() {
   const ARCHIVE_SEASON = '2025/26';
   const seasonOptions = [CURRENT_SEASON, NEXT_SEASON];
   const getItemSeason = (item) => item?.season || ARCHIVE_SEASON;
+  const getSeasonDocId = (season) => String(season || CURRENT_SEASON).replace(/\//g, '-');
+  const getDefaultSeasonTeams = () =>
+    categories.reduce((acc, category) => {
+      acc[category.id] = ['predpripravka', 'mladsi-pripravka', 'starsi-pripravka'].includes(category.id);
+      return acc;
+    }, {});
 
   const [activeSection, setActiveSection] = useState('news');
 
@@ -57,6 +67,9 @@ export default function Admin() {
   const [statsPeriod, setStatsPeriod] = useState(7);
   const [currentSeason, setCurrentSeason] = useState(CURRENT_SEASON);
   const [savingCurrentSeason, setSavingCurrentSeason] = useState(false);
+  const [seasonTeamsSeason, setSeasonTeamsSeason] = useState(CURRENT_SEASON);
+  const [seasonTeams, setSeasonTeams] = useState(getDefaultSeasonTeams);
+  const [savingSeasonTeams, setSavingSeasonTeams] = useState(false);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -352,6 +365,7 @@ export default function Admin() {
       const visitsSnapshot = await getDoc(doc(db, 'siteStats', 'visits'));
       const visitsData = visitsSnapshot.exists() ? visitsSnapshot.data() : null;
 
+      let loadedCurrentSeason = CURRENT_SEASON;
       try {
         const seasonSnapshot = await getDoc(doc(db, 'siteSettings', 'season'));
         const savedCurrentSeason = seasonSnapshot.exists()
@@ -359,11 +373,29 @@ export default function Admin() {
           : CURRENT_SEASON;
 
         if (savedCurrentSeason) {
+          loadedCurrentSeason = savedCurrentSeason;
           setCurrentSeason(savedCurrentSeason);
+          setSeasonTeamsSeason(savedCurrentSeason);
           setMatchListSeasonFilter(savedCurrentSeason);
         }
       } catch (seasonError) {
         console.warn('Nepodařilo se načíst nastavení sezony:', seasonError);
+      }
+
+      try {
+        const teamsSeason = loadedCurrentSeason || CURRENT_SEASON;
+        const seasonTeamsSnapshot = await getDoc(doc(db, 'seasonTeams', getSeasonDocId(teamsSeason)));
+        if (seasonTeamsSnapshot.exists()) {
+          setSeasonTeams({
+            ...getDefaultSeasonTeams(),
+            ...(seasonTeamsSnapshot.data()?.teams || {}),
+          });
+        } else {
+          setSeasonTeams(getDefaultSeasonTeams());
+        }
+      } catch (seasonTeamsError) {
+        console.warn('Nepodařilo se načíst týmy v sezoně:', seasonTeamsError);
+        setSeasonTeams(getDefaultSeasonTeams());
       }
 
       const dailyStatsSnapshot = await getDocs(collection(db, 'siteStatsDaily'));
@@ -732,6 +764,63 @@ export default function Admin() {
       alert('Nepodařilo se uložit aktuální sezonu.');
     } finally {
       setSavingCurrentSeason(false);
+    }
+  };
+
+
+  const loadSeasonTeams = async (season) => {
+    try {
+      const snapshot = await getDoc(doc(db, 'seasonTeams', getSeasonDocId(season)));
+      if (snapshot.exists()) {
+        setSeasonTeams({
+          ...getDefaultSeasonTeams(),
+          ...(snapshot.data()?.teams || {}),
+        });
+      } else {
+        setSeasonTeams(getDefaultSeasonTeams());
+      }
+    } catch (error) {
+      console.error('Chyba při načítání týmů v sezoně:', error);
+      alert('Nepodařilo se načíst týmy pro vybranou sezonu.');
+    }
+  };
+
+  const handleSeasonTeamsSeasonChange = async (season) => {
+    setSeasonTeamsSeason(season);
+    await loadSeasonTeams(season);
+  };
+
+  const handleToggleSeasonTeam = (teamId) => {
+    setSeasonTeams((prev) => ({
+      ...prev,
+      [teamId]: !prev[teamId],
+    }));
+  };
+
+  const handleSaveSeasonTeams = async () => {
+    try {
+      setSavingSeasonTeams(true);
+      await setDoc(doc(db, 'seasonTeams', getSeasonDocId(seasonTeamsSeason)), {
+        season: seasonTeamsSeason,
+        teams: seasonTeams,
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      await logAdminAction({
+        action: 'update_season_teams',
+        section: 'Týmy v sezoně',
+        targetId: getSeasonDocId(seasonTeamsSeason),
+        targetTitle: seasonTeamsSeason,
+        detail: categories
+          .filter((category) => seasonTeams[category.id])
+          .map((category) => category.shortLabel)
+          .join(', '),
+      });
+      alert(`Týmy pro sezonu ${seasonTeamsSeason} byly uloženy.`);
+    } catch (error) {
+      console.error('Chyba při ukládání týmů v sezoně:', error);
+      alert('Nepodařilo se uložit týmy v sezoně.');
+    } finally {
+      setSavingSeasonTeams(false);
     }
   };
 
@@ -1979,6 +2068,14 @@ export default function Admin() {
             className={sectionButtonClass(activeSection === 'stats')}
           >
             Statistiky
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('seasonTeams')}
+            className={sectionButtonClass(activeSection === 'seasonTeams')}
+          >
+            Týmy v sezoně
           </button>
 
           <button
@@ -3864,6 +3961,83 @@ L`}
                       </div>
                     </div>
                   )}
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'seasonTeams' && (
+              <div className="grid gap-8 xl:grid-cols-[0.9fr_1.1fr]">
+                <div className={cardSoftClass}>
+                  <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                    Sezona / týmy
+                  </div>
+                  <h2 className="text-2xl font-bold text-green-700">
+                    Zobrazit / nezobrazit týmy
+                  </h2>
+                  <p className="mt-3 leading-7 text-gray-600">
+                    Tady zapneš jen ty týmy, které v dané sezoně opravdu máte. Web potom ukáže jen zapnuté týmy v menu, na úvodu, v novinkách, zápasech a galerii.
+                  </p>
+
+                  <div className="mt-6">
+                    <label className={labelClass}>Sezona</label>
+                    <select
+                      value={seasonTeamsSeason}
+                      onChange={(e) => handleSeasonTeamsSeasonChange(e.target.value)}
+                      className={inputClass}
+                    >
+                      {seasonOptions.map((season) => (
+                        <option key={season} value={season}>{season}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="mt-5 rounded-2xl border border-green-100 bg-white p-4 text-sm text-gray-600">
+                    Vypnutí týmu nemaže žádná data. Jen ho schová z webu pro vybranou sezonu.
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSaveSeasonTeams}
+                    disabled={savingSeasonTeams || !canEdit}
+                    className="mt-6 rounded-xl bg-green-600 px-5 py-3 font-bold text-white shadow-sm transition hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {savingSeasonTeams ? 'Ukládám…' : 'Uložit týmy v sezoně'}
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {categories.map((category) => (
+                    <div key={category.id} className={cardClass}>
+                      <div className="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                          <div className="text-lg font-black text-gray-900">
+                            {category.label}
+                          </div>
+                          <div className="mt-1 text-sm text-gray-500">
+                            ID: {category.id}
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-gray-700">
+                              {category.shortLabel}
+                            </span>
+                            <span className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wide ${seasonTeams[category.id] ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                              {seasonTeams[category.id] ? 'zobrazeno' : 'skryto'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-green-100 bg-green-50 px-4 py-3 font-semibold text-gray-700">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(seasonTeams[category.id])}
+                            onChange={() => handleToggleSeasonTeam(category.id)}
+                            className="h-5 w-5"
+                          />
+                          Zobrazit na webu
+                        </label>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
