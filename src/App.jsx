@@ -39,9 +39,25 @@ export default function AskLipuvkaWeb() {
   const DEFAULT_CURRENT_SEASON = '2025/26';
   const NEXT_SEASON = '2026/27';
   const ARCHIVE_SEASON = '2025/26';
+  const getCachedSeasonTeams = (season) => {
+    if (typeof window === 'undefined') return null;
+    try {
+      return JSON.parse(localStorage.getItem(`ask-lipuvka-season-teams-${String(season || DEFAULT_CURRENT_SEASON).replace(/\//g, '-')}`));
+    } catch (error) {
+      return null;
+    }
+  };
+  const setCachedSeasonTeams = (season, teams) => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(`ask-lipuvka-season-teams-${String(season || DEFAULT_CURRENT_SEASON).replace(/\//g, '-')}`, JSON.stringify(teams || {}));
+    } catch (error) {
+      // cache není nutná pro běh webu
+    }
+  };
   const [currentSeason, setCurrentSeason] = useState(DEFAULT_CURRENT_SEASON);
   const [selectedSeason, setSelectedSeason] = useState(DEFAULT_CURRENT_SEASON);
-  const [seasonTeams, setSeasonTeams] = useState(null);
+  const [seasonTeams, setSeasonTeams] = useState(() => getCachedSeasonTeams(DEFAULT_CURRENT_SEASON));
   const [seasonTeamsLoaded, setSeasonTeamsLoaded] = useState(false);
   const CURRENT_SEASON = selectedSeason;
   const getItemSeason = (item) => item?.season || ARCHIVE_SEASON;
@@ -123,14 +139,19 @@ export default function AskLipuvkaWeb() {
   }), []);
 
   const visibleCategories = useMemo(() => {
-    // Dokud se nenačte nastavení týmů z Firebase, necháme všechny kategorie viditelné.
-    // Jinak se po F5 nové týmy na chvilku schovaly a aktivní tým skočil zpět na předpřípravku.
-    if (!seasonTeamsLoaded) return categories;
+    // Dokud se nenačte nastavení týmů z Firebase, nezobrazujeme preventivně všechny týmy.
+    // Ukážeme jen základní týmy + případně tým uložený v prohlížeči, aby po F5 neproblikly skryté kategorie.
+    if (!seasonTeamsLoaded) {
+      const fallbackVisible = categories.filter(
+        (category) => defaultSeasonTeams[category.id] !== false || category.id === activeCategory
+      );
+      return fallbackVisible.length > 0 ? fallbackVisible : categories.slice(0, 3);
+    }
 
     const activeTeams = seasonTeams || defaultSeasonTeams;
     const visible = categories.filter((category) => activeTeams[category.id] !== false);
     return visible.length > 0 ? visible : categories.slice(0, 3);
-  }, [seasonTeams, seasonTeamsLoaded, defaultSeasonTeams]);
+  }, [activeCategory, seasonTeams, seasonTeamsLoaded, defaultSeasonTeams]);
 
   const faqItems = [
     {
@@ -945,6 +966,7 @@ export default function AskLipuvkaWeb() {
         } catch (seasonTeamsError) {
           console.warn('Nepodařilo se načíst týmy v sezoně:', seasonTeamsError);
           setSeasonTeams(defaultSeasonTeams);
+        setCachedSeasonTeams(selectedSeason, defaultSeasonTeams);
         } finally {
           setSeasonTeamsLoaded(true);
         }
