@@ -35,6 +35,7 @@ export default function AskLipuvkaWeb() {
   const [firebaseNews, setFirebaseNews] = useState([]);
   const [firebaseMatches, setFirebaseMatches] = useState([]);
   const [firebaseGallery, setFirebaseGallery] = useState([]);
+  const [siteDataReady, setSiteDataReady] = useState(false);
 
   const DEFAULT_CURRENT_SEASON = '2025/26';
   const NEXT_SEASON = '2026/27';
@@ -122,10 +123,11 @@ export default function AskLipuvkaWeb() {
   }), []);
 
   const visibleCategories = useMemo(() => {
-    const activeTeams = seasonTeams || defaultSeasonTeams;
+    if (!siteDataReady || !seasonTeams) return [];
+    const activeTeams = seasonTeams;
     const visible = categories.filter((category) => activeTeams[category.id] !== false);
     return visible.length > 0 ? visible : categories.slice(0, 3);
-  }, [seasonTeams, defaultSeasonTeams]);
+  }, [seasonTeams, defaultSeasonTeams, siteDataReady]);
 
   const faqItems = [
     {
@@ -521,6 +523,7 @@ export default function AskLipuvkaWeb() {
   const handleSeasonChange = async (value) => {
     setSelectedSeason(value);
     setShowAllTeamAlbums(false);
+    setSeasonTeams(null);
 
     try {
       const seasonTeamsSnapshot = await getDoc(doc(db, 'seasonTeams', getSeasonDocId(value)));
@@ -807,9 +810,18 @@ export default function AskLipuvkaWeb() {
   };
 
   useEffect(() => {
+    if (!siteDataReady || visibleCategories.length === 0) return;
     if (visibleCategories.some((category) => category.id === activeCategory)) return;
-    setActiveCategory(visibleCategories[0]?.id || 'mladsi-pripravka');
-  }, [visibleCategories, activeCategory]);
+
+    const nextCategory = visibleCategories[0]?.id || 'mladsi-pripravka';
+    setActiveCategory(nextCategory);
+
+    try {
+      localStorage.setItem('ask-lipuvka-active-category', nextCategory);
+    } catch (error) {
+      console.error('Nepodařilo se uložit vybranou kategorii:', error);
+    }
+  }, [visibleCategories, activeCategory, siteDataReady]);
 
   useEffect(() => {
     const loadVisits = async () => {
@@ -952,6 +964,8 @@ export default function AskLipuvkaWeb() {
         setFirebaseGallery(loadedGallery);
       } catch (error) {
         console.error('Firebase chyba:', error);
+      } finally {
+        setSiteDataReady(true);
       }
     };
 
@@ -1485,6 +1499,15 @@ export default function AskLipuvkaWeb() {
   const mainTextClass = theme === 'dark' ? 'text-slate-100' : 'text-gray-900';
   const mutedTextClass = theme === 'dark' ? 'text-slate-300' : 'text-gray-700';
   const softMutedTextClass = theme === 'dark' ? 'text-slate-400' : 'text-gray-500';
+
+  if (!siteDataReady) {
+    return (
+      <div
+        className="app-loading"
+        style={{ minHeight: '100vh', background: theme === 'dark' ? '#07110f' : '#ffffff' }}
+      />
+    );
+  }
 
   return (
     <div className={theme === 'dark' ? 'min-h-screen bg-[#07110f] text-slate-100' : 'min-h-screen bg-white text-gray-900'}>
