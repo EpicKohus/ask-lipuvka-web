@@ -35,30 +35,14 @@ export default function AskLipuvkaWeb() {
   const [firebaseNews, setFirebaseNews] = useState([]);
   const [firebaseMatches, setFirebaseMatches] = useState([]);
   const [firebaseGallery, setFirebaseGallery] = useState([]);
+  const [siteDataReady, setSiteDataReady] = useState(false);
 
   const DEFAULT_CURRENT_SEASON = '2025/26';
   const NEXT_SEASON = '2026/27';
   const ARCHIVE_SEASON = '2025/26';
-  const getCachedSeasonTeams = (season) => {
-    if (typeof window === 'undefined') return null;
-    try {
-      return JSON.parse(localStorage.getItem(`ask-lipuvka-season-teams-${String(season || DEFAULT_CURRENT_SEASON).replace(/\//g, '-')}`));
-    } catch (error) {
-      return null;
-    }
-  };
-  const setCachedSeasonTeams = (season, teams) => {
-    if (typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(`ask-lipuvka-season-teams-${String(season || DEFAULT_CURRENT_SEASON).replace(/\//g, '-')}`, JSON.stringify(teams || {}));
-    } catch (error) {
-      // cache není nutná pro běh webu
-    }
-  };
   const [currentSeason, setCurrentSeason] = useState(DEFAULT_CURRENT_SEASON);
   const [selectedSeason, setSelectedSeason] = useState(DEFAULT_CURRENT_SEASON);
-  const [seasonTeams, setSeasonTeams] = useState(() => getCachedSeasonTeams(DEFAULT_CURRENT_SEASON));
-  const [seasonTeamsLoaded, setSeasonTeamsLoaded] = useState(false);
+  const [seasonTeams, setSeasonTeams] = useState(null);
   const CURRENT_SEASON = selectedSeason;
   const getItemSeason = (item) => item?.season || ARCHIVE_SEASON;
   const getSeasonDocId = (season) => String(season || DEFAULT_CURRENT_SEASON).replace(/\//g, '-');
@@ -139,19 +123,11 @@ export default function AskLipuvkaWeb() {
   }), []);
 
   const visibleCategories = useMemo(() => {
-    // Dokud se nenačte nastavení týmů z Firebase, nezobrazujeme preventivně všechny týmy.
-    // Ukážeme jen základní týmy + případně tým uložený v prohlížeči, aby po F5 neproblikly skryté kategorie.
-    if (!seasonTeamsLoaded) {
-      const fallbackVisible = categories.filter(
-        (category) => defaultSeasonTeams[category.id] !== false || category.id === activeCategory
-      );
-      return fallbackVisible.length > 0 ? fallbackVisible : categories.slice(0, 3);
-    }
-
+    if (!siteDataReady) return [];
     const activeTeams = seasonTeams || defaultSeasonTeams;
     const visible = categories.filter((category) => activeTeams[category.id] !== false);
     return visible.length > 0 ? visible : categories.slice(0, 3);
-  }, [activeCategory, seasonTeams, seasonTeamsLoaded, defaultSeasonTeams]);
+  }, [seasonTeams, defaultSeasonTeams, siteDataReady]);
 
   const faqItems = [
     {
@@ -527,12 +503,14 @@ export default function AskLipuvkaWeb() {
   };
 
   const allAvailableNews = useMemo(() => {
+    if (!siteDataReady) return [];
     return firebaseNews.length > 0 ? firebaseNews : newsItems;
-  }, [firebaseNews]);
+  }, [firebaseNews, siteDataReady]);
 
   const allAvailableMatches = useMemo(() => {
+    if (!siteDataReady) return [];
     return firebaseMatches.length > 0 ? firebaseMatches : matches;
-  }, [firebaseMatches]);
+  }, [firebaseMatches, siteDataReady]);
 
   const seasonOptions = useMemo(() => {
     const seasons = [currentSeason, DEFAULT_CURRENT_SEASON, NEXT_SEASON];
@@ -545,7 +523,6 @@ export default function AskLipuvkaWeb() {
   }, [allAvailableNews, allAvailableMatches, firebaseGallery, currentSeason]);
 
   const handleSeasonChange = async (value) => {
-    setSeasonTeamsLoaded(false);
     setSelectedSeason(value);
     setShowAllTeamAlbums(false);
 
@@ -558,8 +535,6 @@ export default function AskLipuvkaWeb() {
     } catch (error) {
       console.warn('Nepodařilo se načíst týmy pro vybranou sezonu:', error);
       setSeasonTeams(defaultSeasonTeams);
-    } finally {
-      setSeasonTeamsLoaded(true);
     }
   };
 
@@ -741,15 +716,6 @@ export default function AskLipuvkaWeb() {
   };
 
   const activeCategoryStyle = getCategoryStyle(activeCategory);
-  const activeCategoryPanelClass = theme === 'dark'
-    ? 'bg-[#0d1715] border-emerald-900/60 text-white'
-    : activeCategoryStyle.light;
-  const activeCategoryInnerCardClass = theme === 'dark'
-    ? 'bg-[#07110f] border-emerald-900/60 text-white'
-    : 'bg-white';
-  const activeCategoryEmptyClass = theme === 'dark'
-    ? 'bg-[#07110f] text-slate-200 border border-emerald-900/60'
-    : 'bg-white text-gray-700';
 
   const getMatchAlbum = (match) => {
     if (!match?.galleryAlbumId) return null;
@@ -845,10 +811,10 @@ export default function AskLipuvkaWeb() {
   };
 
   useEffect(() => {
-    if (!seasonTeamsLoaded) return;
+    if (!siteDataReady) return;
     if (visibleCategories.some((category) => category.id === activeCategory)) return;
     setActiveCategory(visibleCategories[0]?.id || 'mladsi-pripravka');
-  }, [visibleCategories, activeCategory, seasonTeamsLoaded]);
+  }, [visibleCategories, activeCategory, siteDataReady]);
 
   useEffect(() => {
     const loadVisits = async () => {
@@ -966,9 +932,6 @@ export default function AskLipuvkaWeb() {
         } catch (seasonTeamsError) {
           console.warn('Nepodařilo se načíst týmy v sezoně:', seasonTeamsError);
           setSeasonTeams(defaultSeasonTeams);
-        setCachedSeasonTeams(selectedSeason, defaultSeasonTeams);
-        } finally {
-          setSeasonTeamsLoaded(true);
         }
 
         const newsSnapshot = await getDocs(collection(db, 'news'));
@@ -994,6 +957,8 @@ export default function AskLipuvkaWeb() {
         setFirebaseGallery(loadedGallery);
       } catch (error) {
         console.error('Firebase chyba:', error);
+      } finally {
+        setSiteDataReady(true);
       }
     };
 
@@ -1238,7 +1203,7 @@ export default function AskLipuvkaWeb() {
                 )}
               </div>
 
-              <div className={theme === 'dark' ? 'mt-1 text-sm text-slate-400' : 'mt-1 text-sm text-gray-500'}>
+              <div className="mt-1 text-sm text-gray-500">
                 {m.date} • {m.time} • {m.home ? 'Domácí zápas' : 'Venkovní zápas'}
                 {!m.home && m.venue ? ` • ${m.venue}` : ''}
               </div>
@@ -1305,7 +1270,7 @@ export default function AskLipuvkaWeb() {
       : 'Klikni na detail zápasu a zobraz si výsledek, report i fotky.';
 
     return (
-      <div className={`mb-6 overflow-hidden rounded-3xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${activeCategoryPanelClass}`}>
+      <div className={`mb-6 overflow-hidden rounded-3xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${activeCategoryStyle.light}`}>
         <button
           type="button"
           onClick={() => m.id && navigate(`/zapas/${m.id}`)}
@@ -1495,6 +1460,10 @@ export default function AskLipuvkaWeb() {
       </button>
     );
   };
+
+  if (!siteDataReady) {
+    return <div className="app-loading" style={{ minHeight: '100vh', background: '#07140f' }} />;
+  }
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
@@ -2034,7 +2003,7 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <section id="novinky" className="mx-auto max-w-5xl px-6 py-14">
-        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryPanelClass}`}> 
+        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}> 
           <div className="mb-2 flex flex-wrap items-center gap-3">
             <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
               {activeCategoryLabel}
@@ -2051,13 +2020,13 @@ export default function AskLipuvkaWeb() {
               {filteredNews.map((item) => (
                 <div
                   key={`${item.category}-${item.title}`}
-                  className={`rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${activeCategoryInnerCardClass}`}
+                  className="rounded-2xl border border-green-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <div className={`mb-2 text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
                     {item.date}
                   </div>
-                  <h3 className={`mb-2 text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{item.title}</h3>
-                  <p className={theme === 'dark' ? 'text-slate-200' : 'text-gray-700'}>{item.text}</p>
+                  <h3 className="mb-2 text-xl font-bold text-gray-900">{item.title}</h3>
+                  <p className="text-gray-700">{item.text}</p>
 
                   {item.image && (
                     <button
@@ -2100,7 +2069,7 @@ export default function AskLipuvkaWeb() {
               ))}
             </div>
           ) : (
-            <div className={`rounded-2xl border p-5 shadow-sm ${activeCategoryEmptyClass}`}>
+            <div className="rounded-2xl border border-green-100 bg-white p-5 text-gray-600 shadow-sm">
               Pro tuto kategorii zatím nejsou doplněné žádné novinky.
             </div>
           )}
@@ -2133,7 +2102,7 @@ export default function AskLipuvkaWeb() {
           {upcomingMatches.length > 0 ? (
             upcomingMatches.map((m) => renderMatchCard(m, Boolean(m.result1 || m.result2)))
           ) : (
-            <div className={`rounded-2xl p-5 ${activeCategoryEmptyClass}`}>
+            <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
               V následujících 14 dnech nejsou pro tuto kategorii naplánované žádné zápasy.
             </div>
           )}
@@ -2163,14 +2132,14 @@ export default function AskLipuvkaWeb() {
             )}
           </>
         ) : (
-          <div className={`rounded-2xl p-5 ${activeCategoryEmptyClass}`}>
+          <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
             Pro tuto kategorii zatím nejsou žádné odehrané zápasy.
           </div>
         )}
       </section>
 
       <section className="mx-auto max-w-5xl px-6 pb-14">
-        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryPanelClass}`}>
+        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
           <div className="mb-2 flex flex-wrap items-center gap-3">
             <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
               {activeCategoryLabel}
@@ -2182,32 +2151,32 @@ export default function AskLipuvkaWeb() {
 
           <h2 className={`mb-4 text-3xl font-bold ${activeCategoryStyle.text}`}>Kdy trénujeme</h2>
 
-          <div className={`rounded-2xl p-6 text-lg shadow-sm ${activeCategoryEmptyClass}`}>
+          <div className="rounded-2xl bg-white p-6 text-lg shadow-sm">
             {activeCategory === 'predpripravka' && (
               <>
-                <div className={`mb-2 font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Předpřípravka (U7)</div>
-                <div className={theme === 'dark' ? 'text-slate-200' : 'text-gray-700'}>Čtvrtek 17:00–18:00</div>
+                <div className="mb-2 font-bold text-gray-900">Předpřípravka (U7)</div>
+                <div className="text-gray-700">Čtvrtek 17:00–18:00</div>
               </>
             )}
 
             {activeCategory === 'mladsi-pripravka' && (
               <>
-                <div className={`mb-2 font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Mladší přípravka (U9)</div>
-                <div className={theme === 'dark' ? 'text-slate-200' : 'text-gray-700'}>Úterý a čtvrtek 16:30–18:00</div>
+                <div className="mb-2 font-bold text-gray-900">Mladší přípravka (U9)</div>
+                <div className="text-gray-700">Úterý a čtvrtek 16:30–18:00</div>
               </>
             )}
 
             {activeCategory === 'starsi-pripravka' && (
               <>
-                <div className={`mb-2 font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>Starší přípravka (U11)</div>
-                <div className={theme === 'dark' ? 'text-slate-200' : 'text-gray-700'}>Středa 17:00–18:00</div>
+                <div className="mb-2 font-bold text-gray-900">Starší přípravka (U11)</div>
+                <div className="text-gray-700">Středa 17:00–18:00</div>
               </>
             )}
 
             {!['predpripravka', 'mladsi-pripravka', 'starsi-pripravka'].includes(activeCategory) && (
               <>
-                <div className={`mb-2 font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{activeCategoryLabel}</div>
-                <div className={theme === 'dark' ? 'text-slate-200' : 'text-gray-700'}>Tréninky budou doplněny.</div>
+                <div className="mb-2 font-bold text-gray-900">{activeCategoryLabel}</div>
+                <div className="text-gray-700">Tréninky budou doplněny.</div>
               </>
             )}
           </div>
@@ -2215,7 +2184,7 @@ export default function AskLipuvkaWeb() {
       </section>
 
       <section className="mx-auto max-w-5xl px-6 pb-14">
-        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryPanelClass}`}>
+        <div className={`rounded-3xl border p-8 shadow-sm ${activeCategoryStyle.light}`}>
           <div className="mb-2 flex flex-wrap items-center gap-3">
             <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
               {activeCategoryLabel}
@@ -2238,15 +2207,15 @@ export default function AskLipuvkaWeb() {
                       type="button"
                       key={album.id}
                       onClick={() => openTeamAlbum(album)}
-                      className={`overflow-hidden rounded-2xl border text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${activeCategoryInnerCardClass}`}
+                      className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                     >
                       {renderAlbumCover(album)}
                       <div className="p-5">
-                        <div className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{album.title}</div>
+                        <div className="text-xl font-bold text-gray-900">{album.title}</div>
                         {linkedMatch?.date && (
-                          <div className={theme === 'dark' ? 'mt-1 text-sm text-slate-400' : 'mt-1 text-sm text-gray-500'}>{linkedMatch.date}</div>
+                          <div className="mt-1 text-sm text-gray-500">{linkedMatch.date}</div>
                         )}
-                        <div className={theme === 'dark' ? 'mt-1 text-sm text-slate-400' : 'mt-1 text-sm text-gray-500'}>
+                        <div className="mt-1 text-sm text-gray-500">
                           {album.photos?.length || 0} položek
                         </div>
                       </div>
@@ -2268,7 +2237,7 @@ export default function AskLipuvkaWeb() {
               )}
             </>
           ) : (
-            <div className={`rounded-2xl p-5 shadow-sm ${activeCategoryEmptyClass}`}>
+            <div className="rounded-2xl bg-white p-5 text-gray-600 shadow-sm">
               Pro tuto kategorii zatím nejsou doplněná žádná alba.
             </div>
           )}
@@ -2306,12 +2275,12 @@ export default function AskLipuvkaWeb() {
                         setSelectedAlbum(album);
                         setSelectedPhotoIndex(null);
                       }}
-                      className={`overflow-hidden rounded-2xl border text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg ${activeCategoryInnerCardClass}`}
+                      className="overflow-hidden rounded-2xl border border-gray-200 bg-white text-left shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
                     >
                       {renderAlbumCover(album)}
                       <div className="p-5">
-                        <div className={`text-xl font-bold ${theme === 'dark' ? 'text-white' : 'text-gray-900'}`}>{album.title}</div>
-                        <div className={theme === 'dark' ? 'mt-1 text-sm text-slate-400' : 'mt-1 text-sm text-gray-500'}>
+                        <div className="text-xl font-bold text-gray-900">{album.title}</div>
+                        <div className="mt-1 text-sm text-gray-500">
                           {album.photos?.length || 0} položek
                         </div>
                       </div>
@@ -2319,7 +2288,7 @@ export default function AskLipuvkaWeb() {
                   ))}
                 </div>
               ) : (
-                <div className={`rounded-2xl p-5 ${activeCategoryEmptyClass}`}>
+                <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
                   Ve společné galerii zatím nejsou žádná alba.
                 </div>
               )}
@@ -2655,7 +2624,7 @@ export default function AskLipuvkaWeb() {
                       ? 'border border-emerald-900/40 bg-[#0d1715]'
                       : 'bg-white/70'
                   }`}>
-                    <p className={theme === 'dark' ? 'text-slate-200' : 'text-gray-700'}>Nenašli jste odpověď?</p>
+                    <p className="text-gray-700">Nenašli jste odpověď?</p>
 
                     <p className="mt-2 text-sm text-gray-600">
                       Klidně nám napište nebo zavolejte.
@@ -2924,7 +2893,7 @@ export default function AskLipuvkaWeb() {
                   </div>
 
                   <div className="mt-10 text-center">
-                    <p className={theme === 'dark' ? 'text-slate-200' : 'text-gray-700'}>
+                    <p className="text-gray-700">
                       Chcete podpořit mládež ASK Lipůvka?
                     </p>
 
@@ -3127,7 +3096,7 @@ export default function AskLipuvkaWeb() {
                                 )}
                               </div>
 
-                              <div className={theme === 'dark' ? 'mt-1 text-sm text-slate-400' : 'mt-1 text-sm text-gray-500'}>{m.date} • {m.time}</div>
+                              <div className="mt-1 text-sm text-gray-500">{m.date} • {m.time}</div>
 
                               <div className="mt-2 text-sm font-medium text-gray-700">
                                 Hraje se: {m.home ? 'Lipůvka' : m.venue || 'bude doplněno'}
@@ -3185,7 +3154,7 @@ export default function AskLipuvkaWeb() {
                       );
                     })
                   ) : (
-                    <div className={`rounded-2xl p-5 ${activeCategoryEmptyClass}`}>
+                    <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
                       Pro tuto kategorii zatím není rozpis doplněný.
                     </div>
                   )}
@@ -3450,7 +3419,7 @@ export default function AskLipuvkaWeb() {
         <div className="rounded-2xl bg-gray-50 p-6 text-center shadow-sm">
           <h3 className="mb-3 text-xl font-bold text-gray-800">Mládežnické týmy ASK Lipůvka</h3>
 
-          <p className={theme === 'dark' ? 'text-slate-200' : 'text-gray-700'}>
+          <p className="text-gray-700">
             Mládežnický fotbal ASK Lipůvka zahrnuje předpřípravku (U7), mladší přípravku (U9) a starší přípravku (U11). Mladší přípravka se účastní soutěží a od příští sezony budeme mít dva týmy v soutěžích U9 a U11.
           </p>
 
