@@ -35,7 +35,6 @@ export default function AskLipuvkaWeb() {
   const [firebaseNews, setFirebaseNews] = useState([]);
   const [firebaseMatches, setFirebaseMatches] = useState([]);
   const [firebaseGallery, setFirebaseGallery] = useState([]);
-  const [firebaseCalendarEvents, setFirebaseCalendarEvents] = useState([]);
   const [siteDataReady, setSiteDataReady] = useState(false);
 
   const DEFAULT_CURRENT_SEASON = '2025/26';
@@ -511,20 +510,15 @@ export default function AskLipuvkaWeb() {
     return firebaseMatches.length > 0 ? firebaseMatches : matches;
   }, [firebaseMatches]);
 
-  const allAvailableCalendarEvents = useMemo(() => {
-    return firebaseCalendarEvents.filter((event) => event.visible !== false);
-  }, [firebaseCalendarEvents]);
-
   const seasonOptions = useMemo(() => {
     const seasons = [currentSeason, DEFAULT_CURRENT_SEASON, NEXT_SEASON];
 
     allAvailableNews.forEach((item) => seasons.push(getItemSeason(item)));
     allAvailableMatches.forEach((item) => seasons.push(getItemSeason(item)));
-    allAvailableCalendarEvents.forEach((item) => seasons.push(getItemSeason(item)));
     firebaseGallery.forEach((item) => seasons.push(getItemSeason(item)));
 
     return [...new Set(seasons.filter(Boolean))].sort((a, b) => b.localeCompare(a, 'cs'));
-  }, [allAvailableNews, allAvailableMatches, allAvailableCalendarEvents, firebaseGallery, currentSeason]);
+  }, [allAvailableNews, allAvailableMatches, firebaseGallery, currentSeason]);
 
   const handleSeasonChange = async (value) => {
     setSelectedSeason(value);
@@ -550,10 +544,6 @@ export default function AskLipuvkaWeb() {
   const availableMatches = useMemo(() => {
     return allAvailableMatches.filter((match) => getItemSeason(match) === CURRENT_SEASON);
   }, [allAvailableMatches, CURRENT_SEASON]);
-
-  const availableCalendarEvents = useMemo(() => {
-    return allAvailableCalendarEvents.filter((event) => getItemSeason(event) === CURRENT_SEASON);
-  }, [allAvailableCalendarEvents, CURRENT_SEASON]);
 
   const availableGallery = useMemo(() => {
     return firebaseGallery.filter((album) => getItemSeason(album) === CURRENT_SEASON);
@@ -723,42 +713,28 @@ export default function AskLipuvkaWeb() {
     return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${text}&dates=${dates}&details=${details}&location=${location}&ctz=Europe/Prague`;
   };
 
-  const calendarEventsForActiveTeam = useMemo(() => {
-    const manualEvents = availableCalendarEvents
-      .filter((event) => !event.category || event.category === 'all' || event.category === activeCategory)
-      .map((event) => ({
-        id: `calendar-${event.id}`,
-        source: 'calendar',
-        title: event.title || 'Akce ASK Lipůvka',
-        type: event.type || 'Akce',
-        category: event.category || activeCategory,
-        date: event.date || event.dateISO || '',
-        startTime: event.startTime || '',
-        endTime: event.endTime || '',
-        time: event.time || '',
-        venue: event.venue || '',
-        description: event.description || '',
-      }));
+  const getMatchCalendarLink = (match) => {
+    const shortLabel = getCategoryShortLabel(match.category);
+    const homeTeam = 'ASK Lipůvka';
+    const awayTeam = match.opponent || 'Soupeř';
+    const title = `${shortLabel ? `${shortLabel} – ` : ''}${match.home ? `${homeTeam} vs ${awayTeam}` : `${awayTeam} vs ${homeTeam}`}`;
+    const description = [
+      match.home ? 'Domácí zápas' : 'Venkovní zápas',
+      match.category ? getCategoryLabel(match.category) : '',
+      match.time ? `Čas: ${match.time}` : '',
+      match.venue ? `Místo: ${match.venue}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n');
 
-    const matchEvents = filteredMatches.map((match) => ({
-      id: `match-${match.id || match.date}-${match.opponent}`,
-      source: 'match',
-      title: `${activeCategoryShortLabel ? `${activeCategoryShortLabel} – ` : ''}${match.home ? 'ASK Lipůvka' : match.opponent} vs ${match.home ? match.opponent : 'ASK Lipůvka'}`,
-      type: match.status === 'played' || match.result1 || match.result2 ? 'Odehraný zápas' : 'Zápas',
-      category: match.category,
+    return buildGoogleCalendarLink({
+      title,
       date: match.date,
-      startTime: getFirstTime(match.time),
-      endTime: '',
-      time: match.time || '',
+      startTime: getFirstTime(match.time) || '17:00',
       venue: match.venue || '',
-      description: match.articleTitle || match.article || 'Zápas ASK Lipůvka mládež',
-    }));
-
-    return [...manualEvents, ...matchEvents]
-      .filter((event) => getCalendarDateObject(event.date) >= todayStart)
-      .sort((a, b) => getCalendarDateObject(a.date) - getCalendarDateObject(b.date))
-      .slice(0, 10);
-  }, [availableCalendarEvents, filteredMatches, activeCategory, activeCategoryShortLabel, todayStart]);
+      description,
+    });
+  };
 
   const selectedPhoto =
     selectedAlbum && selectedPhotoIndex !== null
@@ -1096,21 +1072,9 @@ export default function AskLipuvkaWeb() {
           ...item.data(),
         }));
 
-        let loadedCalendarEvents = [];
-        try {
-          const calendarSnapshot = await getDocs(collection(db, 'calendarEvents'));
-          loadedCalendarEvents = calendarSnapshot.docs.map((item) => ({
-            id: item.id,
-            ...item.data(),
-          }));
-        } catch (calendarError) {
-          console.warn('Kalendář akcí se nepodařilo načíst. Ostatní web nechávám běžet:', calendarError);
-        }
-
         setFirebaseNews(loadedNews);
         setFirebaseMatches(loadedMatches);
         setFirebaseGallery(loadedGallery);
-        setFirebaseCalendarEvents(loadedCalendarEvents);
       } catch (error) {
         console.error('Firebase chyba:', error);
       } finally {
@@ -1411,6 +1375,19 @@ export default function AskLipuvkaWeb() {
             </button>
           </div>
         )}
+
+        {!isPlayed && (
+          <div className="mt-4 flex flex-wrap items-center justify-start gap-3 md:justify-center">
+            <a
+              href={getMatchCalendarLink(m)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center justify-center rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-400"
+            >
+              Přidat do Google kalendáře
+            </a>
+          </div>
+        )}
       </div>
     );
   };
@@ -1690,7 +1667,6 @@ export default function AskLipuvkaWeb() {
             <nav className="flex items-center gap-6 text-sm">
               <a href="#novinky" className="hover:text-green-600">Novinky</a>
               <a href="#zapasy" className="hover:text-green-600">Zápasy</a>
-              <a href="#kalendar" className="hover:text-green-600">Kalendář</a>
 
             <div className="relative" onClick={(e) => e.stopPropagation()}>
               <button
@@ -1940,14 +1916,6 @@ export default function AskLipuvkaWeb() {
                 className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
               >
                 Zápasy
-              </a>
-
-              <a
-                href="#kalendar"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className={`mx-2 rounded-2xl px-4 py-4 text-left text-[1.05rem] font-semibold transition ${theme === 'dark' ? 'text-white hover:bg-white/5' : 'text-gray-800 hover:bg-white hover:shadow-sm'}`}
-              >
-                Kalendář
               </a>
 
               <button
@@ -2308,67 +2276,6 @@ export default function AskLipuvkaWeb() {
           ) : (
             <div className={`rounded-2xl p-5 ${mutedBoxThemeClass}`}>
               V následujících 14 dnech nejsou pro tuto kategorii naplánované žádné zápasy.
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section id="kalendar" className="mx-auto max-w-5xl px-6 pb-14">
-        <div className={`rounded-3xl border p-8 shadow-sm ${categoryPanelThemeClass(activeCategoryStyle)}`}>
-          <div className="mb-2 flex flex-wrap items-center gap-3">
-            <div className={`text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
-              {activeCategoryLabel}
-            </div>
-            <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
-              {activeCategoryShortLabel}
-            </span>
-          </div>
-
-          <div className="mb-6 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
-            <div>
-              <h2 className={`text-3xl font-bold ${activeCategoryStyle.text}`}>Kalendář</h2>
-              <p className={`mt-2 ${mutedTextClass}`}>
-                Nejbližší zápasy a akce vybraného týmu. U každé akce si ji můžeš přidat do Google kalendáře.
-              </p>
-            </div>
-          </div>
-
-          {calendarEventsForActiveTeam.length > 0 ? (
-            <div className="space-y-4">
-              {calendarEventsForActiveTeam.map((event) => (
-                <div key={event.id} className={`rounded-2xl p-5 shadow-sm ${cardThemeClass}`}>
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className={`mb-2 text-sm font-semibold uppercase tracking-wide ${activeCategoryStyle.text}`}>
-                        {formatCalendarDate(event.date)} · {getCalendarTimeText(event)}
-                      </div>
-                      <h3 className={`text-xl font-bold ${mainTextClass}`}>{event.title}</h3>
-                      <div className={`mt-2 flex flex-wrap gap-2 text-sm ${softMutedTextClass}`}>
-                        <span className={`rounded-full px-3 py-1 text-xs font-bold ${activeCategoryStyle.softBadge}`}>
-                          {event.type}
-                        </span>
-                        {event.venue && <span>{event.venue}</span>}
-                      </div>
-                      {event.description && (
-                        <p className={`mt-3 text-sm leading-6 ${mutedTextClass}`}>{event.description}</p>
-                      )}
-                    </div>
-
-                    <a
-                      href={buildGoogleCalendarLink(event)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={`inline-flex shrink-0 items-center justify-center rounded-xl px-4 py-3 text-sm font-bold transition hover:scale-[1.02] ${activeCategoryStyle.button}`}
-                    >
-                      Přidat do Google kalendáře
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className={`rounded-2xl p-5 ${softCardThemeClass}`}>
-              Pro tuto kategorii zatím nejsou v kalendáři žádné nadcházející akce.
             </div>
           )}
         </div>
