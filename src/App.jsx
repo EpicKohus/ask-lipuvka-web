@@ -502,6 +502,61 @@ export default function AskLipuvkaWeb() {
     return /\.(mp4|webm|ogg)$/i.test(filePath);
   };
 
+
+  const padCalendarNumber = (value) => String(value).padStart(2, '0');
+
+  const formatCalendarDate = (date) => {
+    return `${date.getFullYear()}${padCalendarNumber(date.getMonth() + 1)}${padCalendarNumber(date.getDate())}`;
+  };
+
+  const parseFirstMatchTime = (timeString) => {
+    if (!timeString || typeof timeString !== 'string') return null;
+    const match = timeString.match(/(\d{1,2})[:.](\d{2})/);
+    if (!match) return null;
+    return {
+      hours: Number(match[1]),
+      minutes: Number(match[2]),
+    };
+  };
+
+  const buildGoogleCalendarUrl = (match) => {
+    const matchDate = parseMatchDate(match.date);
+    const firstTime = parseFirstMatchTime(match.time);
+    const title = match.home
+      ? `ASK Lipůvka vs. ${match.opponent}`
+      : `${match.opponent} vs. ASK Lipůvka`;
+
+    let dates;
+    if (firstTime) {
+      const start = new Date(matchDate);
+      start.setHours(firstTime.hours, firstTime.minutes, 0, 0);
+      const end = new Date(start.getTime() + 90 * 60 * 1000);
+      dates = `${formatCalendarDate(start)}T${padCalendarNumber(start.getHours())}${padCalendarNumber(start.getMinutes())}00/${formatCalendarDate(end)}T${padCalendarNumber(end.getHours())}${padCalendarNumber(end.getMinutes())}00`;
+    } else {
+      const end = new Date(matchDate);
+      end.setDate(end.getDate() + 1);
+      dates = `${formatCalendarDate(matchDate)}/${formatCalendarDate(end)}`;
+    }
+
+    const details = [
+      activeCategoryLabel ? `Kategorie: ${activeCategoryLabel}` : '',
+      match.time ? `Čas: ${match.time}` : '',
+      match.venue ? `Místo: ${match.venue}` : '',
+      match.result1 || match.result2 ? `Výsledek: ${[match.result1, match.result2].filter(Boolean).join(' / ')}` : '',
+    ].filter(Boolean).join('\n');
+
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: title,
+      dates,
+      ctz: 'Europe/Prague',
+      details,
+      location: match.home ? 'Lipůvka' : match.venue || '',
+    });
+
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  };
+
   const allAvailableNews = useMemo(() => {
     return firebaseNews.length > 0 ? firebaseNews : newsItems;
   }, [firebaseNews]);
@@ -2133,14 +2188,14 @@ export default function AskLipuvkaWeb() {
         </div>
 
         <div className="mb-6">
-          <h2 className={`mb-2 text-3xl font-bold ${activeCategoryStyle.text}`}>Nadcházející zápasy</h2>
+          <h2 className={`mb-2 text-3xl font-bold ${activeCategoryStyle.text}`}>Nadcházející zápasy/akce</h2>
 
           <button
             type="button"
             onClick={() => setIsScheduleOpen(true)}
             className={`mt-4 rounded-xl px-6 py-3 font-semibold transition hover:scale-[1.02] ${activeCategoryStyle.button}`}
           >
-            Rozpis zápasů – Jaro 2026
+            Rozpis zápasů/akcí – Jaro 2026
           </button>
         </div>
 
@@ -3086,7 +3141,7 @@ export default function AskLipuvkaWeb() {
                   <div className={`mb-2 rounded-full px-4 py-1 text-sm font-semibold backdrop-blur ${activeCategoryStyle.badge}`}>
                     {activeCategoryLabel}
                   </div>
-                  <h2 className="text-3xl font-black md:text-4xl">Rozpis zápasů</h2>
+                  <h2 className="text-3xl font-black md:text-4xl">Rozpis zápasů/akcí</h2>
                   <p className="mt-2 text-lg text-white/90">Jaro 2026</p>
                 </div>
               </div>
@@ -3096,7 +3151,7 @@ export default function AskLipuvkaWeb() {
                   <span className={`rounded-full px-3 py-1 text-sm font-bold ${activeCategoryStyle.softBadge}`}>
                     {activeCategoryShortLabel}
                   </span>
-                  <span className={`text-sm ${softMutedTextClass}`}>Kompletní přehled zápasů vybrané kategorie</span>
+                  <span className={`text-sm ${softMutedTextClass}`}>Kompletní přehled zápasů a akcí vybrané kategorie</span>
                 </div>
 
                 <div className="space-y-4">
@@ -3108,14 +3163,22 @@ export default function AskLipuvkaWeb() {
                       const label2 = m.matchLabel2?.trim() || '2. blok';
 
                       return (
-                        <button
-                          type="button"
+                        <div
                           key={m.id || `schedule-${m.date}-${m.opponent}`}
+                          role="button"
+                          tabIndex={0}
                           onClick={() => {
                             setIsScheduleOpen(false);
                             if (m.id) navigate(`/zapas/${m.id}`);
                           }}
-                          className={`group w-full rounded-2xl border p-5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              setIsScheduleOpen(false);
+                              if (m.id) navigate(`/zapas/${m.id}`);
+                            }
+                          }}
+                          className={`group w-full cursor-pointer rounded-2xl border p-5 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-md ${
                             isToday
                               ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
                               : categoryPanelThemeClass(categoryStyle)
@@ -3165,6 +3228,31 @@ export default function AskLipuvkaWeb() {
                                 </svg>
                                 Detail zápasu
                               </div>
+
+
+                              <a
+                                href={buildGoogleCalendarUrl(m)}
+                                target="_blank"
+                                rel="noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-3 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition duration-200 hover:scale-[1.03] hover:shadow-md"
+                              >
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-4 w-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    d="M8 7V3m8 4V3M5 11h14M7 21h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                  />
+                                </svg>
+                                Přidat do Google kalendáře
+                              </a>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-3">
@@ -3196,12 +3284,12 @@ export default function AskLipuvkaWeb() {
                               )}
                             </div>
                           </div>
-                        </button>
+                        </div>
                       );
                     })
                   ) : (
                     <div className={`rounded-2xl p-5 ${mutedBoxThemeClass}`}>
-                      Pro tuto kategorii zatím není rozpis doplněný.
+                      Pro tuto kategorii zatím není rozpis zápasů/akcí doplněný.
                     </div>
                   )}
                 </div>
