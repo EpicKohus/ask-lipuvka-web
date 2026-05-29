@@ -35,6 +35,7 @@ export default function AskLipuvkaWeb() {
   const [firebaseNews, setFirebaseNews] = useState([]);
   const [firebaseMatches, setFirebaseMatches] = useState([]);
   const [firebaseGallery, setFirebaseGallery] = useState([]);
+  const [siteDataReady, setSiteDataReady] = useState(false);
 
   const DEFAULT_CURRENT_SEASON = '2025/26';
   const NEXT_SEASON = '2026/27';
@@ -122,10 +123,11 @@ export default function AskLipuvkaWeb() {
   }), []);
 
   const visibleCategories = useMemo(() => {
+    if (!siteDataReady) return [];
     const activeTeams = seasonTeams || defaultSeasonTeams;
     const visible = categories.filter((category) => activeTeams[category.id] !== false);
     return visible.length > 0 ? visible : categories.slice(0, 3);
-  }, [seasonTeams, defaultSeasonTeams]);
+  }, [seasonTeams, defaultSeasonTeams, siteDataReady]);
 
   const faqItems = [
     {
@@ -501,12 +503,14 @@ export default function AskLipuvkaWeb() {
   };
 
   const allAvailableNews = useMemo(() => {
+    if (!siteDataReady) return [];
     return firebaseNews.length > 0 ? firebaseNews : newsItems;
-  }, [firebaseNews]);
+  }, [firebaseNews, siteDataReady]);
 
   const allAvailableMatches = useMemo(() => {
+    if (!siteDataReady) return [];
     return firebaseMatches.length > 0 ? firebaseMatches : matches;
-  }, [firebaseMatches]);
+  }, [firebaseMatches, siteDataReady]);
 
   const seasonOptions = useMemo(() => {
     const seasons = [currentSeason, DEFAULT_CURRENT_SEASON, NEXT_SEASON];
@@ -636,7 +640,7 @@ export default function AskLipuvkaWeb() {
         return {
           badge: 'bg-blue-600 text-white',
           softBadge: 'bg-blue-100 text-blue-700',
-          light: 'bg-blue-50 border-blue-200 dark:bg-[#0b1726] dark:border-blue-900/60',
+          light: 'bg-blue-50 border-blue-200',
           text: 'text-blue-600',
           button: 'bg-blue-600 text-white hover:bg-blue-700',
           buttonOutline: 'border-blue-500 text-blue-600 hover:bg-blue-50',
@@ -645,7 +649,7 @@ export default function AskLipuvkaWeb() {
         return {
           badge: 'bg-green-600 text-white',
           softBadge: 'bg-green-100 text-green-700',
-          light: 'bg-green-50 border-green-200 dark:bg-[#0b1b14] dark:border-green-800/70',
+          light: 'bg-green-50 border-green-200',
           text: 'text-green-600',
           button: 'bg-green-600 text-white hover:bg-green-700',
           buttonOutline: 'border-green-500 text-green-600 hover:bg-green-50',
@@ -654,7 +658,7 @@ export default function AskLipuvkaWeb() {
         return {
           badge: 'bg-orange-500 text-white',
           softBadge: 'bg-orange-100 text-orange-700',
-          light: 'bg-orange-50 border-orange-200 dark:bg-[#1f1608] dark:border-orange-900/60',
+          light: 'bg-orange-50 border-orange-200',
           text: 'text-orange-600',
           button: 'bg-orange-500 text-white hover:bg-orange-600',
           buttonOutline: 'border-orange-500 text-orange-600 hover:bg-orange-50',
@@ -663,7 +667,7 @@ export default function AskLipuvkaWeb() {
         return {
           badge: 'bg-purple-600 text-white',
           softBadge: 'bg-purple-100 text-purple-700',
-          light: 'bg-purple-50 border-purple-200 dark:bg-[#171126] dark:border-purple-900/60',
+          light: 'bg-purple-50 border-purple-200',
           text: 'text-purple-600',
           button: 'bg-purple-600 text-white hover:bg-purple-700',
           buttonOutline: 'border-purple-500 text-purple-600 hover:bg-purple-50',
@@ -672,7 +676,7 @@ export default function AskLipuvkaWeb() {
         return {
           badge: 'bg-red-600 text-white',
           softBadge: 'bg-red-100 text-red-700',
-          light: 'bg-red-50 border-red-200 dark:bg-[#240f12] dark:border-red-900/60',
+          light: 'bg-red-50 border-red-200',
           text: 'text-red-600',
           button: 'bg-red-600 text-white hover:bg-red-700',
           buttonOutline: 'border-red-500 text-red-600 hover:bg-red-50',
@@ -681,7 +685,7 @@ export default function AskLipuvkaWeb() {
         return {
           badge: 'bg-indigo-600 text-white',
           softBadge: 'bg-indigo-100 text-indigo-700',
-          light: 'bg-indigo-50 border-indigo-200 dark:bg-[#11142a] dark:border-indigo-900/60',
+          light: 'bg-indigo-50 border-indigo-200',
           text: 'text-indigo-600',
           button: 'bg-indigo-600 text-white hover:bg-indigo-700',
           buttonOutline: 'border-indigo-500 text-indigo-600 hover:bg-indigo-50',
@@ -690,7 +694,7 @@ export default function AskLipuvkaWeb() {
         return {
           badge: 'bg-rose-600 text-white',
           softBadge: 'bg-rose-100 text-rose-700',
-          light: 'bg-rose-50 border-rose-200 dark:bg-[#241015] dark:border-rose-900/60',
+          light: 'bg-rose-50 border-rose-200',
           text: 'text-rose-600',
           button: 'bg-rose-600 text-white hover:bg-rose-700',
           buttonOutline: 'border-rose-500 text-rose-600 hover:bg-rose-50',
@@ -699,7 +703,7 @@ export default function AskLipuvkaWeb() {
         return {
           badge: 'bg-gray-500 text-white',
           softBadge: 'bg-gray-100 text-gray-700',
-          light: 'bg-gray-50 border-gray-200 dark:bg-[#101a16] dark:border-gray-800',
+          light: 'bg-gray-50 border-gray-200',
           text: 'text-gray-600',
           button: 'bg-gray-500 text-white hover:bg-gray-600',
           buttonOutline: 'border-gray-500 text-gray-600 hover:bg-gray-50',
@@ -807,9 +811,10 @@ export default function AskLipuvkaWeb() {
   };
 
   useEffect(() => {
+    if (!siteDataReady) return;
     if (visibleCategories.some((category) => category.id === activeCategory)) return;
     setActiveCategory(visibleCategories[0]?.id || 'mladsi-pripravka');
-  }, [visibleCategories, activeCategory]);
+  }, [visibleCategories, activeCategory, siteDataReady]);
 
   useEffect(() => {
     const loadVisits = async () => {
@@ -952,6 +957,8 @@ export default function AskLipuvkaWeb() {
         setFirebaseGallery(loadedGallery);
       } catch (error) {
         console.error('Firebase chyba:', error);
+      } finally {
+        setSiteDataReady(true);
       }
     };
 
@@ -1453,6 +1460,10 @@ export default function AskLipuvkaWeb() {
       </button>
     );
   };
+
+  if (!siteDataReady) {
+    return <div className="app-loading" style={{ minHeight: '100vh', background: '#07140f' }} />;
+  }
 
   return (
     <div className="min-h-screen bg-white text-gray-900">
