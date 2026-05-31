@@ -70,7 +70,15 @@ export default function AskLipuvkaWeb() {
     return new Date(today.getFullYear(), today.getMonth(), today.getDate());
   }, []);
 
-  const [calendarView, setCalendarView] = useState('month');
+  const [calendarView, setCalendarView] = useState(() => {
+    if (typeof window === 'undefined') return 'month';
+    const savedView = localStorage.getItem('ask-lipuvka-calendar-view');
+    return ['month', 'week', 'day'].includes(savedView) ? savedView : 'month';
+  });
+  const [calendarTeamFilter, setCalendarTeamFilter] = useState(() => {
+    if (typeof window === 'undefined') return 'all';
+    return localStorage.getItem('ask-lipuvka-calendar-team-filter') || 'all';
+  });
   const [calendarCursorDate, setCalendarCursorDate] = useState(todayStart);
 
   const categories = [
@@ -974,6 +982,12 @@ export default function AskLipuvkaWeb() {
   }, [visibleCategories, activeCategory, siteDataReady]);
 
   useEffect(() => {
+    if (!siteDataReady || calendarTeamFilter === 'all') return;
+    if (visibleCategories.some((category) => category.id === calendarTeamFilter)) return;
+    changeCalendarTeamFilter('all');
+  }, [visibleCategories, calendarTeamFilter, siteDataReady]);
+
+  useEffect(() => {
     const loadVisits = async () => {
       try {
         const visitsDocRef = doc(db, 'siteStats', 'visits');
@@ -1699,6 +1713,7 @@ export default function AskLipuvkaWeb() {
     const rangeEnd = calendarRange.end;
 
     calendarMatches.forEach((match) => {
+      if (calendarTeamFilter !== 'all' && match.category !== calendarTeamFilter) return;
       const start = parseMatchDate(match.date);
       if (start < rangeStart || start >= rangeEnd) return;
       const firstTime = parseFirstMatchTime(match.time);
@@ -1724,6 +1739,7 @@ export default function AskLipuvkaWeb() {
     });
 
     availableTrainings.forEach((training) => {
+      if (calendarTeamFilter !== 'all' && training.category !== calendarTeamFilter) return;
       const target = Number(training.weekday) === 7 ? 0 : Number(training.weekday);
       if (!Number.isFinite(target)) return;
       const current = new Date(rangeStart);
@@ -1756,7 +1772,7 @@ export default function AskLipuvkaWeb() {
     });
 
     return events.sort((a, b) => a.start - b.start || a.title.localeCompare(b.title, 'cs'));
-  }, [calendarMatches, availableTrainings, calendarView, calendarCursorDate]);
+  }, [calendarMatches, availableTrainings, calendarView, calendarCursorDate, calendarTeamFilter]);
 
   const calendarTitle = useMemo(() => {
     if (calendarView === 'day') return formatReadableDate(calendarCursorDate);
@@ -1792,6 +1808,33 @@ export default function AskLipuvkaWeb() {
   }, [calendarCursorDate]);
 
   const getEventsForDay = (date) => calendarEvents.filter((event) => isSameDay(event.date, date));
+
+  const changeCalendarView = (view) => {
+    setCalendarView(view);
+    try {
+      localStorage.setItem('ask-lipuvka-calendar-view', view);
+    } catch (error) {
+      console.error('Nepodařilo se uložit zobrazení kalendáře:', error);
+    }
+  };
+
+  const changeCalendarTeamFilter = (teamId) => {
+    setCalendarTeamFilter(teamId);
+    try {
+      localStorage.setItem('ask-lipuvka-calendar-team-filter', teamId);
+    } catch (error) {
+      console.error('Nepodařilo se uložit filtr kalendáře:', error);
+    }
+  };
+
+  const calendarFilterOptions = useMemo(() => [
+    { id: 'all', label: 'Všechny týmy', shortLabel: 'Vše' },
+    ...visibleCategories.map((category) => ({
+      id: category.id,
+      label: category.label,
+      shortLabel: category.shortLabel,
+    })),
+  ], [visibleCategories]);
 
   const calendarDayNames = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
 
@@ -1839,12 +1882,41 @@ export default function AskLipuvkaWeb() {
               <button
                 key={id}
                 type="button"
-                onClick={() => setCalendarView(id)}
+                onClick={() => changeCalendarView(id)}
                 className={`rounded-full px-4 py-2 text-sm font-bold transition ${calendarView === id ? 'bg-green-600 text-white shadow-sm' : theme === 'dark' ? 'bg-white/10 text-slate-200 hover:bg-white/15' : 'bg-white text-gray-700 hover:bg-green-50'}`}
               >
                 {label}
               </button>
             ))}
+          </div>
+        </div>
+
+        <div className={`mb-5 rounded-3xl border p-4 ${theme === 'dark' ? 'border-emerald-900/45 bg-white/5' : 'border-green-100 bg-white/75'}`}>
+          <div className={`mb-3 text-xs font-black uppercase tracking-wide ${softMutedTextClass}`}>Filtr podle týmu</div>
+          <div className="flex flex-wrap gap-2">
+            {calendarFilterOptions.map((option) => {
+              const active = calendarTeamFilter === option.id;
+              const style = option.id === 'all' ? null : getCategoryStyle(option.id);
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => changeCalendarTeamFilter(option.id)}
+                  className={`rounded-full px-4 py-2 text-sm font-black transition ${
+                    active
+                      ? option.id === 'all'
+                        ? 'bg-green-600 text-white shadow-sm'
+                        : style.button
+                      : theme === 'dark'
+                        ? 'bg-white/10 text-slate-200 hover:bg-white/15'
+                        : 'bg-white text-gray-700 hover:bg-green-50'
+                  }`}
+                  title={option.label}
+                >
+                  {option.shortLabel}
+                </button>
+              );
+            })}
           </div>
         </div>
 
