@@ -1877,7 +1877,7 @@ export default function AskLipuvkaWeb() {
               Tréninky a zápasy
             </h1>
             <p className={`mt-2 max-w-2xl ${mutedTextClass}`}>
-              Samostatná stránka s měsíčním, týdenním a denním přehledem. Tréninky se berou z adminu a zápasy z rozpisu.
+              Přehled všech týmů v kalendáři.
             </p>
           </div>
 
