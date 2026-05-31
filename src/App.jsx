@@ -38,6 +38,7 @@ export default function AskLipuvkaWeb() {
   const [firebaseMatches, setFirebaseMatches] = useState([]);
   const [firebaseGallery, setFirebaseGallery] = useState([]);
   const [firebaseTrainings, setFirebaseTrainings] = useState([]);
+  const [firebaseTrainingBreaks, setFirebaseTrainingBreaks] = useState([]);
   const [siteDataReady, setSiteDataReady] = useState(false);
 
   const DEFAULT_CURRENT_SEASON = '2025/26';
@@ -689,6 +690,12 @@ export default function AskLipuvkaWeb() {
       });
   }, [firebaseTrainings, CURRENT_SEASON, visibleCategories]);
 
+  const availableTrainingBreaks = useMemo(() => {
+    return firebaseTrainingBreaks
+      .filter((item) => getItemSeason(item) === CURRENT_SEASON && item.active !== false)
+      .filter((item) => item.category === 'all' || visibleCategories.some((category) => category.id === item.category));
+  }, [firebaseTrainingBreaks, CURRENT_SEASON, visibleCategories]);
+
   const activeCategoryTrainings = useMemo(() => {
     return availableTrainings.filter((training) => training.category === activeCategory);
   }, [availableTrainings, activeCategory]);
@@ -1129,10 +1136,17 @@ export default function AskLipuvkaWeb() {
           ...item.data(),
         }));
 
+        const trainingBreaksSnapshot = await getDocs(collection(db, 'trainingBreaks'));
+        const loadedTrainingBreaks = trainingBreaksSnapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+
         setFirebaseNews(loadedNews);
         setFirebaseMatches(loadedMatches);
         setFirebaseGallery(loadedGallery);
         setFirebaseTrainings(loadedTrainings);
+        setFirebaseTrainingBreaks(loadedTrainingBreaks);
       } catch (error) {
         console.error('Firebase chyba:', error);
       } finally {
@@ -1707,6 +1721,20 @@ export default function AskLipuvkaWeb() {
     return `https://calendar.google.com/calendar/render?${params.toString()}`;
   };
 
+  const toBreakDateKey = (value) => String(value || '').replace(/-/g, '');
+
+  const isTrainingCancelledByBreak = (training, date) => {
+    const dayKey = formatCalendarDate(date);
+
+    return availableTrainingBreaks.some((item) => {
+      if (item.category !== 'all' && item.category !== training.category) return false;
+      const fromKey = toBreakDateKey(item.dateFrom);
+      const toKey = toBreakDateKey(item.dateTo || item.dateFrom);
+      if (!fromKey || !toKey) return false;
+      return dayKey >= fromKey && dayKey <= toKey;
+    });
+  };
+
   const calendarEvents = useMemo(() => {
     const events = [];
     const matchDayKeys = new Set();
@@ -1750,7 +1778,7 @@ export default function AskLipuvkaWeb() {
       while (current < rangeEnd) {
         if (current.getDay() === target) {
           const dateKey = `${training.category}-${formatCalendarDate(current)}`;
-          if (matchDayKeys.has(dateKey)) {
+          if (matchDayKeys.has(dateKey) || isTrainingCancelledByBreak(training, current)) {
             current.setDate(current.getDate() + 1);
             continue;
           }
@@ -1780,7 +1808,7 @@ export default function AskLipuvkaWeb() {
     });
 
     return events.sort((a, b) => a.start - b.start || a.title.localeCompare(b.title, 'cs'));
-  }, [calendarMatches, availableTrainings, calendarView, calendarCursorDate, calendarTeamFilter]);
+  }, [calendarMatches, availableTrainings, availableTrainingBreaks, calendarView, calendarCursorDate, calendarTeamFilter]);
 
   const calendarTitle = useMemo(() => {
     if (calendarView === 'day') return formatReadableDate(calendarCursorDate);

@@ -54,6 +54,7 @@ export default function Admin() {
   const [newsItems, setNewsItems] = useState([]);
   const [matches, setMatches] = useState([]);
   const [trainings, setTrainings] = useState([]);
+  const [trainingBreaks, setTrainingBreaks] = useState([]);
   const [galleryAlbums, setGalleryAlbums] = useState([]);
   const [merchProducts, setMerchProducts] = useState([]);
   const [merchOrders, setMerchOrders] = useState([]);
@@ -109,12 +110,23 @@ export default function Admin() {
 
   const [editingMatchId, setEditingMatchId] = useState(null);
   const [editingTrainingId, setEditingTrainingId] = useState(null);
+  const [editingTrainingBreakId, setEditingTrainingBreakId] = useState(null);
   const [trainingForm, setTrainingForm] = useState({
     season: CURRENT_SEASON,
     category: 'mladsi-pripravka',
     weekday: '2',
     timeFrom: '',
     timeTo: '',
+    note: '',
+    active: true,
+  });
+
+  const [trainingBreakForm, setTrainingBreakForm] = useState({
+    season: CURRENT_SEASON,
+    category: 'all',
+    title: '',
+    dateFrom: '',
+    dateTo: '',
     note: '',
     active: true,
   });
@@ -336,6 +348,19 @@ export default function Admin() {
     });
   };
 
+  const resetTrainingBreakForm = () => {
+    setEditingTrainingBreakId(null);
+    setTrainingBreakForm({
+      season: CURRENT_SEASON,
+      category: 'all',
+      title: '',
+      dateFrom: '',
+      dateTo: '',
+      note: '',
+      active: true,
+    });
+  };
+
   const resetGalleryForm = () => {
     setEditingGalleryId(null);
     setGalleryForm({
@@ -370,6 +395,12 @@ export default function Admin() {
 
       const trainingsSnapshot = await getDocs(collection(db, 'trainings'));
       const loadedTrainings = trainingsSnapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
+
+      const trainingBreaksSnapshot = await getDocs(collection(db, 'trainingBreaks'));
+      const loadedTrainingBreaks = trainingBreaksSnapshot.docs.map((item) => ({
         id: item.id,
         ...item.data(),
       }));
@@ -468,6 +499,7 @@ export default function Admin() {
       setNewsItems(loadedNews);
       setMatches(loadedMatches);
       setTrainings(loadedTrainings);
+      setTrainingBreaks(loadedTrainingBreaks);
       setGalleryAlbums(loadedGallery);
       setMerchProducts(loadedMerchProducts);
       setMerchOrders(loadedMerchOrders);
@@ -917,6 +949,127 @@ export default function Admin() {
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleTrainingBreakChange = (field, value) => {
+    setTrainingBreakForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+  };
+
+  const getTrainingBreakTitle = (item) => item?.title || item?.note || 'Pauza tréninků';
+
+  const handleSaveTrainingBreak = async (e) => {
+    e.preventDefault();
+
+    if (!trainingBreakForm.dateFrom || !trainingBreakForm.dateTo) {
+      alert('Vyplň datum od a datum do.');
+      return;
+    }
+
+    if (trainingBreakForm.dateFrom > trainingBreakForm.dateTo) {
+      alert('Datum od nesmí být později než datum do.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const payload = {
+        season: trainingBreakForm.season || CURRENT_SEASON,
+        category: trainingBreakForm.category || 'all',
+        title: trainingBreakForm.title.trim() || 'Pauza tréninků',
+        dateFrom: trainingBreakForm.dateFrom,
+        dateTo: trainingBreakForm.dateTo,
+        note: trainingBreakForm.note.trim(),
+        active: Boolean(trainingBreakForm.active),
+      };
+
+      const teamText = payload.category === 'all' ? 'Všechny týmy' : getCategoryLabel(payload.category);
+      const detail = `${teamText} • ${payload.dateFrom} až ${payload.dateTo}${payload.note ? ` • ${payload.note}` : ''}`;
+
+      if (editingTrainingBreakId) {
+        await updateDoc(doc(db, 'trainingBreaks', editingTrainingBreakId), payload);
+        await logAdminAction({
+          action: 'update_training_break',
+          section: 'Pauzy tréninků',
+          targetId: editingTrainingBreakId,
+          targetTitle: payload.title,
+          detail,
+          collectionName: 'trainingBreaks',
+          beforeData: trainingBreaks.find((item) => item.id === editingTrainingBreakId),
+          afterData: payload,
+          canRestore: true,
+        });
+      } else {
+        const createdBreak = await addDoc(collection(db, 'trainingBreaks'), payload);
+        await logAdminAction({
+          action: 'create_training_break',
+          section: 'Pauzy tréninků',
+          targetId: createdBreak.id,
+          targetTitle: payload.title,
+          detail,
+          collectionName: 'trainingBreaks',
+          afterData: payload,
+          canRestore: true,
+        });
+      }
+
+      await loadAllData();
+      resetTrainingBreakForm();
+      alert(editingTrainingBreakId ? 'Pauza byla upravena.' : 'Pauza byla přidána.');
+    } catch (error) {
+      console.error('Chyba při ukládání pauzy tréninků:', error);
+      alert(`Nepodařilo se uložit pauzu: ${error?.message || error}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditTrainingBreak = (item) => {
+    setEditingTrainingBreakId(item.id);
+    setTrainingBreakForm({
+      season: getItemSeason(item),
+      category: item.category || 'all',
+      title: item.title || '',
+      dateFrom: item.dateFrom || '',
+      dateTo: item.dateTo || item.dateFrom || '',
+      note: item.note || '',
+      active: item.active !== false,
+    });
+    setActiveSection('trainingBreaks');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteTrainingBreak = async (breakId) => {
+    const confirmed = window.confirm('Opravdu chceš smazat tuto pauzu tréninků?');
+    if (!confirmed) return;
+
+    try {
+      const deletedBreak = trainingBreaks.find((item) => item.id === breakId);
+      await deleteDoc(doc(db, 'trainingBreaks', breakId));
+      await logAdminAction({
+        action: 'delete_training_break',
+        section: 'Pauzy tréninků',
+        targetId: breakId,
+        targetTitle: getTrainingBreakTitle(deletedBreak),
+        detail: deletedBreak ? `${deletedBreak.dateFrom || ''} až ${deletedBreak.dateTo || ''}` : '',
+        collectionName: 'trainingBreaks',
+        beforeData: deletedBreak,
+        canRestore: true,
+      });
+      await loadAllData();
+
+      if (editingTrainingBreakId === breakId) {
+        resetTrainingBreakForm();
+      }
+
+      alert('Pauza byla smazána.');
+    } catch (error) {
+      console.error('Chyba při mazání pauzy tréninků:', error);
+      alert('Nepodařilo se smazat pauzu.');
+    }
   };
 
   const handleSaveTraining = async (e) => {
@@ -1523,6 +1676,12 @@ export default function Admin() {
         return 'Upravil trénink';
       case 'delete_training':
         return 'Smazal trénink';
+      case 'create_training_break':
+        return 'Přidal pauzu tréninků';
+      case 'update_training_break':
+        return 'Upravil pauzu tréninků';
+      case 'delete_training_break':
+        return 'Smazal pauzu tréninků';
       case 'create_gallery':
         return 'Přidal album';
       case 'update_gallery':
@@ -2227,6 +2386,14 @@ export default function Admin() {
             className={sectionButtonClass(activeSection === 'trainings')}
           >
             Tréninky
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('trainingBreaks')}
+            className={sectionButtonClass(activeSection === 'trainingBreaks')}
+          >
+            Pauzy tréninků
           </button>
 
           <button
@@ -3869,6 +4036,169 @@ L`}
                     ) : (
                       <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
                         Zatím nejsou uložené žádné tréninky.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+
+            {activeSection === 'trainingBreaks' && (
+              <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
+                <div className={cardSoftClass}>
+                  <div className="mb-6">
+                    <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                      Pauzy / zrušené tréninky
+                    </div>
+                    <h2 className="text-2xl font-bold text-green-700">
+                      {editingTrainingBreakId ? 'Upravit pauzu' : 'Přidat pauzu'}
+                    </h2>
+                    <p className="mt-2 text-sm text-gray-600">
+                      Zadej období, kdy se pravidelné tréninky nemají zobrazovat v kalendáři. Zápasy zůstanou vidět.
+                    </p>
+                  </div>
+
+                  <form onSubmit={handleSaveTrainingBreak} className="space-y-5">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Sezona</label>
+                        <select
+                          value={trainingBreakForm.season}
+                          onChange={(e) => handleTrainingBreakChange('season', e.target.value)}
+                          className={inputClass}
+                        >
+                          {seasonOptions.map((season) => (
+                            <option key={season} value={season}>{season}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Tým</label>
+                        <select
+                          value={trainingBreakForm.category}
+                          onChange={(e) => handleTrainingBreakChange('category', e.target.value)}
+                          className={inputClass}
+                        >
+                          <option value="all">Všechny týmy</option>
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.id}>{category.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Od</label>
+                        <input
+                          type="date"
+                          value={trainingBreakForm.dateFrom}
+                          onChange={(e) => handleTrainingBreakChange('dateFrom', e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Do</label>
+                        <input
+                          type="date"
+                          value={trainingBreakForm.dateTo}
+                          onChange={(e) => handleTrainingBreakChange('dateTo', e.target.value)}
+                          className={inputClass}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Název</label>
+                      <input
+                        value={trainingBreakForm.title}
+                        onChange={(e) => handleTrainingBreakChange('title', e.target.value)}
+                        className={inputClass}
+                        placeholder="např. Vánoční pauza, prázdniny, zrušený trénink..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Poznámka</label>
+                      <textarea
+                        rows="3"
+                        value={trainingBreakForm.note}
+                        onChange={(e) => handleTrainingBreakChange('note', e.target.value)}
+                        className={inputClass}
+                        placeholder="např. tělocvična zavřená, svátek, prázdniny..."
+                      />
+                    </div>
+
+                    <label className="flex items-center gap-3 rounded-2xl bg-white p-4 text-sm font-semibold text-gray-700 shadow-sm">
+                      <input
+                        type="checkbox"
+                        checked={trainingBreakForm.active}
+                        onChange={(e) => handleTrainingBreakChange('active', e.target.checked)}
+                        className="h-5 w-5 accent-green-600"
+                      />
+                      Pauza je aktivní
+                    </label>
+
+                    <div className="flex flex-wrap gap-3">
+                      <button type="submit" disabled={saving} className={greenButtonClass}>
+                        {saving ? 'Ukládám…' : editingTrainingBreakId ? 'Uložit změny' : 'Přidat pauzu'}
+                      </button>
+
+                      {editingTrainingBreakId && (
+                        <button type="button" onClick={resetTrainingBreakForm} className={outlineButtonClass}>
+                          Zrušit úpravu
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+
+                <div className={cardClass}>
+                  <div className="mb-5">
+                    <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                      Uložené pauzy
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900">Přehled</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    {sortedTrainingBreaks.length > 0 ? (
+                      sortedTrainingBreaks.map((item) => (
+                        <div key={item.id} className="rounded-2xl border border-orange-100 bg-orange-50/70 p-4">
+                          <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <div className="text-lg font-bold text-gray-900">
+                                {getTrainingBreakTitle(item)}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                {getItemSeason(item)} · {item.category === 'all' ? 'Všechny týmy' : getCategoryLabel(item.category)} · {item.dateFrom || '—'} až {item.dateTo || item.dateFrom || '—'}
+                              </div>
+                            </div>
+                            <span className={`rounded-full px-3 py-1 text-xs font-bold ${item.active === false ? 'bg-gray-200 text-gray-600' : 'bg-orange-100 text-orange-700'}`}>
+                              {item.active === false ? 'Vypnuté' : 'Aktivní'}
+                            </span>
+                          </div>
+
+                          <div className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-gray-700">
+                            {item.note || 'bez poznámky'}
+                          </div>
+
+                          <div className="flex flex-wrap gap-2">
+                            <button type="button" onClick={() => handleEditTrainingBreak(item)} className={outlineButtonClass}>
+                              Upravit
+                            </button>
+                            <button type="button" onClick={() => handleDeleteTrainingBreak(item.id)} className={dangerButtonClass}>
+                              Smazat
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+                        Zatím nejsou uložené žádné pauzy tréninků.
                       </div>
                     )}
                   </div>
