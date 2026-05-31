@@ -607,6 +607,16 @@ export default function Admin() {
     });
   }, [trainings]);
 
+  const sortedTrainingBreaks = useMemo(() => {
+    return [...trainingBreaks].sort((a, b) => {
+      const seasonCompare = String(b.season || '').localeCompare(String(a.season || ''), 'cs');
+      if (seasonCompare !== 0) return seasonCompare;
+      const dateCompare = String(a.dateFrom || '').localeCompare(String(b.dateFrom || ''), 'cs');
+      if (dateCompare !== 0) return dateCompare;
+      return String(a.title || '').localeCompare(String(b.title || ''), 'cs');
+    });
+  }, [trainingBreaks]);
+
   const getWeekdayLabel = (weekday) =>
     weekdayOptions.find((item) => String(item.value) === String(weekday))?.label || weekday;
 
