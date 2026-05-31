@@ -1709,6 +1709,7 @@ export default function AskLipuvkaWeb() {
 
   const calendarEvents = useMemo(() => {
     const events = [];
+    const matchDayKeys = new Set();
     const rangeStart = calendarRange.start;
     const rangeEnd = calendarRange.end;
 
@@ -1716,6 +1717,8 @@ export default function AskLipuvkaWeb() {
       if (calendarTeamFilter !== 'all' && match.category !== calendarTeamFilter) return;
       const start = parseMatchDate(match.date);
       if (start < rangeStart || start >= rangeEnd) return;
+      const dateKey = `${match.category}-${formatCalendarDate(start)}`;
+      matchDayKeys.add(dateKey);
       const firstTime = parseFirstMatchTime(match.time);
       if (firstTime) start.setHours(firstTime.hours, firstTime.minutes, 0, 0);
       const end = new Date(start.getTime() + 90 * 60 * 1000);
@@ -1746,6 +1749,11 @@ export default function AskLipuvkaWeb() {
       current.setHours(0, 0, 0, 0);
       while (current < rangeEnd) {
         if (current.getDay() === target) {
+          const dateKey = `${training.category}-${formatCalendarDate(current)}`;
+          if (matchDayKeys.has(dateKey)) {
+            current.setDate(current.getDate() + 1);
+            continue;
+          }
           const start = getTrainingDateTime(current, training.timeFrom);
           const end = getTrainingDateTime(current, training.timeTo);
           if (end <= start) end.setTime(start.getTime() + 90 * 60 * 1000);
