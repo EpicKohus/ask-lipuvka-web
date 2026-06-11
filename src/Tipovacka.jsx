@@ -20,7 +20,7 @@ const PLAYERS = [
 
 const ADMIN_CODE = 'radek2026';
 const PLAYER_CODES = {
-  radek: 'radek2026',
+  radek: 'radek1986',
   david: 'david2026',
   jirka: 'jirka2026',
   lukin: 'lukin2026',
