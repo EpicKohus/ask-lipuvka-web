@@ -20,7 +20,7 @@ const PLAYERS = [
 
 const ADMIN_CODE = 'radek2026';
 const PLAYER_CODES = {
-  radek: 'radek1986',
+  radek: 'radek2026',
   david: 'david2026',
   jirka: 'jirka2026',
   lukin: 'lukin2026',
@@ -878,6 +878,8 @@ const tipOptions = [
   { value: '2', label: '2', help: 'výhra týmu 2' },
 ];
 
+const PLAYED_ARCHIVE_AFTER_HOURS = 24;
+
 const formatKickoff = (value) => {
   if (!value) return 'bez času';
 
@@ -901,6 +903,14 @@ const isMatchLocked = (match) => {
   return Date.now() >= kickoffDate.getTime();
 };
 
+const isMatchInPlayedArchive = (match) => {
+  if (!match?.kickoff) return false;
+  const kickoffDate = new Date(match.kickoff);
+  if (Number.isNaN(kickoffDate.getTime())) return false;
+  const archiveTime = kickoffDate.getTime() + PLAYED_ARCHIVE_AFTER_HOURS * 60 * 60 * 1000;
+  return Date.now() >= archiveTime;
+};
+
 const getTipDocId = (playerId, matchId) => `${playerId}_${matchId}`;
 
 const getSavedPlayer = () => {
@@ -922,6 +932,7 @@ export default function Tipovacka() {
   const [savingAdmin, setSavingAdmin] = useState(false);
   const [matchForm, setMatchForm] = useState(emptyMatchForm);
   const [editingMatchId, setEditingMatchId] = useState(null);
+  const [matchView, setMatchView] = useState('upcoming');
 
   const selectedPlayerName = PLAYERS.find((player) => player.id === selectedPlayer)?.name || 'hráč';
   const loginPlayerName = PLAYERS.find((player) => player.id === loginPlayer)?.name || 'hráč';
@@ -934,6 +945,22 @@ export default function Tipovacka() {
       return aTime - bTime;
     });
   }, [matches]);
+
+  const upcomingMatches = useMemo(() => {
+    return sortedMatches.filter((match) => !isMatchInPlayedArchive(match));
+  }, [sortedMatches]);
+
+  const playedMatches = useMemo(() => {
+    return sortedMatches
+      .filter((match) => isMatchInPlayedArchive(match))
+      .sort((a, b) => {
+        const aTime = a.kickoff ? new Date(a.kickoff).getTime() : 0;
+        const bTime = b.kickoff ? new Date(b.kickoff).getTime() : 0;
+        return bTime - aTime;
+      });
+  }, [sortedMatches]);
+
+  const visibleMatches = matchView === 'played' ? playedMatches : upcomingMatches;
 
   const tipsByPlayerAndMatch = useMemo(() => {
     const map = new Map();
@@ -1298,8 +1325,46 @@ export default function Tipovacka() {
           </div>
         ) : (
           <section className="space-y-4">
-            {sortedMatches.length > 0 ? (
-              sortedMatches.map((match) => {
+            <div className="mb-4 flex flex-col gap-3 rounded-3xl border border-green-500/20 bg-[#071711] p-4 shadow-lg shadow-black/20 md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="text-sm font-black uppercase tracking-wide text-green-300">
+                  Zápasy
+                </div>
+                <div className="mt-1 text-sm text-gray-400">
+                  {matchView === 'played'
+                    ? 'Odehrané zápasy jsou od nejnovějšího nahoře. Spadnou sem až 24 hodin po začátku.'
+                    : 'Nejbližší zápas je vždy první. Zápas tady zůstane ještě 24 hodin po začátku.'}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 rounded-2xl bg-black/20 p-1">
+                <button
+                  type="button"
+                  onClick={() => setMatchView('upcoming')}
+                  className={`rounded-xl px-4 py-3 text-sm font-black transition ${
+                    matchView === 'upcoming'
+                      ? 'bg-green-500 text-white shadow-lg shadow-green-900/30'
+                      : 'text-gray-300 hover:bg-white/10'
+                  }`}
+                >
+                  Nadcházející ({upcomingMatches.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMatchView('played')}
+                  className={`rounded-xl px-4 py-3 text-sm font-black transition ${
+                    matchView === 'played'
+                      ? 'bg-green-500 text-white shadow-lg shadow-green-900/30'
+                      : 'text-gray-300 hover:bg-white/10'
+                  }`}
+                >
+                  Odehrané ({playedMatches.length})
+                </button>
+              </div>
+            </div>
+
+            {visibleMatches.length > 0 ? (
+              visibleMatches.map((match) => {
                 const locked = isMatchLocked(match);
                 const currentTip = tipsByPlayerAndMatch.get(getTipDocId(selectedPlayer, match.id));
                 const savingThis = savingTipId === getTipDocId(selectedPlayer, match.id);
@@ -1451,7 +1516,9 @@ export default function Tipovacka() {
               })
             ) : (
               <div className="rounded-3xl border border-green-500/20 bg-[#071711] p-8 text-center text-gray-300">
-                Zatím tu nejsou vložené žádné zápasy. Při prvním načtení se má automaticky nahrát rozpis MS.
+                {matchView === 'played'
+                  ? 'Zatím tu nejsou žádné odehrané zápasy.'
+                  : 'Zatím tu nejsou žádné nadcházející zápasy.'}
               </div>
             )}
           </section>
