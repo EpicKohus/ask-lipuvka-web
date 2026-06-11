@@ -1214,6 +1214,19 @@ export default function Tipovacka() {
                 const locked = isMatchLocked(match);
                 const currentTip = tipsByPlayerAndMatch.get(getTipDocId(selectedPlayer, match.id));
                 const savingThis = savingTipId === getTipDocId(selectedPlayer, match.id);
+                const playerTips = PLAYERS.map((player) => {
+                  const tip = tipsByPlayerAndMatch.get(getTipDocId(player.id, match.id));
+                  const isCorrect = Boolean(match.result && tip?.tip === match.result);
+                  const isWrong = Boolean(match.result && tip?.tip && tip.tip !== match.result);
+
+                  return {
+                    ...player,
+                    tip: tip?.tip || '',
+                    isCorrect,
+                    isWrong,
+                  };
+                });
+                const showPlayerTips = locked || adminOpen || Boolean(match.result);
 
                 return (
                   <div
@@ -1281,6 +1294,68 @@ export default function Tipovacka() {
                           ))}
                         </div>
                       </div>
+                    </div>
+
+                    <div className="mt-5 rounded-2xl border border-white/10 bg-black/20 p-4">
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-sm font-black uppercase tracking-wide text-green-300">
+                          Tipy hráčů
+                        </div>
+                        {!showPlayerTips && (
+                          <div className="text-xs font-semibold text-gray-400">
+                            Zobrazí se až po začátku zápasu
+                          </div>
+                        )}
+                      </div>
+
+                      {showPlayerTips ? (
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                          {playerTips.map((playerTip) => (
+                            <div
+                              key={`${match.id}-${playerTip.id}`}
+                              className={`rounded-2xl border px-4 py-3 ${
+                                playerTip.isCorrect
+                                  ? 'border-green-400/40 bg-green-500/15'
+                                  : playerTip.isWrong
+                                  ? 'border-red-400/40 bg-red-500/15'
+                                  : 'border-white/10 bg-white/[0.04]'
+                              }`}
+                            >
+                              <div className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                                {playerTip.name}
+                              </div>
+                              <div className="mt-1 flex items-center gap-2">
+                                <span className="text-2xl font-black text-white">
+                                  {playerTip.tip || '—'}
+                                </span>
+                                {playerTip.isCorrect && (
+                                  <span className="rounded-full bg-green-500 px-2 py-0.5 text-xs font-black text-white">
+                                    +1
+                                  </span>
+                                )}
+                                {playerTip.isWrong && (
+                                  <span className="rounded-full bg-red-500 px-2 py-0.5 text-xs font-black text-white">
+                                    0
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                          {PLAYERS.map((player) => (
+                            <div key={`${match.id}-hidden-${player.id}`} className="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3">
+                              <div className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                                {player.name}
+                              </div>
+                              <div className="mt-1 text-sm font-bold text-gray-500">
+                                skryto
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
