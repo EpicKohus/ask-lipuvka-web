@@ -19,6 +19,13 @@ const PLAYERS = [
 ];
 
 const ADMIN_CODE = 'radek2026';
+const PLAYER_CODES = {
+  radek: 'radek2026',
+  david: 'david2026',
+  jirka: 'jirka2026',
+  lukin: 'lukin2026',
+};
+const PLAYER_STORAGE_KEY = 'ask-ms-tipovacka-player';
 const MATCHES_COLLECTION = 'msTipovackaMatches';
 const TIPS_COLLECTION = 'msTipovackaTips';
 
@@ -896,10 +903,18 @@ const isMatchLocked = (match) => {
 
 const getTipDocId = (playerId, matchId) => `${playerId}_${matchId}`;
 
+const getSavedPlayer = () => {
+  if (typeof window === 'undefined') return '';
+  const saved = window.localStorage.getItem(PLAYER_STORAGE_KEY) || '';
+  return PLAYERS.some((player) => player.id === saved) ? saved : '';
+};
+
 export default function Tipovacka() {
   const [matches, setMatches] = useState([]);
   const [tips, setTips] = useState([]);
-  const [selectedPlayer, setSelectedPlayer] = useState('radek');
+  const [selectedPlayer, setSelectedPlayer] = useState(getSavedPlayer);
+  const [loginPlayer, setLoginPlayer] = useState(() => getSavedPlayer() || 'radek');
+  const [playerCode, setPlayerCode] = useState('');
   const [loading, setLoading] = useState(true);
   const [savingTipId, setSavingTipId] = useState('');
   const [adminCode, setAdminCode] = useState('');
@@ -909,6 +924,8 @@ export default function Tipovacka() {
   const [editingMatchId, setEditingMatchId] = useState(null);
 
   const selectedPlayerName = PLAYERS.find((player) => player.id === selectedPlayer)?.name || 'hráč';
+  const loginPlayerName = PLAYERS.find((player) => player.id === loginPlayer)?.name || 'hráč';
+  const playerUnlocked = Boolean(selectedPlayer);
 
   const sortedMatches = useMemo(() => {
     return [...matches].sort((a, b) => {
@@ -994,7 +1011,31 @@ export default function Tipovacka() {
     loadData();
   }, []);
 
+  const unlockPlayer = () => {
+    const expectedCode = PLAYER_CODES[loginPlayer];
+    if (expectedCode && playerCode.trim().toLowerCase() === expectedCode.toLowerCase()) {
+      setSelectedPlayer(loginPlayer);
+      window.localStorage.setItem(PLAYER_STORAGE_KEY, loginPlayer);
+      setPlayerCode('');
+      return;
+    }
+
+    alert(`Špatný kód pro hráče ${loginPlayerName}.`);
+  };
+
+  const changePlayer = () => {
+    window.localStorage.removeItem(PLAYER_STORAGE_KEY);
+    setLoginPlayer(selectedPlayer || 'radek');
+    setSelectedPlayer('');
+    setPlayerCode('');
+  };
+
   const saveTip = async (match, value) => {
+    if (!playerUnlocked) {
+      alert('Nejdřív se přihlas jako hráč svým kódem.');
+      return;
+    }
+
     if (isMatchLocked(match)) {
       alert('Tenhle zápas už začal. Tip nejde změnit.');
       return;
@@ -1163,22 +1204,70 @@ export default function Tipovacka() {
             <div className="mb-3 text-sm font-black uppercase tracking-wide text-green-300">
               Kdo tipuje?
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
-              {PLAYERS.map((player) => (
+
+            {playerUnlocked ? (
+              <div className="rounded-2xl border border-green-400/25 bg-green-500/10 p-4">
+                <div className="text-sm text-gray-300">Přihlášený hráč</div>
+                <div className="mt-1 text-2xl font-black text-green-300">{selectedPlayerName}</div>
+                <div className="mt-2 text-sm text-gray-400">
+                  Zůstane uložený i po aktualizaci stránky.
+                </div>
                 <button
-                  key={player.id}
                   type="button"
-                  onClick={() => setSelectedPlayer(player.id)}
-                  className={`rounded-2xl px-4 py-4 text-center font-black transition ${
-                    selectedPlayer === player.id
-                      ? 'bg-green-500 text-white shadow-lg shadow-green-900/40'
-                      : 'bg-white/8 text-gray-200 hover:bg-white/12'
-                  }`}
+                  onClick={changePlayer}
+                  className="mt-4 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/15"
                 >
-                  {player.name}
+                  Změnit hráče
                 </button>
-              ))}
-            </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
+                  {PLAYERS.map((player) => (
+                    <button
+                      key={player.id}
+                      type="button"
+                      onClick={() => setLoginPlayer(player.id)}
+                      className={`rounded-2xl px-4 py-4 text-center font-black transition ${
+                        loginPlayer === player.id
+                          ? 'bg-green-500 text-white shadow-lg shadow-green-900/40'
+                          : 'bg-white/8 text-gray-200 hover:bg-white/12'
+                      }`}
+                    >
+                      {player.name}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                  <label className="mb-2 block text-sm font-bold text-gray-300">
+                    Kód pro {loginPlayerName}
+                  </label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <input
+                      type="password"
+                      value={playerCode}
+                      onChange={(e) => setPlayerCode(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') unlockPlayer();
+                      }}
+                      placeholder="Zadej svůj kód"
+                      className="min-h-[46px] flex-1 rounded-xl border border-white/10 bg-black/20 px-4 py-3 font-semibold text-white outline-none transition focus:border-green-400"
+                    />
+                    <button
+                      type="button"
+                      onClick={unlockPlayer}
+                      className="rounded-xl bg-green-600 px-5 py-3 font-black text-white transition hover:bg-green-700"
+                    >
+                      Přihlásit
+                    </button>
+                  </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    Každý má svůj kód, takže nepůjde tipovat za ostatní.
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="rounded-3xl border border-green-500/20 bg-[#071711] p-5 shadow-lg shadow-black/20">
@@ -1265,7 +1354,7 @@ export default function Tipovacka() {
 
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                         <div className="text-sm text-gray-400 sm:text-right">
-                          Tipuje: <span className="font-bold text-green-300">{selectedPlayerName}</span>
+                          Tipuje: <span className="font-bold text-green-300">{playerUnlocked ? selectedPlayerName : 'nepřihlášen'}</span>
                           {currentTip?.tip && (
                             <div>
                               Aktuální tip: <span className="font-black text-white">{currentTip.tip}</span>
@@ -1278,13 +1367,13 @@ export default function Tipovacka() {
                             <button
                               key={option.value}
                               type="button"
-                              disabled={locked || savingThis}
+                              disabled={!playerUnlocked || locked || savingThis}
                               onClick={() => saveTip(match, option.value)}
                               title={option.help}
                               className={`h-12 w-12 rounded-2xl text-lg font-black transition ${
                                 currentTip?.tip === option.value
                                   ? 'bg-green-500 text-white shadow-lg shadow-green-900/40'
-                                  : locked
+                                  : !playerUnlocked || locked
                                   ? 'cursor-not-allowed bg-white/5 text-gray-500'
                                   : 'bg-white/10 text-white hover:bg-green-600'
                               }`}
