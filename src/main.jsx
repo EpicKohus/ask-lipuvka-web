@@ -5,6 +5,7 @@ import App from './App'
 import Admin from './Admin'
 import MatchDetail from './MatchDetail'
 import Merch from './Merch'
+import Tipovacka from './Tipovacka'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -16,6 +17,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/admin" element={<Admin />} />
         <Route path="/merch" element={<Merch />} />
         <Route path="/zapas/:matchId" element={<MatchDetail />} />
+        <Route path="/ms-tipovacka-2026" element={<Tipovacka />} />
       </Routes>
     </BrowserRouter>
   </React.StrictMode>,
