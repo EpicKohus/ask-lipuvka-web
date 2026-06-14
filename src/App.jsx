@@ -773,6 +773,27 @@ export default function AskLipuvkaWeb() {
     [availableMatches, activeCategory]
   );
 
+  const filteredCalendarEvents = useMemo(
+    () => availableCalendarEvents.filter((event) => event.category === 'all' || event.category === activeCategory),
+    [availableCalendarEvents, activeCategory]
+  );
+
+  const parseCalendarEventDate = (event) => {
+    if (!event?.date) return new Date(0);
+
+    const eventDate = new Date(event.date);
+    if (Number.isNaN(eventDate.getTime())) return new Date(0);
+
+    const startTime = parseTrainingTime(event.timeFrom);
+    if (startTime) {
+      eventDate.setHours(startTime.hours, startTime.minutes, 0, 0);
+    } else {
+      eventDate.setHours(9, 0, 0, 0);
+    }
+
+    return eventDate;
+  };
+
   const upcomingMatches = filteredMatches
     .filter((m) => {
       const matchDate = parseMatchDate(m.date);
@@ -780,6 +801,29 @@ export default function AskLipuvkaWeb() {
       return diffDays >= 0 && diffDays <= 14;
     })
     .sort((a, b) => parseMatchDate(a.date) - parseMatchDate(b.date));
+
+  const upcomingEvents = filteredCalendarEvents
+    .filter((event) => {
+      const eventDate = parseCalendarEventDate(event);
+      const diffDays = (eventDate - todayStart) / (1000 * 60 * 60 * 24);
+      return diffDays >= 0 && diffDays <= 14;
+    })
+    .sort((a, b) => parseCalendarEventDate(a) - parseCalendarEventDate(b));
+
+  const upcomingScheduleItems = [
+    ...upcomingMatches.map((match) => ({
+      type: 'match',
+      id: `match-${match.id || `${match.date}-${match.opponent}`}`,
+      date: parseMatchDate(match.date),
+      match,
+    })),
+    ...upcomingEvents.map((event) => ({
+      type: 'event',
+      id: `event-${event.id || `${event.date}-${event.title}`}`,
+      date: parseCalendarEventDate(event),
+      event,
+    })),
+  ].sort((a, b) => a.date - b.date);
 
   const playedMatches = filteredMatches
     .filter((m) => parseMatchDate(m.date) < todayStart)
@@ -1463,6 +1507,70 @@ export default function AskLipuvkaWeb() {
             </button>
           </div>
         )}
+      </div>
+    );
+  };
+
+
+  const renderCalendarEventCard = (event) => {
+    const eventDate = parseCalendarEventDate(event);
+    const isToday = isSameDay(eventDate, todayStart);
+    const isAllTeams = event.category === 'all';
+    const categoryStyle = isAllTeams ? activeCategoryStyle : getCategoryStyle(event.category);
+    const teamLabel = isAllTeams ? 'Všechny týmy' : getCategoryShortLabel(event.category);
+    const timeText = event.timeFrom && event.timeTo
+      ? `${event.timeFrom}–${event.timeTo}`
+      : event.timeFrom || 'čas bude doplněn';
+
+    return (
+      <div
+        key={`event-card-${event.id || `${event.date}-${event.title}`}`}
+        className={`rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+          isToday
+            ? theme === 'dark'
+              ? 'border-green-500 bg-green-950/40 ring-2 ring-green-600/40 shadow-lg shadow-black/30'
+              : 'border-green-500 bg-green-50 ring-2 ring-green-300 shadow-lg'
+            : categoryPanelThemeClass(categoryStyle)
+        }`}
+      >
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className={`flex flex-wrap items-center gap-2 text-lg font-bold ${mainTextClass}`}>
+                <span>{event.title || 'Událost'}</span>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${isAllTeams ? 'bg-emerald-600 text-white' : categoryStyle.badge}`}>
+                  {teamLabel}
+                </span>
+                <span className="rounded-full bg-yellow-500/20 px-2 py-0.5 text-xs font-bold text-yellow-200">
+                  Událost
+                </span>
+              </div>
+
+              {isToday && (
+                <span className="animate-pulse rounded-full bg-green-600 px-4 py-1 text-xs font-bold uppercase tracking-wide text-white shadow-md">
+                  DNES
+                </span>
+              )}
+            </div>
+
+            <div className={`mt-1 text-sm ${softMutedTextClass}`}>
+              {eventDate.toLocaleDateString('cs-CZ')} • {timeText}
+              {event.place ? ` • ${event.place}` : ''}
+            </div>
+
+            {event.note && (
+              <div className={`mt-2 text-sm ${softMutedTextClass}`}>
+                {event.note}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className={`rounded-full px-3 py-1 text-sm font-semibold ${theme === 'dark' ? 'bg-yellow-500/15 text-yellow-100 ring-1 ring-yellow-500/20' : 'bg-yellow-100 text-yellow-800'}`}>
+              Akce
+            </span>
+          </div>
+        </div>
       </div>
     );
   };
@@ -2803,11 +2911,15 @@ export default function AskLipuvkaWeb() {
         </div>
 
         <div className="space-y-4">
-          {upcomingMatches.length > 0 ? (
-            upcomingMatches.map((m) => renderMatchCard(m, Boolean(m.result1 || m.result2)))
+          {upcomingScheduleItems.length > 0 ? (
+            upcomingScheduleItems.map((item) =>
+              item.type === 'event'
+                ? renderCalendarEventCard(item.event)
+                : renderMatchCard(item.match, Boolean(item.match.result1 || item.match.result2))
+            )
           ) : (
             <div className={`rounded-2xl p-5 ${mutedBoxThemeClass}`}>
-              V následujících 14 dnech nejsou pro tuto kategorii naplánované žádné zápasy.
+              V následujících 14 dnech nejsou pro tuto kategorii naplánované žádné zápasy ani akce.
             </div>
           )}
         </div>
