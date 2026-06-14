@@ -28,6 +28,7 @@ const PLAYER_CODES = {
 const PLAYER_STORAGE_KEY = 'ask-ms-tipovacka-player';
 const MATCHES_COLLECTION = 'msTipovackaMatches';
 const TIPS_COLLECTION = 'msTipovackaTips';
+const RESULT_LOGS_COLLECTION = 'msTipovackaResultLogs';
 
 
 const DEFAULT_MATCHES = [
@@ -933,6 +934,7 @@ export default function Tipovacka() {
   const [matchForm, setMatchForm] = useState(emptyMatchForm);
   const [editingMatchId, setEditingMatchId] = useState(null);
   const [matchView, setMatchView] = useState('upcoming');
+  const [adminSaveStatus, setAdminSaveStatus] = useState('');
 
   const selectedPlayerName = PLAYERS.find((player) => player.id === selectedPlayer)?.name || 'hráč';
   const loginPlayerName = PLAYERS.find((player) => player.id === loginPlayer)?.name || 'hráč';
@@ -1000,22 +1002,31 @@ export default function Tipovacka() {
         ...item.data(),
       }));
 
-      if (loadedMatches.length === 0) {
+      // Bezpečný import rozpisu: doplní jen chybějící zápasy.
+      // Nikdy nepřepisuje existující zápasy a hlavně nikdy nemaže uložený result.
+      const existingMatchIds = new Set(loadedMatches.map((match) => match.id));
+      const missingDefaultMatches = DEFAULT_MATCHES.filter((match) => !existingMatchIds.has(match.id));
+
+      if (missingDefaultMatches.length > 0) {
         await Promise.all(
-          DEFAULT_MATCHES.map((match) =>
-            setDoc(doc(db, MATCHES_COLLECTION, match.id), {
-              home: match.home,
-              away: match.away,
-              kickoff: match.kickoff,
-              group: match.group,
-              result: match.result || '',
-              createdAt: serverTimestamp(),
-              updatedAt: serverTimestamp(),
-            })
+          missingDefaultMatches.map((match) =>
+            setDoc(
+              doc(db, MATCHES_COLLECTION, match.id),
+              {
+                home: match.home,
+                away: match.away,
+                kickoff: match.kickoff,
+                group: match.group,
+                result: match.result || '',
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+              },
+              { merge: false }
+            )
           )
         );
 
-        loadedMatches = DEFAULT_MATCHES;
+        loadedMatches = [...loadedMatches, ...missingDefaultMatches];
       }
 
       const tipsSnapshot = await getDocs(collection(db, TIPS_COLLECTION));
@@ -1167,19 +1178,53 @@ export default function Tipovacka() {
   };
 
   const setResult = async (match, result) => {
+    const previousResult = match?.result || '';
+
+    if (previousResult === result) return;
+
+    if (!result && previousResult) {
+      const confirmed = window.confirm(
+        `Opravdu chceš vymazat uložený výsledek zápasu ${match.home} - ${match.away}?`
+      );
+      if (!confirmed) return;
+    }
+
     try {
       setSavingAdmin(true);
-      await updateDoc(doc(db, MATCHES_COLLECTION, match.id), {
-        result,
-        resultUpdatedAt: serverTimestamp(),
-      });
+      setAdminSaveStatus('Ukládám výsledek…');
+
+      await setDoc(
+        doc(db, MATCHES_COLLECTION, match.id),
+        {
+          result,
+          resultUpdatedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
 
       setMatches((prev) => prev.map((item) => item.id === match.id ? { ...item, result } : item));
+      setAdminSaveStatus(result ? `Výsledek ${result} uložen ✅` : 'Výsledek vymazán ✅');
+
+      // Pomocný log. Když pravidla log nepovolí, výsledek už zůstane uložený a log jen tiše přeskočíme.
+      try {
+        await addDoc(collection(db, RESULT_LOGS_COLLECTION), {
+          matchId: match.id,
+          matchTitle: `${match.home} - ${match.away}`,
+          previousResult,
+          newResult: result,
+          createdAt: serverTimestamp(),
+        });
+      } catch (logError) {
+        console.warn('Výsledek je uložený, ale log změny se nepodařilo zapsat:', logError);
+      }
     } catch (error) {
       console.error(error);
+      setAdminSaveStatus('Výsledek se nepodařilo uložit ❌');
       alert('Nepodařilo se uložit výsledek.');
     } finally {
       setSavingAdmin(false);
+      window.setTimeout(() => setAdminSaveStatus(''), 3500);
     }
   };
 
@@ -1552,6 +1597,11 @@ export default function Tipovacka() {
                   <div>
                     <div className="text-sm font-black uppercase tracking-wide text-green-300">Admin</div>
                     <h2 className="text-2xl font-black text-white">Zápasy a výsledky</h2>
+                    {adminSaveStatus && (
+                      <div className="mt-2 rounded-xl border border-green-400/30 bg-green-500/10 px-3 py-2 text-sm font-bold text-green-200">
+                        {adminSaveStatus}
+                      </div>
+                    )}
                   </div>
                   <button
                     type="button"
@@ -1639,7 +1689,7 @@ export default function Tipovacka() {
 
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="mr-2 text-sm font-bold text-gray-300">Správný výsledek:</span>
-                      {[...tipOptions, { value: '', label: 'Vymazat', help: 'bez výsledku' }].map((option) => (
+                      {[...tipOptions, { value: '', label: 'Vymazat výsledek', help: 'bez výsledku' }].map((option) => (
                         <button
                           key={`result-${match.id}-${option.value || 'empty'}`}
                           type="button"
