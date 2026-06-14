@@ -39,6 +39,7 @@ export default function AskLipuvkaWeb() {
   const [firebaseGallery, setFirebaseGallery] = useState([]);
   const [firebaseTrainings, setFirebaseTrainings] = useState([]);
   const [firebaseTrainingBreaks, setFirebaseTrainingBreaks] = useState([]);
+  const [firebaseCalendarEvents, setFirebaseCalendarEvents] = useState([]);
   const [siteDataReady, setSiteDataReady] = useState(false);
 
   const DEFAULT_CURRENT_SEASON = '2025/26';
@@ -650,9 +651,10 @@ export default function AskLipuvkaWeb() {
     allAvailableMatches.forEach((item) => seasons.push(getItemSeason(item)));
     firebaseGallery.forEach((item) => seasons.push(getItemSeason(item)));
     firebaseTrainings.forEach((item) => seasons.push(getItemSeason(item)));
+    firebaseCalendarEvents.forEach((item) => seasons.push(getItemSeason(item)));
 
     return [...new Set(seasons.filter(Boolean))].sort((a, b) => b.localeCompare(a, 'cs'));
-  }, [allAvailableNews, allAvailableMatches, firebaseGallery, firebaseTrainings, currentSeason]);
+  }, [allAvailableNews, allAvailableMatches, firebaseGallery, firebaseTrainings, firebaseCalendarEvents, currentSeason]);
 
   const handleSeasonChange = async (value) => {
     setSelectedSeason(value);
@@ -695,6 +697,13 @@ export default function AskLipuvkaWeb() {
       .filter((item) => getItemSeason(item) === CURRENT_SEASON && item.active !== false)
       .filter((item) => item.category === 'all' || visibleCategories.some((category) => category.id === item.category));
   }, [firebaseTrainingBreaks, CURRENT_SEASON, visibleCategories]);
+
+  const availableCalendarEvents = useMemo(() => {
+    return firebaseCalendarEvents
+      .filter((item) => getItemSeason(item) === CURRENT_SEASON && item.active !== false)
+      .filter((item) => item.category === 'all' || visibleCategories.some((category) => category.id === item.category))
+      .sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''), 'cs'));
+  }, [firebaseCalendarEvents, CURRENT_SEASON, visibleCategories]);
 
   const activeCategoryTrainings = useMemo(() => {
     return availableTrainings.filter((training) => training.category === activeCategory);
@@ -1142,11 +1151,18 @@ export default function AskLipuvkaWeb() {
           ...item.data(),
         }));
 
+        const calendarEventsSnapshot = await getDocs(collection(db, 'calendarEvents'));
+        const loadedCalendarEvents = calendarEventsSnapshot.docs.map((item) => ({
+          id: item.id,
+          ...item.data(),
+        }));
+
         setFirebaseNews(loadedNews);
         setFirebaseMatches(loadedMatches);
         setFirebaseGallery(loadedGallery);
         setFirebaseTrainings(loadedTrainings);
         setFirebaseTrainingBreaks(loadedTrainingBreaks);
+        setFirebaseCalendarEvents(loadedCalendarEvents);
       } catch (error) {
         console.error('Firebase chyba:', error);
       } finally {
@@ -1721,6 +1737,26 @@ export default function AskLipuvkaWeb() {
     return `https://calendar.google.com/calendar/render?${params.toString()}`;
   };
 
+
+  const buildCalendarEventGoogleCalendarUrl = (event) => {
+    const start = event.start;
+    const end = event.end;
+    const dates = `${formatCalendarDate(start)}T${padCalendarNumber(start.getHours())}${padCalendarNumber(start.getMinutes())}00/${formatCalendarDate(end)}T${padCalendarNumber(end.getHours())}${padCalendarNumber(end.getMinutes())}00`;
+    const params = new URLSearchParams({
+      action: 'TEMPLATE',
+      text: event.title,
+      dates,
+      ctz: 'Europe/Prague',
+      details: [
+        'Typ: Událost ASK Lipůvka',
+        event.teamLabel ? `Tým: ${event.teamLabel}` : '',
+        event.note ? `Poznámka: ${event.note}` : '',
+      ].filter(Boolean).join('\n'),
+      location: event.place || event.note || 'Lipůvka',
+    });
+    return `https://calendar.google.com/calendar/render?${params.toString()}`;
+  };
+
   const toBreakDateKey = (value) => String(value || '').replace(/-/g, '');
 
   const isTrainingCancelledByBreak = (training, date) => {
@@ -1807,8 +1843,45 @@ export default function AskLipuvkaWeb() {
       }
     });
 
+    availableCalendarEvents.forEach((item) => {
+      if (calendarTeamFilter !== 'all' && item.category !== 'all' && item.category !== calendarTeamFilter) return;
+      if (!item.date) return;
+      const start = new Date(item.date);
+      if (Number.isNaN(start.getTime())) return;
+      if (item.timeFrom) {
+        const startTime = parseTrainingTime(item.timeFrom);
+        if (startTime) start.setHours(startTime.hours, startTime.minutes, 0, 0);
+      } else {
+        start.setHours(9, 0, 0, 0);
+      }
+      if (start < rangeStart || start >= rangeEnd) return;
+      const end = new Date(start);
+      const endTime = parseTrainingTime(item.timeTo);
+      if (endTime) end.setHours(endTime.hours, endTime.minutes, 0, 0);
+      if (!endTime || end <= start) end.setTime(start.getTime() + 90 * 60 * 1000);
+      const isAllTeams = item.category === 'all';
+      const categoryStyle = isAllTeams ? null : getCategoryStyle(item.category);
+      const event = {
+        id: `event-${item.id}`,
+        type: 'event',
+        title: item.title || 'Událost',
+        category: item.category || 'all',
+        teamLabel: isAllTeams ? 'ASK' : getCategoryShortLabel(item.category),
+        date: new Date(start.getFullYear(), start.getMonth(), start.getDate()),
+        start,
+        end,
+        time: item.timeFrom && item.timeTo ? `${item.timeFrom}–${item.timeTo}` : item.timeFrom || 'čas bude doplněn',
+        note: item.note || item.place || '',
+        place: item.place || '',
+        badge: isAllTeams ? 'bg-emerald-100 text-emerald-700' : categoryStyle.softBadge,
+        button: isAllTeams ? 'bg-emerald-600 text-white hover:bg-emerald-700' : categoryStyle.button,
+      };
+      event.googleUrl = buildCalendarEventGoogleCalendarUrl(event);
+      events.push(event);
+    });
+
     return events.sort((a, b) => a.start - b.start || a.title.localeCompare(b.title, 'cs'));
-  }, [calendarMatches, availableTrainings, availableTrainingBreaks, calendarView, calendarCursorDate, calendarTeamFilter]);
+  }, [calendarMatches, availableTrainings, availableTrainingBreaks, availableCalendarEvents, calendarView, calendarCursorDate, calendarTeamFilter]);
 
   const calendarTitle = useMemo(() => {
     if (calendarView === 'day') return formatReadableDate(calendarCursorDate);
@@ -1880,8 +1953,8 @@ export default function AskLipuvkaWeb() {
         <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${event.badge}`}>
           {event.teamLabel}
         </span>
-        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${event.type === 'training' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
-          {event.type === 'training' ? 'Trénink' : 'Zápas'}
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${event.type === 'training' ? 'bg-blue-100 text-blue-700' : event.type === 'event' ? 'bg-purple-100 text-purple-700' : 'bg-orange-100 text-orange-700'}`}>
+          {event.type === 'training' ? 'Trénink' : event.type === 'event' ? 'Událost' : 'Zápas'}
         </span>
       </div>
       <div className={`font-bold ${compact ? 'text-xs' : 'text-sm'} ${mainTextClass}`}>{event.title}</div>
@@ -1902,10 +1975,10 @@ export default function AskLipuvkaWeb() {
           <div>
             <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-600">Kalendář</div>
             <h1 className={theme === 'dark' ? 'text-3xl font-black text-white md:text-4xl' : 'text-3xl font-black text-green-700 md:text-4xl'}>
-              Tréninky a zápasy
+              Tréninky, zápasy a události
             </h1>
             <p className={`mt-2 max-w-2xl ${mutedTextClass}`}>
-              Přehled všech týmů v kalendáři.
+              Přehled všech týmů v kalendáři včetně jednorázových akcí.
             </p>
           </div>
 
@@ -2007,7 +2080,7 @@ export default function AskLipuvkaWeb() {
                   {dayEvents.length > 0 ? (
                     <div className="grid gap-3 md:grid-cols-2">{dayEvents.map((event) => renderEventPill(event))}</div>
                   ) : (
-                    <div className={`rounded-2xl p-4 ${mutedBoxThemeClass}`}>Žádný trénink ani zápas.</div>
+                    <div className={`rounded-2xl p-4 ${mutedBoxThemeClass}`}>Žádný trénink, zápas ani událost.</div>
                   )}
                 </div>
               );
