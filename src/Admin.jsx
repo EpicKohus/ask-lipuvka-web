@@ -119,6 +119,8 @@ export default function Admin() {
     weekday: '2',
     timeFrom: '',
     timeTo: '',
+    validFrom: '',
+    validTo: '',
     note: '',
     active: true,
   });
@@ -357,6 +359,8 @@ export default function Admin() {
       weekday: '2',
       timeFrom: '',
       timeTo: '',
+      validFrom: '',
+      validTo: '',
       note: '',
       active: true,
     });
@@ -665,6 +669,30 @@ export default function Admin() {
 
   const getWeekdayLabel = (weekday) =>
     weekdayOptions.find((item) => String(item.value) === String(weekday))?.label || weekday;
+
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  const isTrainingHistory = (training) => {
+    if (training.active === false) return true;
+    if (training.validTo && String(training.validTo) < todayKey) return true;
+    return false;
+  };
+
+  const getTrainingValidityLabel = (training) => {
+    const from = training.validFrom || 'bez začátku';
+    const to = training.validTo || 'bez konce';
+    return `Platí od ${from} do ${to}`;
+  };
+
+  const currentTrainings = useMemo(
+    () => sortedTrainings.filter((training) => !isTrainingHistory(training)),
+    [sortedTrainings]
+  );
+
+  const historyTrainings = useMemo(
+    () => sortedTrainings.filter((training) => isTrainingHistory(training)),
+    [sortedTrainings]
+  );
 
   const filteredMatches = useMemo(() => {
     const today = new Date();
@@ -1260,6 +1288,11 @@ export default function Admin() {
       return;
     }
 
+    if (trainingForm.validFrom && trainingForm.validTo && trainingForm.validFrom > trainingForm.validTo) {
+      alert('Platnost od nesmí být později než platnost do.');
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -1269,6 +1302,8 @@ export default function Admin() {
         weekday: String(trainingForm.weekday),
         timeFrom: trainingForm.timeFrom.trim(),
         timeTo: trainingForm.timeTo.trim(),
+        validFrom: trainingForm.validFrom || '',
+        validTo: trainingForm.validTo || '',
         note: trainingForm.note.trim(),
         active: Boolean(trainingForm.active),
       };
@@ -1280,7 +1315,7 @@ export default function Admin() {
           section: 'Tréninky',
           targetId: editingTrainingId,
           targetTitle: getCategoryLabel(payload.category),
-          detail: `${getWeekdayLabel(payload.weekday)} ${payload.timeFrom}–${payload.timeTo} • ${payload.note}`,
+          detail: `${getWeekdayLabel(payload.weekday)} ${payload.timeFrom}–${payload.timeTo} • ${payload.validFrom || 'bez začátku'} až ${payload.validTo || 'bez konce'} • ${payload.note}`,
           collectionName: 'trainings',
           beforeData: trainings.find((training) => training.id === editingTrainingId),
           afterData: payload,
@@ -1293,7 +1328,7 @@ export default function Admin() {
           section: 'Tréninky',
           targetId: createdTraining.id,
           targetTitle: getCategoryLabel(payload.category),
-          detail: `${getWeekdayLabel(payload.weekday)} ${payload.timeFrom}–${payload.timeTo} • ${payload.note}`,
+          detail: `${getWeekdayLabel(payload.weekday)} ${payload.timeFrom}–${payload.timeTo} • ${payload.validFrom || 'bez začátku'} až ${payload.validTo || 'bez konce'} • ${payload.note}`,
           collectionName: 'trainings',
           afterData: payload,
           canRestore: true,
@@ -1319,6 +1354,8 @@ export default function Admin() {
       weekday: String(training.weekday || '2'),
       timeFrom: training.timeFrom || '',
       timeTo: training.timeTo || '',
+      validFrom: training.validFrom || '',
+      validTo: training.validTo || '',
       note: training.note || training.place || '',
       active: training.active !== false,
     });
@@ -4152,6 +4189,34 @@ L`}
                       </div>
                     </div>
 
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Platí od</label>
+                        <input
+                          type="date"
+                          value={trainingForm.validFrom}
+                          onChange={(e) => handleTrainingChange('validFrom', e.target.value)}
+                          className={inputClass}
+                        />
+                        <div className="mt-2 text-xs text-gray-500">
+                          Nepovinné. Když necháš prázdné, bere se od začátku sezony.
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Platí do</label>
+                        <input
+                          type="date"
+                          value={trainingForm.validTo}
+                          onChange={(e) => handleTrainingChange('validTo', e.target.value)}
+                          className={inputClass}
+                        />
+                        <div className="mt-2 text-xs text-gray-500">
+                          Nepovinné. Když necháš prázdné, trénink platí dál.
+                        </div>
+                      </div>
+                    </div>
+
                     <div>
                       <label className={labelClass}>Poznámka / místo</label>
                       <textarea
@@ -4195,41 +4260,86 @@ L`}
                     <h3 className="text-2xl font-bold text-gray-900">Přehled</h3>
                   </div>
 
-                  <div className="space-y-4">
-                    {sortedTrainings.length > 0 ? (
-                      sortedTrainings.map((training) => (
-                        <div key={training.id} className="rounded-2xl border border-green-100 bg-green-50/70 p-4">
-                          <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                              <div className="text-lg font-bold text-gray-900">
-                                {getCategoryLabel(training.category)}
+                  <div className="space-y-6">
+                    {currentTrainings.length > 0 ? (
+                      <div className="space-y-4">
+                        <div className="text-sm font-black uppercase tracking-wide text-green-700">Aktuální / budoucí tréninky</div>
+                        {currentTrainings.map((training) => (
+                          <div key={training.id} className="rounded-2xl border border-green-100 bg-green-50/70 p-4">
+                            <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <div className="text-lg font-bold text-gray-900">
+                                  {getCategoryLabel(training.category)}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {getItemSeason(training)} · {getWeekdayLabel(training.weekday)} · {training.timeFrom}–{training.timeTo}
+                                </div>
+                                <div className="mt-1 text-xs font-semibold text-green-700">
+                                  {getTrainingValidityLabel(training)}
+                                </div>
                               </div>
-                              <div className="text-sm text-gray-600">
-                                {getItemSeason(training)} · {getWeekdayLabel(training.weekday)} · {training.timeFrom}–{training.timeTo}
-                              </div>
+                              <span className={`rounded-full px-3 py-1 text-xs font-bold ${training.active === false ? 'bg-gray-200 text-gray-600' : 'bg-green-100 text-green-700'}`}>
+                                {training.active === false ? 'Skryté' : 'Zobrazené'}
+                              </span>
                             </div>
-                            <span className={`rounded-full px-3 py-1 text-xs font-bold ${training.active === false ? 'bg-gray-200 text-gray-600' : 'bg-green-100 text-green-700'}`}>
-                              {training.active === false ? 'Skryté' : 'Zobrazené'}
-                            </span>
-                          </div>
 
-                          <div className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-gray-700">
-                            {training.note || 'bez poznámky'}
-                          </div>
+                            <div className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-gray-700">
+                              {training.note || 'bez poznámky'}
+                            </div>
 
-                          <div className="flex flex-wrap gap-2">
-                            <button type="button" onClick={() => handleEditTraining(training)} className={outlineButtonClass}>
-                              Upravit
-                            </button>
-                            <button type="button" onClick={() => handleDeleteTraining(training.id)} className={dangerButtonClass}>
-                              Smazat
-                            </button>
+                            <div className="flex flex-wrap gap-2">
+                              <button type="button" onClick={() => handleEditTraining(training)} className={outlineButtonClass}>
+                                Upravit
+                              </button>
+                              <button type="button" onClick={() => handleDeleteTraining(training.id)} className={dangerButtonClass}>
+                                Smazat
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ))
+                        ))}
+                      </div>
                     ) : (
                       <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
-                        Zatím nejsou uložené žádné tréninky.
+                        Zatím nejsou uložené žádné aktuální tréninky.
+                      </div>
+                    )}
+
+                    {historyTrainings.length > 0 && (
+                      <div className="space-y-4 border-t border-green-100 pt-5">
+                        <div className="text-sm font-black uppercase tracking-wide text-gray-500">Historie tréninků</div>
+                        {historyTrainings.map((training) => (
+                          <div key={training.id} className="rounded-2xl border border-gray-200 bg-gray-50 p-4 opacity-90">
+                            <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+                              <div>
+                                <div className="text-lg font-bold text-gray-900">
+                                  {getCategoryLabel(training.category)}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {getItemSeason(training)} · {getWeekdayLabel(training.weekday)} · {training.timeFrom}–{training.timeTo}
+                                </div>
+                                <div className="mt-1 text-xs font-semibold text-gray-500">
+                                  {getTrainingValidityLabel(training)}
+                                </div>
+                              </div>
+                              <span className="rounded-full bg-gray-200 px-3 py-1 text-xs font-bold text-gray-600">
+                                Historie
+                              </span>
+                            </div>
+
+                            <div className="mb-4 rounded-xl bg-white px-4 py-3 text-sm text-gray-700">
+                              {training.note || 'bez poznámky'}
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                              <button type="button" onClick={() => handleEditTraining(training)} className={outlineButtonClass}>
+                                Upravit
+                              </button>
+                              <button type="button" onClick={() => handleDeleteTraining(training.id)} className={dangerButtonClass}>
+                                Smazat
+                              </button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

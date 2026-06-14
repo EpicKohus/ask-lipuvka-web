@@ -525,6 +525,32 @@ export default function AskLipuvkaWeb() {
     return `${date.getFullYear()}${padCalendarNumber(date.getMonth() + 1)}${padCalendarNumber(date.getDate())}`;
   };
 
+  const formatDateInputKey = (date) => {
+    return `${date.getFullYear()}-${padCalendarNumber(date.getMonth() + 1)}-${padCalendarNumber(date.getDate())}`;
+  };
+
+  const formatTrainingDateLabel = (value) => {
+    if (!value) return '';
+    const [year, month, day] = String(value).split('-');
+    if (!year || !month || !day) return value;
+    return `${Number(day)}. ${Number(month)}. ${year}`;
+  };
+
+  const isTrainingActiveOnDate = (training, date) => {
+    if (training.active === false) return false;
+    const dayKey = formatDateInputKey(date);
+    if (training.validFrom && dayKey < training.validFrom) return false;
+    if (training.validTo && dayKey > training.validTo) return false;
+    return true;
+  };
+
+  const getTrainingValidityText = (training) => {
+    if (!training.validFrom && !training.validTo) return '';
+    const from = training.validFrom ? formatTrainingDateLabel(training.validFrom) : 'začátek sezony';
+    const to = training.validTo ? formatTrainingDateLabel(training.validTo) : 'bez konce';
+    return `Platí: ${from} – ${to}`;
+  };
+
   const parseFirstMatchTime = (timeString) => {
     if (!timeString || typeof timeString !== 'string') return null;
     const match = timeString.match(/(\d{1,2})[:.](\d{2})/);
@@ -706,8 +732,10 @@ export default function AskLipuvkaWeb() {
   }, [firebaseCalendarEvents, CURRENT_SEASON, visibleCategories]);
 
   const activeCategoryTrainings = useMemo(() => {
-    return availableTrainings.filter((training) => training.category === activeCategory);
-  }, [availableTrainings, activeCategory]);
+    return availableTrainings.filter(
+      (training) => training.category === activeCategory && isTrainingActiveOnDate(training, todayStart)
+    );
+  }, [availableTrainings, activeCategory, todayStart]);
 
   const calendarMatches = useMemo(() => {
     return availableMatches
@@ -1921,6 +1949,10 @@ export default function AskLipuvkaWeb() {
       current.setHours(0, 0, 0, 0);
       while (current < rangeEnd) {
         if (current.getDay() === target) {
+          if (!isTrainingActiveOnDate(training, current)) {
+            current.setDate(current.getDate() + 1);
+            continue;
+          }
           const dateKey = `${training.category}-${formatCalendarDate(current)}`;
           if (matchDayKeys.has(dateKey) || isTrainingCancelledByBreak(training, current)) {
             current.setDate(current.getDate() + 1);
@@ -2977,6 +3009,9 @@ export default function AskLipuvkaWeb() {
                       {getWeekdayLabel(training.weekday)} {training.timeFrom}–{training.timeTo}
                     </div>
                     {training.note && <div className={`mt-1 text-sm ${mutedTextClass}`}>{training.note}</div>}
+                    {getTrainingValidityText(training) && (
+                      <div className={`mt-2 text-xs font-semibold ${mutedTextClass}`}>{getTrainingValidityText(training)}</div>
+                    )}
                   </div>
                 ))}
               </div>
