@@ -55,6 +55,7 @@ export default function AskLipuvkaWeb() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [selectedCalendarEventDetail, setSelectedCalendarEventDetail] = useState(null);
 
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [selectedNewsImage, setSelectedNewsImage] = useState(null);
@@ -1279,6 +1280,7 @@ export default function AskLipuvkaWeb() {
       setIsMobileClubDropdownOpen(false);
       setIsTermsOpen(false);
       setIsScheduleOpen(false);
+      setSelectedCalendarEventDetail(null);
     };
 
     const handleClickOutside = () => {
@@ -1318,6 +1320,7 @@ export default function AskLipuvkaWeb() {
       isGalleryOpen ||
       selectedPhoto ||
       selectedNewsImage ||
+      selectedCalendarEventDetail ||
       isTermsOpen ||
       isScheduleOpen;
 
@@ -1334,6 +1337,7 @@ export default function AskLipuvkaWeb() {
     isGalleryOpen,
     selectedPhoto,
     selectedNewsImage,
+    selectedCalendarEventDetail,
     isTermsOpen,
     isScheduleOpen,
   ]);
@@ -1540,6 +1544,39 @@ export default function AskLipuvkaWeb() {
   };
 
 
+  const getCalendarEventDetailData = (event) => {
+    if (!event) return null;
+    const rawEvent = event.event || event;
+    const eventDate = event.start || parseCalendarEventDate(rawEvent);
+    const isAllTeams = (rawEvent.category || event.category) === 'all';
+    const teamLabel = event.teamLabel || (isAllTeams ? 'Všechny týmy' : getCategoryLabel(rawEvent.category || event.category));
+    const timeText = event.time || (rawEvent.timeFrom && rawEvent.timeTo
+      ? `${rawEvent.timeFrom}–${rawEvent.timeTo}`
+      : rawEvent.timeFrom || 'čas bude doplněn');
+
+    return {
+      title: rawEvent.title || event.title || 'Událost',
+      date: eventDate,
+      timeText,
+      place: rawEvent.place || event.place || '',
+      note: rawEvent.note || event.note || '',
+      teamLabel,
+      googleUrl: event.googleUrl || buildCalendarEventGoogleCalendarUrl({
+        title: rawEvent.title || event.title || 'Událost',
+        start: eventDate,
+        end: event.end || new Date(eventDate.getTime() + 90 * 60 * 1000),
+        teamLabel,
+        note: rawEvent.note || event.note || '',
+        place: rawEvent.place || event.place || '',
+      }),
+    };
+  };
+
+  const openCalendarEventDetail = (event) => {
+    const detail = getCalendarEventDetailData(event);
+    if (detail) setSelectedCalendarEventDetail(detail);
+  };
+
   const renderCalendarEventCard = (event) => {
     const eventDate = parseCalendarEventDate(event);
     const isToday = isSameDay(eventDate, todayStart);
@@ -1551,9 +1588,11 @@ export default function AskLipuvkaWeb() {
       : event.timeFrom || 'čas bude doplněn';
 
     return (
-      <div
+      <button
+        type="button"
         key={`event-card-${event.id || `${event.date}-${event.title}`}`}
-        className={`rounded-2xl border p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+        onClick={() => openCalendarEventDetail(event)}
+        className={`w-full rounded-2xl border p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
           isToday
             ? theme === 'dark'
               ? 'border-green-500 bg-green-950/40 ring-2 ring-green-600/40 shadow-lg shadow-black/30'
@@ -1599,7 +1638,7 @@ export default function AskLipuvkaWeb() {
             </span>
           </div>
         </div>
-      </div>
+      </button>
     );
   };
 
@@ -2087,8 +2126,23 @@ export default function AskLipuvkaWeb() {
 
   const calendarDayNames = ['Po', 'Út', 'St', 'Čt', 'Pá', 'So', 'Ne'];
 
-  const renderEventPill = (event, compact = false) => (
-    <div key={event.id} className={`rounded-xl border p-2 text-left ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-green-100 bg-white/85'}`}>
+  const renderEventPill = (event, compact = false) => {
+    const canOpenDetail = event.type === 'event';
+
+    return (
+      <div
+        key={event.id}
+        role={canOpenDetail ? 'button' : undefined}
+        tabIndex={canOpenDetail ? 0 : undefined}
+        onClick={canOpenDetail ? () => openCalendarEventDetail(event) : undefined}
+        onKeyDown={canOpenDetail ? (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openCalendarEventDetail(event);
+          }
+        } : undefined}
+        className={`rounded-xl border p-2 text-left ${canOpenDetail ? 'cursor-pointer transition hover:-translate-y-0.5 hover:shadow-md' : ''} ${theme === 'dark' ? 'border-white/10 bg-white/5' : 'border-green-100 bg-white/85'}`}
+      >
       <div className="mb-1 flex flex-wrap items-center gap-1">
         <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${event.badge}`}>
           {event.teamLabel}
@@ -2101,12 +2155,13 @@ export default function AskLipuvkaWeb() {
       <div className={`text-xs ${softMutedTextClass}`}>{event.time}</div>
       {event.note && !compact && <div className={`mt-1 text-xs ${softMutedTextClass}`}>{event.note}</div>}
       {!compact && (
-        <a href={event.googleUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-gray-700 shadow-sm">
+        <a href={event.googleUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()} className="mt-2 inline-flex rounded-full bg-white/90 px-3 py-1 text-xs font-bold text-gray-700 shadow-sm">
           📅 Přidat do Google kalendáře
         </a>
       )}
-    </div>
-  );
+      </div>
+    );
+  };
 
   const renderCalendarPage = () => (
     <main className="mx-auto max-w-7xl px-4 py-10 md:px-6 md:py-14">
@@ -3258,6 +3313,103 @@ export default function AskLipuvkaWeb() {
               alt="Zvětšená fotka novinky"
               className="max-h-[85vh] max-w-[92vw] rounded-2xl object-contain shadow-2xl"
             />
+          </div>
+        </div>
+      )}
+
+      {selectedCalendarEventDetail && (
+        <div
+          className="fixed inset-0 z-[66] overflow-y-auto bg-black/70 px-4 py-6 animate-[fadeIn_0.2s_ease-out]"
+          onClick={() => setSelectedCalendarEventDetail(null)}
+        >
+          <div className="flex min-h-full items-center justify-center">
+            <div
+              className={`relative my-4 w-full max-w-xl rounded-3xl border p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out] ${
+                theme === 'dark'
+                  ? 'border-emerald-900/60 bg-[#0d1715] text-slate-100'
+                  : 'border-green-100 bg-white text-gray-900'
+              }`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                type="button"
+                onClick={() => setSelectedCalendarEventDetail(null)}
+                className={`absolute right-4 top-4 rounded-full px-3 py-1 text-2xl font-bold transition ${theme === 'dark' ? 'text-slate-300 hover:bg-white/10 hover:text-white' : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
+                aria-label="Zavřít událost"
+              >
+                ×
+              </button>
+
+              <div className="mb-3 inline-flex rounded-full bg-purple-500/15 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-purple-300">
+                Událost
+              </div>
+
+              <h2 className={`pr-10 text-3xl font-black ${theme === 'dark' ? 'text-emerald-300' : 'text-green-700'}`}>
+                {selectedCalendarEventDetail.title}
+              </h2>
+
+              <div className={`mt-5 space-y-3 rounded-2xl p-5 ${theme === 'dark' ? 'bg-white/5' : 'bg-green-50'}`}>
+                <div className="flex gap-3">
+                  <span className="w-7 shrink-0 text-xl">📅</span>
+                  <div>
+                    <div className="text-sm font-bold uppercase tracking-wide opacity-70">Datum</div>
+                    <div className="font-bold">{selectedCalendarEventDetail.date?.toLocaleDateString?.('cs-CZ') || 'bez data'}</div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <span className="w-7 shrink-0 text-xl">🕒</span>
+                  <div>
+                    <div className="text-sm font-bold uppercase tracking-wide opacity-70">Čas</div>
+                    <div className="font-bold">{selectedCalendarEventDetail.timeText}</div>
+                  </div>
+                </div>
+
+                {selectedCalendarEventDetail.place && (
+                  <div className="flex gap-3">
+                    <span className="w-7 shrink-0 text-xl">📍</span>
+                    <div>
+                      <div className="text-sm font-bold uppercase tracking-wide opacity-70">Místo</div>
+                      <div className="font-bold">{selectedCalendarEventDetail.place}</div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <span className="w-7 shrink-0 text-xl">👥</span>
+                  <div>
+                    <div className="text-sm font-bold uppercase tracking-wide opacity-70">Pro koho</div>
+                    <div className="font-bold">{selectedCalendarEventDetail.teamLabel}</div>
+                  </div>
+                </div>
+              </div>
+
+              {selectedCalendarEventDetail.note && (
+                <div className={`mt-5 rounded-2xl p-5 leading-7 ${theme === 'dark' ? 'bg-black/25 text-slate-200' : 'bg-gray-50 text-gray-700'}`}>
+                  {selectedCalendarEventDetail.note}
+                </div>
+              )}
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                {selectedCalendarEventDetail.googleUrl && (
+                  <a
+                    href={selectedCalendarEventDetail.googleUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex rounded-2xl bg-green-600 px-5 py-3 font-bold text-white transition hover:bg-green-700"
+                  >
+                    📅 Přidat do Google kalendáře
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSelectedCalendarEventDetail(null)}
+                  className={`rounded-2xl px-5 py-3 font-bold transition ${theme === 'dark' ? 'bg-white/10 text-white hover:bg-white/15' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  Zavřít
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
