@@ -610,128 +610,128 @@ const DEFAULT_MATCHES = [
   },
   {
     "id": "wc073",
-    "home": "2. místo skupiny A",
-    "away": "2. místo skupiny B",
+    "home": "Jihoafrická republika",
+    "away": "Kanada",
     "kickoff": "2026-06-28T21:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc074",
-    "home": "Vítěz skupiny C",
-    "away": "2. místo skupiny F",
+    "home": "Brazílie",
+    "away": "Japonsko",
     "kickoff": "2026-06-29T19:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc075",
-    "home": "Vítěz skupiny E",
-    "away": "3. tým A/B/C/D/F",
+    "home": "Německo",
+    "away": "Paraguay",
     "kickoff": "2026-06-29T22:30",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc076",
-    "home": "Vítěz skupiny F",
-    "away": "2. místo skupiny C",
+    "home": "Nizozemsko",
+    "away": "Maroko",
     "kickoff": "2026-06-30T03:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc077",
-    "home": "2. místo skupiny E",
-    "away": "2. místo skupiny I",
+    "home": "Pobřeží slonoviny",
+    "away": "Norsko",
     "kickoff": "2026-06-30T19:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc078",
-    "home": "Vítěz skupiny I",
-    "away": "3. tým C/D/F/G/H",
+    "home": "Francie",
+    "away": "Švédsko",
     "kickoff": "2026-06-30T23:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc079",
-    "home": "Vítěz skupiny A",
-    "away": "3. tým C/E/F/H/I",
+    "home": "Mexiko",
+    "away": "Ekvádor",
     "kickoff": "2026-07-01T03:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc080",
-    "home": "Vítěz skupiny L",
-    "away": "3. tým E/H/I/J/K",
+    "home": "Anglie",
+    "away": "DR Kongo",
     "kickoff": "2026-07-01T18:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc081",
-    "home": "Vítěz skupiny G",
-    "away": "3. tým A/E/H/I/J",
+    "home": "Belgie",
+    "away": "Senegal",
     "kickoff": "2026-07-01T22:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc082",
-    "home": "Vítěz skupiny D",
-    "away": "3. tým B/E/F/I/J",
+    "home": "USA",
+    "away": "Bosna a Hercegovina",
     "kickoff": "2026-07-02T02:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc083",
-    "home": "Vítěz skupiny H",
-    "away": "2. místo skupiny J",
+    "home": "Španělsko",
+    "away": "Rakousko",
     "kickoff": "2026-07-02T21:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc084",
-    "home": "2. místo skupiny K",
-    "away": "2. místo skupiny L",
+    "home": "Portugalsko",
+    "away": "Chorvatsko",
     "kickoff": "2026-07-03T01:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc085",
-    "home": "Vítěz skupiny B",
-    "away": "3. tým D/E/I/J/L",
+    "home": "Švýcarsko",
+    "away": "Alžírsko",
     "kickoff": "2026-07-03T05:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc086",
-    "home": "2. místo skupiny D",
-    "away": "2. místo skupiny G",
+    "home": "Egypt",
+    "away": "Austrálie",
     "kickoff": "2026-07-03T20:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc087",
-    "home": "Vítěz skupiny J",
-    "away": "2. místo skupiny H",
+    "home": "Argentina",
+    "away": "Kapverdy",
     "kickoff": "2026-07-04T00:00",
     "group": "32 týmů",
     "result": ""
   },
   {
     "id": "wc088",
-    "home": "Vítěz skupiny K",
-    "away": "3. tým D/E/I/J/L",
+    "home": "Kolumbie",
+    "away": "Ghana",
     "kickoff": "2026-07-04T03:30",
     "group": "32 týmů",
     "result": ""
@@ -865,6 +865,12 @@ const DEFAULT_MATCHES = [
     "result": ""
   }
 ];
+
+const ROUND_OF_32_MATCH_IDS = new Set(
+  DEFAULT_MATCHES
+    .filter((match) => match.id >= 'wc073' && match.id <= 'wc088')
+    .map((match) => match.id)
+);
 
 const emptyMatchForm = {
   home: '',
@@ -1027,6 +1033,44 @@ export default function Tipovacka() {
         );
 
         loadedMatches = [...loadedMatches, ...missingDefaultMatches];
+      }
+
+      // Play-off zápasy už jsou známé. Tady bezpečně přejmenujeme jen zápasy wc073–wc088.
+      // Výsledky a tipy se tím nemažou, protože result se tady vůbec nepřepisuje.
+      const roundOf32Updates = DEFAULT_MATCHES.filter(
+        (match) => ROUND_OF_32_MATCH_IDS.has(match.id) && existingMatchIds.has(match.id)
+      );
+
+      if (roundOf32Updates.length > 0) {
+        await Promise.all(
+          roundOf32Updates.map((match) =>
+            setDoc(
+              doc(db, MATCHES_COLLECTION, match.id),
+              {
+                home: match.home,
+                away: match.away,
+                kickoff: match.kickoff,
+                group: match.group,
+                updatedAt: serverTimestamp(),
+              },
+              { merge: true }
+            )
+          )
+        );
+
+        const roundOf32ById = new Map(roundOf32Updates.map((match) => [match.id, match]));
+        loadedMatches = loadedMatches.map((match) => {
+          const updatedMatch = roundOf32ById.get(match.id);
+          return updatedMatch
+            ? {
+                ...match,
+                home: updatedMatch.home,
+                away: updatedMatch.away,
+                kickoff: updatedMatch.kickoff,
+                group: updatedMatch.group,
+              }
+            : match;
+        });
       }
 
       const tipsSnapshot = await getDocs(collection(db, TIPS_COLLECTION));
