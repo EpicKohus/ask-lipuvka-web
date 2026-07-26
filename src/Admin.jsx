@@ -980,7 +980,7 @@ export default function Admin() {
         ...item,
         matchCount: item.matches.size,
         categoryLabels: Array.from(item.categories)
-          .map((categoryId) => getCategoryShortLabel(categoryId))
+          .map((categoryId) => categories.find((category) => category.id === categoryId)?.shortLabel || categoryId)
           .filter(Boolean)
           .join(', '),
         seasonLabels: Array.from(item.seasons).filter(Boolean).join(', '),
