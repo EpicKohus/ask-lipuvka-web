@@ -4540,7 +4540,36 @@ export default function AskLipuvkaWeb() {
             Mládežnický fotbal ASK Lipůvka zahrnuje nesoutěžní týmy – fotbalovou školičku (U7) a předpřípravku (U8) – a tři soutěžní týmy: mladší přípravku (U9), starší přípravku (U11) a mladší žáky (U13).
           </p>
 
-          <div className={`mt-3 text-sm ${softMutedTextClass}`}>
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            {[
+              { category: 'predpripravka', shortLabel: 'U7', label: 'Fotbalová školička', icon: '🌱', group: 'Nesoutěžní' },
+              { category: 'predpripravka', shortLabel: 'U8', label: 'Předpřípravka', icon: '⚽', group: 'Nesoutěžní' },
+              { category: 'mladsi-pripravka', shortLabel: 'U9', label: 'Mladší přípravka', icon: '🟢', group: 'Soutěžní' },
+              { category: 'starsi-pripravka', shortLabel: 'U11', label: 'Starší přípravka', icon: '🟠', group: 'Soutěžní' },
+              { category: 'mladsi-zaci', shortLabel: 'U13', label: 'Mladší žáci', icon: '🟣', group: 'Soutěžní' },
+            ].map((teamLink) => {
+              const categoryStyle = getCategoryStyle(teamLink.category);
+              const isActiveTeam = activeCategory === teamLink.category;
+
+              return (
+                <button
+                  key={`${teamLink.shortLabel}-${teamLink.label}`}
+                  type="button"
+                  onClick={() => selectTeam(teamLink.category)}
+                  className={`inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-black shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
+                    isActiveTeam ? categoryStyle.button : categoryStyle.softBadge
+                  }`}
+                  title={`Přepnout na ${teamLink.label}`}
+                >
+                  <span>{teamLink.icon}</span>
+                  <span>{teamLink.shortLabel}</span>
+                  <span className="hidden sm:inline">{teamLink.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className={`mt-3 text-xs font-semibold ${softMutedTextClass}`}>
             Nesoutěžní týmy U7 a U8 • Soutěžní týmy U9, U11 a U13
           </div>
         </div>
