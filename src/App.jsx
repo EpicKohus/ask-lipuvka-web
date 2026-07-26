@@ -2167,6 +2167,33 @@ export default function AskLipuvkaWeb() {
     }
   };
 
+  useEffect(() => {
+    if (!isCalendarPage) return;
+
+    const params = new URLSearchParams(location.search);
+    const requestedTeam = params.get('tym') || params.get('team');
+    if (!requestedTeam) return;
+
+    const normalizedTeam = String(requestedTeam).trim().toLowerCase();
+    const matchedCategory = categories.find((category) => (
+      category.id.toLowerCase() === normalizedTeam ||
+      category.shortLabel.toLowerCase() === normalizedTeam
+    ));
+
+    if (normalizedTeam === 'all') {
+      changeCalendarTeamFilter('all');
+      return;
+    }
+
+    if (matchedCategory) {
+      changeCalendarTeamFilter(matchedCategory.id);
+    }
+  }, [isCalendarPage, location.search]);
+
+  const openTeamCalendar = () => {
+    navigate(`/kalendar?tym=${activeCategory}`);
+  };
+
   const calendarFilterOptions = useMemo(() => [
     { id: 'all', label: 'Všechny týmy', shortLabel: 'Vše' },
     ...visibleCategories.map((category) => ({
@@ -3104,7 +3131,17 @@ export default function AskLipuvkaWeb() {
             </span>
           </div>
 
-          <h2 className={`mb-4 text-3xl font-bold ${activeCategoryStyle.text}`}>Kdy trénujeme</h2>
+          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <h2 className={`text-3xl font-bold ${activeCategoryStyle.text}`}>Kdy trénujeme</h2>
+
+            <button
+              type="button"
+              onClick={openTeamCalendar}
+              className={`rounded-xl px-5 py-3 text-sm font-bold transition hover:scale-[1.02] ${activeCategoryStyle.button}`}
+            >
+              Otevřít kalendář {activeCategoryShortLabel}
+            </button>
+          </div>
 
           <div className={`rounded-2xl p-6 text-lg shadow-sm ${cardThemeClass}`}>
             <div className={`mb-3 font-bold ${mainTextClass}`}>{activeCategoryLabel}</div>
