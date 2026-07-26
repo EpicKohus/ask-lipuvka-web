@@ -56,6 +56,7 @@ export default function Admin() {
   const [trainings, setTrainings] = useState([]);
   const [trainingBreaks, setTrainingBreaks] = useState([]);
   const [calendarEvents, setCalendarEvents] = useState([]);
+  const [coachRecords, setCoachRecords] = useState([]);
   const [galleryAlbums, setGalleryAlbums] = useState([]);
   const [merchProducts, setMerchProducts] = useState([]);
   const [merchOrders, setMerchOrders] = useState([]);
@@ -114,6 +115,7 @@ export default function Admin() {
   const [editingTrainingId, setEditingTrainingId] = useState(null);
   const [editingTrainingBreakId, setEditingTrainingBreakId] = useState(null);
   const [editingCalendarEventId, setEditingCalendarEventId] = useState(null);
+  const [editingCoachId, setEditingCoachId] = useState(null);
   const [trainingForm, setTrainingForm] = useState({
     season: CURRENT_SEASON,
     category: 'mladsi-pripravka',
@@ -145,6 +147,22 @@ export default function Admin() {
     timeTo: '',
     place: '',
     note: '',
+    active: true,
+  });
+
+  const [coachForm, setCoachForm] = useState({
+    season: CURRENT_SEASON,
+    group: 'trainer',
+    category: 'mladsi-pripravka',
+    name: '',
+    role: 'Trenér',
+    subrole: '',
+    licence: '',
+    phone: '',
+    phoneLabel: '',
+    email: '',
+    photo: '',
+    order: '',
     active: true,
   });
 
@@ -395,6 +413,25 @@ export default function Admin() {
     });
   };
 
+  const resetCoachForm = () => {
+    setEditingCoachId(null);
+    setCoachForm({
+      season: currentSeason || CURRENT_SEASON,
+      group: 'trainer',
+      category: 'mladsi-pripravka',
+      name: '',
+      role: 'Trenér',
+      subrole: '',
+      licence: '',
+      phone: '',
+      phoneLabel: '',
+      email: '',
+      photo: '',
+      order: '',
+      active: true,
+    });
+  };
+
   const resetGalleryForm = () => {
     setEditingGalleryId(null);
     setGalleryForm({
@@ -441,6 +478,12 @@ export default function Admin() {
 
       const calendarEventsSnapshot = await getDocs(collection(db, 'calendarEvents'));
       const loadedCalendarEvents = calendarEventsSnapshot.docs.map((item) => ({
+        id: item.id,
+        ...item.data(),
+      }));
+
+      const coachesSnapshot = await getDocs(collection(db, 'coaches'));
+      const loadedCoaches = coachesSnapshot.docs.map((item) => ({
         id: item.id,
         ...item.data(),
       }));
@@ -542,6 +585,7 @@ export default function Admin() {
       setTrainings(loadedTrainings);
       setTrainingBreaks(loadedTrainingBreaks);
       setCalendarEvents(loadedCalendarEvents);
+      setCoachRecords(loadedCoaches);
       setGalleryAlbums(loadedGallery);
       setMerchProducts(loadedMerchProducts);
       setMerchOrders(loadedMerchOrders);
@@ -648,6 +692,10 @@ export default function Admin() {
       setCalendarEventForm((prev) => ({ ...prev, season: currentSeason }));
     }
 
+    if (!editingCoachId) {
+      setCoachForm((prev) => ({ ...prev, season: currentSeason }));
+    }
+
     if (!editingGalleryId) {
       setGalleryForm((prev) => ({ ...prev, season: currentSeason }));
     }
@@ -657,6 +705,7 @@ export default function Admin() {
     editingTrainingId,
     editingTrainingBreakId,
     editingCalendarEventId,
+    editingCoachId,
     editingGalleryId,
   ]);
 
@@ -705,6 +754,20 @@ export default function Admin() {
       return String(a.timeFrom || '').localeCompare(String(b.timeFrom || ''), 'cs');
     });
   }, [calendarEvents]);
+
+  const sortedCoaches = useMemo(() => {
+    return [...coachRecords].sort((a, b) => {
+      const seasonCompare = String(b.season || '').localeCompare(String(a.season || ''), 'cs');
+      if (seasonCompare !== 0) return seasonCompare;
+      const groupCompare = String(a.group || 'trainer').localeCompare(String(b.group || 'trainer'), 'cs');
+      if (groupCompare !== 0) return groupCompare;
+      const categoryCompare = String(a.category || '').localeCompare(String(b.category || ''), 'cs');
+      if (categoryCompare !== 0) return categoryCompare;
+      const orderCompare = (Number(a.order) || 0) - (Number(b.order) || 0);
+      if (orderCompare !== 0) return orderCompare;
+      return String(a.name || '').localeCompare(String(b.name || ''), 'cs');
+    });
+  }, [coachRecords]);
 
   const getWeekdayLabel = (weekday) =>
     weekdayOptions.find((item) => String(item.value) === String(weekday))?.label || weekday;
@@ -1093,6 +1156,14 @@ export default function Admin() {
         detail: 'Aktuální sezona webu',
       });
       setMatchListSeasonFilter(currentSeason);
+      setSeasonTeamsSeason(currentSeason);
+      setNewsForm((prev) => ({ ...prev, season: currentSeason }));
+      if (!editingMatchId) setMatchForm((prev) => ({ ...prev, season: currentSeason }));
+      if (!editingTrainingId) setTrainingForm((prev) => ({ ...prev, season: currentSeason }));
+      if (!editingTrainingBreakId) setTrainingBreakForm((prev) => ({ ...prev, season: currentSeason }));
+      if (!editingCalendarEventId) setCalendarEventForm((prev) => ({ ...prev, season: currentSeason }));
+      if (!editingCoachId) setCoachForm((prev) => ({ ...prev, season: currentSeason }));
+      if (!editingGalleryId) setGalleryForm((prev) => ({ ...prev, season: currentSeason }));
       alert(`Aktuální sezona webu je nastavená na ${currentSeason}.`);
     } catch (error) {
       console.error('Chyba při ukládání aktuální sezony:', error);
@@ -1210,6 +1281,164 @@ export default function Admin() {
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleCoachChange = (field, value) => {
+    setCoachForm((prev) => {
+      const next = {
+        ...prev,
+        [field]: value,
+      };
+
+      if (field === 'group' && value === 'management') {
+        next.category = '';
+        if (!next.role || next.role === 'Trenér') next.role = 'Vedení mládeže';
+      }
+
+      if (field === 'group' && value === 'trainer') {
+        next.category = prev.category || 'mladsi-pripravka';
+        if (!next.role || next.role === 'Vedení mládeže') next.role = 'Trenér';
+      }
+
+      if (field === 'phone') {
+        next.phoneLabel = value
+          .replace(/\D/g, '')
+          .replace(/(\d{3})(?=\d)/g, '$1 ')
+          .trim();
+      }
+
+      return next;
+    });
+  };
+
+  const getCoachTitle = (item) => item?.name || 'Trenér';
+
+  const handleSaveCoach = async (e) => {
+    e.preventDefault();
+
+    if (!coachForm.name.trim()) {
+      alert('Vyplň jméno trenéra.');
+      return;
+    }
+
+    if (coachForm.group === 'trainer' && !coachForm.category) {
+      alert('U trenéra vyber kategorii týmu.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+
+      const phoneClean = coachForm.phone.replace(/\D/g, '');
+      const payload = {
+        season: coachForm.season || CURRENT_SEASON,
+        group: coachForm.group === 'management' ? 'management' : 'trainer',
+        category: coachForm.group === 'trainer' ? coachForm.category : '',
+        name: coachForm.name.trim(),
+        role: coachForm.role.trim() || (coachForm.group === 'management' ? 'Vedení mládeže' : 'Trenér'),
+        subrole: coachForm.subrole.trim(),
+        licence: coachForm.licence.trim(),
+        phone: phoneClean,
+        phoneLabel: coachForm.phoneLabel.trim() || phoneClean.replace(/(\d{3})(?=\d)/g, '$1 ').trim(),
+        email: coachForm.email.trim(),
+        photo: coachForm.photo.trim(),
+        order: Number(coachForm.order) || 0,
+        active: Boolean(coachForm.active),
+        updatedAt: serverTimestamp(),
+      };
+
+      const detail = `${payload.season} • ${payload.group === 'management' ? 'Vedení' : getCategoryLabel(payload.category)} • ${payload.role}`;
+
+      if (editingCoachId) {
+        await updateDoc(doc(db, 'coaches', editingCoachId), payload);
+        await logAdminAction({
+          action: 'update_coach',
+          section: 'Trenéři',
+          targetId: editingCoachId,
+          targetTitle: payload.name,
+          detail,
+          collectionName: 'coaches',
+          beforeData: coachRecords.find((item) => item.id === editingCoachId),
+          afterData: payload,
+          canRestore: true,
+        });
+      } else {
+        const createdCoach = await addDoc(collection(db, 'coaches'), {
+          ...payload,
+          createdAt: serverTimestamp(),
+        });
+        await logAdminAction({
+          action: 'create_coach',
+          section: 'Trenéři',
+          targetId: createdCoach.id,
+          targetTitle: payload.name,
+          detail,
+          collectionName: 'coaches',
+          afterData: payload,
+          canRestore: true,
+        });
+      }
+
+      await loadAllData();
+      resetCoachForm();
+      alert(editingCoachId ? 'Trenér byl upraven.' : 'Trenér byl přidán.');
+    } catch (error) {
+      console.error('Chyba při ukládání trenéra:', error);
+      alert(`Nepodařilo se uložit trenéra: ${error?.message || error}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditCoach = (item) => {
+    setEditingCoachId(item.id);
+    setCoachForm({
+      season: getItemSeason(item),
+      group: item.group === 'management' ? 'management' : 'trainer',
+      category: item.category || 'mladsi-pripravka',
+      name: item.name || '',
+      role: item.role || (item.group === 'management' ? 'Vedení mládeže' : 'Trenér'),
+      subrole: item.subrole || '',
+      licence: item.licence || '',
+      phone: item.phone || '',
+      phoneLabel: item.phoneLabel || '',
+      email: item.email || '',
+      photo: item.photo || '',
+      order: item.order ?? '',
+      active: item.active !== false,
+    });
+    setActiveSection('coaches');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleDeleteCoach = async (coachId) => {
+    const confirmed = window.confirm('Opravdu chceš smazat tohoto trenéra z webu?');
+    if (!confirmed) return;
+
+    try {
+      const deletedCoach = coachRecords.find((item) => item.id === coachId);
+      await deleteDoc(doc(db, 'coaches', coachId));
+      await logAdminAction({
+        action: 'delete_coach',
+        section: 'Trenéři',
+        targetId: coachId,
+        targetTitle: getCoachTitle(deletedCoach),
+        detail: deletedCoach?.season || '',
+        collectionName: 'coaches',
+        beforeData: deletedCoach,
+        canRestore: true,
+      });
+      await loadAllData();
+
+      if (editingCoachId === coachId) {
+        resetCoachForm();
+      }
+
+      alert('Trenér byl smazán.');
+    } catch (error) {
+      console.error('Chyba při mazání trenéra:', error);
+      alert('Nepodařilo se smazat trenéra.');
+    }
   };
 
   const getCalendarEventTitle = (item) => item?.title || 'Událost';
@@ -2068,6 +2297,12 @@ export default function Admin() {
         return 'Upravil událost';
       case 'delete_calendar_event':
         return 'Smazal událost';
+      case 'create_coach':
+        return 'Přidal trenéra';
+      case 'update_coach':
+        return 'Upravil trenéra';
+      case 'delete_coach':
+        return 'Smazal trenéra';
       case 'create_gallery':
         return 'Přidal album';
       case 'update_gallery':
@@ -2845,6 +3080,14 @@ export default function Admin() {
             className={sectionButtonClass(activeSection === 'calendarEvents')}
           >
             Události
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveSection('coaches')}
+            className={sectionButtonClass(activeSection === 'coaches')}
+          >
+            Trenéři
           </button>
 
           <button
@@ -5012,6 +5255,256 @@ L`}
                     ) : (
                       <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
                         Zatím nejsou uložené žádné pauzy tréninků.
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'coaches' && (
+              <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr]">
+                <div className={cardSoftClass}>
+                  <div className="mb-6 flex items-center justify-between gap-3">
+                    <div>
+                      <div className="mb-2 text-sm font-semibold uppercase tracking-wide text-green-700">
+                        Realizační tým podle sezony
+                      </div>
+                      <h2 className="text-2xl font-bold text-green-700">
+                        {editingCoachId ? 'Upravit trenéra' : 'Přidat trenéra'}
+                      </h2>
+                      <p className="mt-2 text-sm text-gray-600">
+                        Trenéři se zobrazí na webu podle aktuální sezony. Vedení mládeže nech bez týmu, trenéry přiřaď ke kategorii.
+                      </p>
+                    </div>
+
+                    {editingCoachId && (
+                      <button type="button" onClick={resetCoachForm} className={outlineButtonClass}>
+                        Zrušit editaci
+                      </button>
+                    )}
+                  </div>
+
+                  <form onSubmit={handleSaveCoach} className="space-y-5">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Sezona</label>
+                        <select
+                          value={coachForm.season}
+                          onChange={(e) => handleCoachChange('season', e.target.value)}
+                          className={inputClass}
+                        >
+                          {seasonOptions.map((season) => (
+                            <option key={season} value={season}>{season}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Typ</label>
+                        <select
+                          value={coachForm.group}
+                          onChange={(e) => handleCoachChange('group', e.target.value)}
+                          className={inputClass}
+                        >
+                          <option value="management">Vedení mládeže</option>
+                          <option value="trainer">Trenér týmu</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {coachForm.group === 'trainer' && (
+                      <div>
+                        <label className={labelClass}>Kategorie</label>
+                        <select
+                          value={coachForm.category}
+                          onChange={(e) => handleCoachChange('category', e.target.value)}
+                          className={inputClass}
+                        >
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.id}>{category.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Jméno</label>
+                        <input
+                          value={coachForm.name}
+                          onChange={(e) => handleCoachChange('name', e.target.value)}
+                          className={inputClass}
+                          placeholder="Radek Mánek"
+                        />
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Funkce</label>
+                        <input
+                          value={coachForm.role}
+                          onChange={(e) => handleCoachChange('role', e.target.value)}
+                          className={inputClass}
+                          placeholder="Trenér / Vedoucí mládeže"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Doplňková funkce / poznámka</label>
+                      <input
+                        value={coachForm.subrole}
+                        onChange={(e) => handleCoachChange('subrole', e.target.value)}
+                        className={inputClass}
+                        placeholder="např. Organizace a komunikace"
+                      />
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Licence</label>
+                        <input
+                          value={coachForm.licence}
+                          onChange={(e) => handleCoachChange('licence', e.target.value)}
+                          className={inputClass}
+                          placeholder="FAČR C+ / Grassroots"
+                        />
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Pořadí</label>
+                        <input
+                          type="number"
+                          value={coachForm.order}
+                          onChange={(e) => handleCoachChange('order', e.target.value)}
+                          className={inputClass}
+                          placeholder="1"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div>
+                        <label className={labelClass}>Telefon</label>
+                        <input
+                          value={coachForm.phone}
+                          onChange={(e) => handleCoachChange('phone', e.target.value)}
+                          className={inputClass}
+                          placeholder="606148368"
+                        />
+                      </div>
+
+                      <div>
+                        <label className={labelClass}>Telefon pro zobrazení</label>
+                        <input
+                          value={coachForm.phoneLabel}
+                          onChange={(e) => handleCoachChange('phoneLabel', e.target.value)}
+                          className={inputClass}
+                          placeholder="606 148 368"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>E-mail</label>
+                      <input
+                        value={coachForm.email}
+                        onChange={(e) => handleCoachChange('email', e.target.value)}
+                        className={inputClass}
+                        placeholder="email@domena.cz"
+                      />
+                    </div>
+
+                    <div>
+                      <label className={labelClass}>Fotka</label>
+                      <input
+                        value={coachForm.photo}
+                        onChange={(e) => handleCoachChange('photo', e.target.value)}
+                        className={inputClass}
+                        placeholder="/treneri/manek.jpg"
+                      />
+                      {coachForm.photo && (
+                        <div className="mt-3 h-24 w-24 overflow-hidden rounded-full bg-gray-100">
+                          <img src={coachForm.photo} alt="Náhled trenéra" className="h-full w-full object-cover" />
+                        </div>
+                      )}
+                    </div>
+
+                    <label className="flex items-center gap-3 rounded-2xl bg-white p-4 text-sm font-semibold text-gray-700 shadow-sm">
+                      <input
+                        type="checkbox"
+                        checked={coachForm.active}
+                        onChange={(e) => handleCoachChange('active', e.target.checked)}
+                        className="h-5 w-5 accent-green-600"
+                      />
+                      Zobrazit na webu
+                    </label>
+
+                    <button type="submit" disabled={saving || !canEdit} className={greenButtonClass}>
+                      {saving ? 'Ukládám…' : editingCoachId ? 'Uložit trenéra' : 'Přidat trenéra'}
+                    </button>
+                  </form>
+                </div>
+
+                <div className={cardClass}>
+                  <div className="mb-5">
+                    <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                      Uložený realizační tým
+                    </div>
+                    <h3 className="text-2xl font-bold text-gray-900">Přehled</h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    {sortedCoaches.length > 0 ? (
+                      sortedCoaches.map((coach) => (
+                        <div key={coach.id} className="rounded-2xl border border-green-100 bg-green-50/70 p-4">
+                          <div className="flex gap-4">
+                            <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full bg-white">
+                              {coach.photo ? (
+                                <img src={coach.photo} alt={coach.name} className="h-full w-full object-cover" />
+                              ) : (
+                                <div className="flex h-full items-center justify-center text-xs text-gray-500">Bez fotky</div>
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <div className="mb-2 flex flex-wrap gap-2">
+                                <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+                                  {getItemSeason(coach)}
+                                </span>
+                                <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-700 shadow-sm">
+                                  {coach.group === 'management' ? 'Vedení' : getCategoryShortLabel(coach.category)}
+                                </span>
+                                <span className={`rounded-full px-3 py-1 text-xs font-bold ${coach.active === false ? 'bg-gray-200 text-gray-600' : 'bg-green-100 text-green-700'}`}>
+                                  {coach.active === false ? 'Skryté' : 'Zobrazené'}
+                                </span>
+                              </div>
+
+                              <div className="text-lg font-black text-gray-900">{coach.name}</div>
+                              <div className="text-sm font-semibold text-green-700">{coach.role || 'Trenér'}</div>
+                              {coach.subrole && <div className="mt-1 text-sm text-gray-600">{coach.subrole}</div>}
+                              {coach.licence && <div className="mt-1 text-sm text-gray-600">Licence: {coach.licence}</div>}
+                              {(coach.phoneLabel || coach.phone || coach.email) && (
+                                <div className="mt-2 text-sm text-gray-500">
+                                  {[coach.phoneLabel || coach.phone, coach.email].filter(Boolean).join(' • ')}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            <button type="button" onClick={() => handleEditCoach(coach)} className={outlineButtonClass}>
+                              Upravit
+                            </button>
+                            <button type="button" onClick={() => handleDeleteCoach(coach.id)} className={dangerButtonClass}>
+                              Smazat
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="rounded-2xl bg-gray-100 p-5 text-gray-600">
+                        Zatím nejsou uložení žádní trenéři. Web zatím použije původní seznam z kódu.
                       </div>
                     )}
                   </div>

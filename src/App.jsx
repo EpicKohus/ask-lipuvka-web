@@ -40,6 +40,7 @@ export default function AskLipuvkaWeb() {
   const [firebaseTrainings, setFirebaseTrainings] = useState([]);
   const [firebaseTrainingBreaks, setFirebaseTrainingBreaks] = useState([]);
   const [firebaseCalendarEvents, setFirebaseCalendarEvents] = useState([]);
+  const [firebaseCoaches, setFirebaseCoaches] = useState([]);
   const [siteDataReady, setSiteDataReady] = useState(false);
 
   const DEFAULT_CURRENT_SEASON = '2025/26';
@@ -282,6 +283,27 @@ export default function AskLipuvkaWeb() {
       },
     ],
   };
+
+  const firebaseSeasonCoaches = useMemo(() => {
+    return firebaseCoaches
+      .filter((person) => getItemSeason(person) === CURRENT_SEASON && person.active !== false)
+      .sort((a, b) => {
+        const groupCompare = String(a.group || 'trainer').localeCompare(String(b.group || 'trainer'), 'cs');
+        if (groupCompare !== 0) return groupCompare;
+        const orderCompare = (Number(a.order) || 0) - (Number(b.order) || 0);
+        if (orderCompare !== 0) return orderCompare;
+        return String(a.name || '').localeCompare(String(b.name || ''), 'cs');
+      });
+  }, [firebaseCoaches, CURRENT_SEASON]);
+
+  const publicTeam = useMemo(() => {
+    if (firebaseSeasonCoaches.length === 0) return team;
+
+    return {
+      management: firebaseSeasonCoaches.filter((person) => person.group === 'management'),
+      trainers: firebaseSeasonCoaches.filter((person) => person.group !== 'management'),
+    };
+  }, [firebaseSeasonCoaches]);
 
   const matches = [
     {
@@ -679,9 +701,10 @@ export default function AskLipuvkaWeb() {
     firebaseGallery.forEach((item) => seasons.push(getItemSeason(item)));
     firebaseTrainings.forEach((item) => seasons.push(getItemSeason(item)));
     firebaseCalendarEvents.forEach((item) => seasons.push(getItemSeason(item)));
+    firebaseCoaches.forEach((item) => seasons.push(getItemSeason(item)));
 
     return [...new Set(seasons.filter(Boolean))].sort((a, b) => b.localeCompare(a, 'cs'));
-  }, [allAvailableNews, allAvailableMatches, firebaseGallery, firebaseTrainings, firebaseCalendarEvents, currentSeason]);
+  }, [allAvailableNews, allAvailableMatches, firebaseGallery, firebaseTrainings, firebaseCalendarEvents, firebaseCoaches, currentSeason]);
 
   const handleSeasonChange = async (value) => {
     setSelectedSeason(value);
@@ -1230,12 +1253,24 @@ export default function AskLipuvkaWeb() {
           ...item.data(),
         }));
 
+        let loadedCoaches = [];
+        try {
+          const coachesSnapshot = await getDocs(collection(db, 'coaches'));
+          loadedCoaches = coachesSnapshot.docs.map((item) => ({
+            id: item.id,
+            ...item.data(),
+          }));
+        } catch (coachesError) {
+          console.warn('Nepodařilo se načíst trenéry, používám původní seznam:', coachesError);
+        }
+
         setFirebaseNews(loadedNews);
         setFirebaseMatches(loadedMatches);
         setFirebaseGallery(loadedGallery);
         setFirebaseTrainings(loadedTrainings);
         setFirebaseTrainingBreaks(loadedTrainingBreaks);
         setFirebaseCalendarEvents(loadedCalendarEvents);
+        setFirebaseCoaches(loadedCoaches);
       } catch (error) {
         console.error('Firebase chyba:', error);
       } finally {
@@ -4332,7 +4367,7 @@ export default function AskLipuvkaWeb() {
               <h3 className="mb-4 text-xl font-bold">Vedení mládeže</h3>
 
               <div className="mb-8 grid gap-6 md:grid-cols-2">
-                {team.management.map((person) => (
+                {publicTeam.management.map((person) => (
                   <div
                     key={person.name}
                     className={`rounded-2xl p-5 text-center shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-lg ${theme === 'dark' ? 'border border-emerald-900/45 bg-white/5 text-slate-100' : 'bg-gray-100 text-gray-900'}`}
@@ -4379,7 +4414,7 @@ export default function AskLipuvkaWeb() {
               <h3 className="mb-4 text-xl font-bold">Trenéři</h3>
 
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {team.trainers.map((person) => {
+                {publicTeam.trainers.map((person) => {
                   const categoryStyle = getCategoryStyle(person.category);
 
                   return (
