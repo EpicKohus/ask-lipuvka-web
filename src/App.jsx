@@ -3045,7 +3045,7 @@ export default function AskLipuvkaWeb() {
             onClick={() => setIsScheduleOpen(true)}
             className={`mt-4 rounded-xl px-6 py-3 font-semibold transition hover:scale-[1.02] ${activeCategoryStyle.button}`}
           >
-            Rozpis zápasů/akcí – Jaro 2026
+            Rozpis zápasů
           </button>
         </div>
 
@@ -4083,8 +4083,8 @@ export default function AskLipuvkaWeb() {
                   <div className={`mb-2 rounded-full px-4 py-1 text-sm font-semibold backdrop-blur ${activeCategoryStyle.badge}`}>
                     {activeCategoryLabel}
                   </div>
-                  <h2 className="text-3xl font-black md:text-4xl">Rozpis zápasů/akcí</h2>
-                  <p className="mt-2 text-lg text-white/90">Jaro 2026</p>
+                  <h2 className="text-3xl font-black md:text-4xl">Rozpis zápasů</h2>
+                  <p className="mt-2 text-lg text-white/90">Sezona {CURRENT_SEASON}</p>
                 </div>
               </div>
 
@@ -4093,7 +4093,7 @@ export default function AskLipuvkaWeb() {
                   <span className={`rounded-full px-3 py-1 text-sm font-bold ${activeCategoryStyle.softBadge}`}>
                     {activeCategoryShortLabel}
                   </span>
-                  <span className={`text-sm ${softMutedTextClass}`}>Kompletní přehled zápasů a akcí vybrané kategorie</span>
+                  <span className={`text-sm ${softMutedTextClass}`}>Kompletní přehled zápasů vybrané kategorie v sezoně {CURRENT_SEASON}</span>
                 </div>
 
                 <div className="space-y-4">
