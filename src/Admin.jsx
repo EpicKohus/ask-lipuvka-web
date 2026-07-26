@@ -176,6 +176,7 @@ export default function Admin() {
     home: true,
     venue: 'Lipůvka',
     status: 'planned',
+    matchType: 'league',
     hasSecondBlock: false,
     matchLabel1: '',
     result1: '',
@@ -357,6 +358,7 @@ export default function Admin() {
       home: true,
       venue: 'Lipůvka',
       status: 'planned',
+      matchType: 'league',
       hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
@@ -2452,6 +2454,7 @@ export default function Admin() {
         home: matchForm.home,
         venue: matchForm.venue.trim(),
         status: matchForm.status,
+        matchType: matchForm.matchType || 'league',
         hasSecondBlock: matchForm.hasSecondBlock,
         matchLabel1: matchForm.matchLabel1.trim(),
         result1: matchForm.result1.trim(),
@@ -3381,6 +3384,19 @@ export default function Admin() {
                           </div>
 
                           <div>
+                            <label className={labelClass}>Typ utkání</label>
+                            <select
+                              value={matchForm.matchType || 'league'}
+                              onChange={(e) => handleMatchChange('matchType', e.target.value)}
+                              className={inputClass}
+                            >
+                              {matchTypeOptions.map((type) => (
+                                <option key={type.id} value={type.id}>{type.icon} {type.label}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
                             <label className={labelClass}>Datum</label>
                             <input
                               type="text"
@@ -3720,6 +3736,7 @@ Večeřa 1x`}
                       const label1 = match.matchLabel1 || '1. blok';
                       const label2 = match.matchLabel2 || '2. blok';
                       const isPlayed = match.status === 'played';
+                      const matchType = getMatchType(match.matchType);
                       const hasSecondBlock = Boolean(
                         match.hasSecondBlock ||
                           match.matchLabel2 ||
@@ -3740,6 +3757,10 @@ Večeřa 1x`}
 
                             <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
                               {getItemSeason(match)}
+                            </span>
+
+                            <span className={`rounded-full px-3 py-1 text-xs font-bold ${matchType.className}`} title={matchType.label}>
+                              {matchType.icon} {matchType.shortLabel}
                             </span>
 
                             <span

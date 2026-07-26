@@ -130,6 +130,19 @@ export default function AskLipuvkaWeb() {
     },
   ];
 
+
+  const matchTypeOptions = [
+    { id: 'league', label: 'Mistrovské utkání', shortLabel: 'Mistrovské', icon: '🏆', className: 'bg-blue-100 text-blue-700', darkClassName: 'bg-blue-500/15 text-blue-200 ring-1 ring-blue-500/20' },
+    { id: 'friendly', label: 'Přátelské utkání', shortLabel: 'Přátelské', icon: '🤝', className: 'bg-emerald-100 text-emerald-700', darkClassName: 'bg-emerald-500/15 text-emerald-200 ring-1 ring-emerald-500/20' },
+    { id: 'tournament', label: 'Turnaj', shortLabel: 'Turnaj', icon: '🎯', className: 'bg-purple-100 text-purple-700', darkClassName: 'bg-purple-500/15 text-purple-200 ring-1 ring-purple-500/20' },
+  ];
+
+  const getMatchType = (value) =>
+    matchTypeOptions.find((item) => item.id === value) || matchTypeOptions[0];
+
+  const getMatchTypeBadgeClass = (type) =>
+    theme === 'dark' ? type.darkClassName : type.className;
+
   const defaultSeasonTeams = useMemo(() => ({
     predpripravka: true,
     'mladsi-pripravka': true,
@@ -1483,6 +1496,7 @@ export default function AskLipuvkaWeb() {
     const isPlayed = parseMatchDate(m.date) < todayStart;
     const categoryStyle = getCategoryStyle(m.category);
     const hasPhotoReport = isPlayed && Boolean(getMatchAlbum(m));
+    const matchType = getMatchType(m.matchType);
 
     const firstPlayedResult = m.result1?.trim();
     const secondPlayedResult = m.result2?.trim();
@@ -1514,6 +1528,9 @@ export default function AskLipuvkaWeb() {
                   </span>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${categoryStyle.badge}`}>
                     {getCategoryShortLabel(m.category)}
+                  </span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${getMatchTypeBadgeClass(matchType)}`} title={matchType.label}>
+                    {matchType.icon} {matchType.shortLabel}
                   </span>
                 </div>
 
@@ -4084,6 +4101,7 @@ export default function AskLipuvkaWeb() {
                     fullScheduleMatches.map((m) => {
                       const isToday = isSameDay(parseMatchDate(m.date), todayStart);
                       const categoryStyle = getCategoryStyle(m.category);
+                      const matchType = getMatchType(m.matchType);
                       const label1 = m.matchLabel1?.trim() || '1. blok';
                       const label2 = m.matchLabel2?.trim() || '2. blok';
 
@@ -4120,6 +4138,9 @@ export default function AskLipuvkaWeb() {
                                   </span>
                                   <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${categoryStyle.badge}`}>
                                     {getCategoryShortLabel(m.category)}
+                                  </span>
+                                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${getMatchTypeBadgeClass(matchType)}`} title={matchType.label}>
+                                    {matchType.icon} {matchType.shortLabel}
                                   </span>
                                 </div>
 
