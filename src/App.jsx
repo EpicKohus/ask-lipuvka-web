@@ -4161,10 +4161,10 @@ export default function AskLipuvkaWeb() {
                         onClick={() => setScheduleSeasonPart(option.id)}
                         className={`rounded-full px-4 py-2 text-sm font-black transition ${
                           active
-                            ? 'bg-green-600 text-white shadow-sm'
+                            ? activeCategoryStyle.button
                             : theme === 'dark'
                               ? 'bg-white/10 text-slate-200 hover:bg-white/15'
-                              : 'bg-gray-100 text-gray-700 hover:bg-green-50'
+                              : `${activeCategoryStyle.softBadge} opacity-80 hover:opacity-100`
                         }`}
                       >
                         {option.label}
