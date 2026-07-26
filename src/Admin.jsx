@@ -329,7 +329,7 @@ export default function Admin() {
   const resetMatchForm = () => {
     setEditingMatchId(null);
     setMatchForm({
-      season: CURRENT_SEASON,
+      season: currentSeason || CURRENT_SEASON,
       category: 'mladsi-pripravka',
       date: '',
       dateISO: '',
@@ -354,7 +354,7 @@ export default function Admin() {
   const resetTrainingForm = () => {
     setEditingTrainingId(null);
     setTrainingForm({
-      season: CURRENT_SEASON,
+      season: currentSeason || CURRENT_SEASON,
       category: 'mladsi-pripravka',
       weekday: '2',
       timeFrom: '',
@@ -369,7 +369,7 @@ export default function Admin() {
   const resetTrainingBreakForm = () => {
     setEditingTrainingBreakId(null);
     setTrainingBreakForm({
-      season: CURRENT_SEASON,
+      season: currentSeason || CURRENT_SEASON,
       category: 'all',
       title: '',
       dateFrom: '',
@@ -382,7 +382,7 @@ export default function Admin() {
   const resetCalendarEventForm = () => {
     setEditingCalendarEventId(null);
     setCalendarEventForm({
-      season: CURRENT_SEASON,
+      season: currentSeason || CURRENT_SEASON,
       category: 'all',
       title: '',
       date: '',
@@ -397,7 +397,7 @@ export default function Admin() {
   const resetGalleryForm = () => {
     setEditingGalleryId(null);
     setGalleryForm({
-      season: CURRENT_SEASON,
+      season: currentSeason || CURRENT_SEASON,
       type: 'global',
       category: 'mladsi-pripravka',
       title: '',
@@ -488,6 +488,7 @@ export default function Admin() {
           setCurrentSeason(savedCurrentSeason);
           setSeasonTeamsSeason(savedCurrentSeason);
           setMatchListSeasonFilter(savedCurrentSeason);
+          applySeasonToNewForms(savedCurrentSeason);
         }
       } catch (seasonError) {
         console.warn('Nepodařilo se načíst nastavení sezony:', seasonError);
@@ -1015,6 +1016,17 @@ export default function Admin() {
         : 'border border-green-200 bg-white text-green-700 hover:bg-green-50'
     }`;
 
+  const applySeasonToNewForms = (season) => {
+    const nextSeason = season || CURRENT_SEASON;
+
+    setNewsForm((prev) => ({ ...prev, season: nextSeason }));
+    setMatchForm((prev) => editingMatchId ? prev : ({ ...prev, season: nextSeason }));
+    setTrainingForm((prev) => editingTrainingId ? prev : ({ ...prev, season: nextSeason }));
+    setTrainingBreakForm((prev) => editingTrainingBreakId ? prev : ({ ...prev, season: nextSeason }));
+    setCalendarEventForm((prev) => editingCalendarEventId ? prev : ({ ...prev, season: nextSeason }));
+    setGalleryForm((prev) => editingGalleryId ? prev : ({ ...prev, season: nextSeason }));
+  };
+
   const handleSaveCurrentSeason = async () => {
     try {
       setSavingCurrentSeason(true);
@@ -1030,6 +1042,8 @@ export default function Admin() {
         detail: 'Aktuální sezona webu',
       });
       setMatchListSeasonFilter(currentSeason);
+      setSeasonTeamsSeason(currentSeason);
+      applySeasonToNewForms(currentSeason);
       alert(`Aktuální sezona webu je nastavená na ${currentSeason}.`);
     } catch (error) {
       console.error('Chyba při ukládání aktuální sezony:', error);
@@ -1163,7 +1177,7 @@ export default function Admin() {
       setSaving(true);
 
       const payload = {
-        season: calendarEventForm.season || CURRENT_SEASON,
+        season: calendarEventForm.season || currentSeason || CURRENT_SEASON,
         category: calendarEventForm.category || 'all',
         title: calendarEventForm.title.trim(),
         date: calendarEventForm.date,
@@ -1285,7 +1299,7 @@ export default function Admin() {
       setSaving(true);
 
       const payload = {
-        season: trainingBreakForm.season || CURRENT_SEASON,
+        season: trainingBreakForm.season || currentSeason || CURRENT_SEASON,
         category: trainingBreakForm.category || 'all',
         title: trainingBreakForm.title.trim() || 'Pauza tréninků',
         dateFrom: trainingBreakForm.dateFrom,
@@ -1397,7 +1411,7 @@ export default function Admin() {
       setSaving(true);
 
       const payload = {
-        season: trainingForm.season || CURRENT_SEASON,
+        season: trainingForm.season || currentSeason || CURRENT_SEASON,
         category: trainingForm.category,
         weekday: String(trainingForm.weekday),
         timeFrom: trainingForm.timeFrom.trim(),
@@ -2050,7 +2064,7 @@ export default function Admin() {
       );
 
       const payload = {
-        season: newsForm.season || CURRENT_SEASON,
+        season: newsForm.season || currentSeason || CURRENT_SEASON,
         category: newsForm.category,
         title: newsForm.title.trim(),
         text: newsForm.text.trim(),
@@ -2145,7 +2159,7 @@ export default function Admin() {
       setSaving(true);
 
       const payload = {
-        season: matchForm.season || CURRENT_SEASON,
+        season: matchForm.season || currentSeason || CURRENT_SEASON,
         category: matchForm.category,
         date: matchForm.date.trim(),
         dateISO: matchForm.dateISO || formatDateToISO(matchForm.date),
@@ -2290,7 +2304,7 @@ export default function Admin() {
 
       const now = new Date().toISOString();
       const payload = {
-        season: galleryForm.season || CURRENT_SEASON,
+        season: galleryForm.season || currentSeason || CURRENT_SEASON,
         type: galleryForm.type,
         category: galleryForm.type === 'team' ? galleryForm.category : '',
         title: galleryForm.title.trim(),
