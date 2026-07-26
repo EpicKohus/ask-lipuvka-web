@@ -56,6 +56,10 @@ export default function AskLipuvkaWeb() {
   const [isTermsOpen, setIsTermsOpen] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [scheduleSeasonPart, setScheduleSeasonPart] = useState(() => {
+    const month = new Date().getMonth() + 1;
+    return month >= 7 ? 'autumn' : 'spring';
+  });
   const [selectedCalendarEventDetail, setSelectedCalendarEventDetail] = useState(null);
 
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
@@ -142,6 +146,20 @@ export default function AskLipuvkaWeb() {
 
   const getMatchTypeBadgeClass = (type) =>
     theme === 'dark' ? type.darkClassName : type.className;
+
+  const scheduleSeasonPartOptions = [
+    { id: 'autumn', label: 'Podzim' },
+    { id: 'spring', label: 'Jaro' },
+    { id: 'all', label: 'Vše' },
+  ];
+
+  const getMatchSeasonPart = (match) => {
+    if (match?.seasonPart === 'autumn' || match?.seasonPart === 'spring') return match.seasonPart;
+    const matchDate = parseMatchDate(match?.date || '');
+    const month = matchDate.getMonth() + 1;
+    if (!Number.isFinite(month)) return 'autumn';
+    return month >= 7 ? 'autumn' : 'spring';
+  };
 
   const defaultSeasonTeams = useMemo(() => ({
     predpripravka: true,
@@ -897,9 +915,9 @@ export default function AskLipuvkaWeb() {
   const latestPlayedMatch = playedMatches.length > 0 ? playedMatches[0] : null;
   const otherPlayedMatches = playedMatches.length > 1 ? playedMatches.slice(1) : [];
 
-  const fullScheduleMatches = [...filteredMatches].sort(
-    (a, b) => parseMatchDate(a.date) - parseMatchDate(b.date)
-  );
+  const fullScheduleMatches = [...filteredMatches]
+    .filter((match) => scheduleSeasonPart === 'all' || getMatchSeasonPart(match) === scheduleSeasonPart)
+    .sort((a, b) => parseMatchDate(a.date) - parseMatchDate(b.date));
 
   const activeCategoryData = categories.find((category) => category.id === activeCategory);
   const activeCategoryLabel = activeCategoryData?.label || '';
@@ -4131,6 +4149,28 @@ export default function AskLipuvkaWeb() {
                     {activeCategoryShortLabel}
                   </span>
                   <span className={`text-sm ${softMutedTextClass}`}>Kompletní přehled zápasů vybrané kategorie v sezoně {CURRENT_SEASON}</span>
+                </div>
+
+                <div className="mb-5 flex flex-wrap gap-2">
+                  {scheduleSeasonPartOptions.map((option) => {
+                    const active = scheduleSeasonPart === option.id;
+                    return (
+                      <button
+                        key={option.id}
+                        type="button"
+                        onClick={() => setScheduleSeasonPart(option.id)}
+                        className={`rounded-full px-4 py-2 text-sm font-black transition ${
+                          active
+                            ? 'bg-green-600 text-white shadow-sm'
+                            : theme === 'dark'
+                              ? 'bg-white/10 text-slate-200 hover:bg-white/15'
+                              : 'bg-gray-100 text-gray-700 hover:bg-green-50'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
                 </div>
 
                 <div className="space-y-4">

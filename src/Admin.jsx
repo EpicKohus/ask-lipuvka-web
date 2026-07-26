@@ -55,6 +55,27 @@ export default function Admin() {
     { id: 'tournament', label: 'Turnaj', shortLabel: 'Turnaj', icon: '🎯' },
   ];
 
+  const seasonPartOptions = [
+    { id: 'autumn', label: 'Podzim' },
+    { id: 'spring', label: 'Jaro' },
+  ];
+
+  const getDefaultSeasonPart = () => {
+    const month = new Date().getMonth() + 1;
+    return month >= 7 ? 'autumn' : 'spring';
+  };
+
+  const getSeasonPart = (value) =>
+    seasonPartOptions.find((item) => item.id === value) || seasonPartOptions[0];
+
+  const getMatchSeasonPart = (match) => {
+    if (match?.seasonPart === 'autumn' || match?.seasonPart === 'spring') return match.seasonPart;
+    const matchDate = parseMatchDate(match || {});
+    const month = matchDate.getMonth() + 1;
+    if (!Number.isFinite(month)) return getDefaultSeasonPart();
+    return month >= 7 ? 'autumn' : 'spring';
+  };
+
   const getMatchType = (value) =>
     matchTypeOptions.find((item) => item.id === value) || matchTypeOptions[0];
 
@@ -198,6 +219,7 @@ export default function Admin() {
     venue: 'Lipůvka',
     status: 'planned',
     matchType: 'league',
+    seasonPart: getDefaultSeasonPart(),
     hasSecondBlock: false,
     matchLabel1: '',
     result1: '',
@@ -380,6 +402,7 @@ export default function Admin() {
       venue: 'Lipůvka',
       status: 'planned',
       matchType: 'league',
+      seasonPart: getDefaultSeasonPart(),
       hasSecondBlock: false,
       matchLabel1: '',
       result1: '',
@@ -2476,6 +2499,7 @@ export default function Admin() {
         venue: matchForm.venue.trim(),
         status: matchForm.status,
         matchType: matchForm.matchType || 'league',
+        seasonPart: matchForm.seasonPart || getDefaultSeasonPart(),
         hasSecondBlock: matchForm.hasSecondBlock,
         matchLabel1: matchForm.matchLabel1.trim(),
         result1: matchForm.result1.trim(),
@@ -2542,6 +2566,8 @@ export default function Admin() {
       home: Boolean(match.home),
       venue: match.venue || '',
       status: match.status || 'planned',
+      matchType: match.matchType || 'league',
+      seasonPart: match.seasonPart || getMatchSeasonPart(match),
       hasSecondBlock,
       matchLabel1: match.matchLabel1 || '',
       result1: match.result1 || '',
@@ -3418,6 +3444,22 @@ export default function Admin() {
                           </div>
 
                           <div>
+                            <label className={labelClass}>Část sezony</label>
+                            <select
+                              value={matchForm.seasonPart || getDefaultSeasonPart()}
+                              onChange={(e) => handleMatchChange('seasonPart', e.target.value)}
+                              className={inputClass}
+                            >
+                              {seasonPartOptions.map((part) => (
+                                <option key={part.id} value={part.id}>{part.label}</option>
+                              ))}
+                            </select>
+                            <div className="mt-2 text-sm text-gray-500">
+                              Použije se v popupu Rozpis zápasů pro filtr Podzim/Jaro.
+                            </div>
+                          </div>
+
+                          <div>
                             <label className={labelClass}>Datum</label>
                             <input
                               type="text"
@@ -3782,6 +3824,10 @@ Večeřa 1x`}
 
                             <span className={`rounded-full px-3 py-1 text-xs font-bold ${matchType.className}`} title={matchType.label}>
                               {matchType.icon} {matchType.shortLabel}
+                            </span>
+
+                            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                              {getSeasonPart(getMatchSeasonPart(match)).label}
                             </span>
 
                             <span
