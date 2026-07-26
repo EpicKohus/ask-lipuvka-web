@@ -49,6 +49,27 @@ export default function Admin() {
     { value: '7', label: 'Neděle' },
   ];
 
+  const matchTypeOptions = [
+    { id: 'league', label: 'Mistrovské utkání', shortLabel: 'Mistrovské', icon: '🏆' },
+    { id: 'friendly', label: 'Přátelské utkání', shortLabel: 'Přátelské', icon: '🤝' },
+    { id: 'tournament', label: 'Turnaj', shortLabel: 'Turnaj', icon: '🎯' },
+  ];
+
+  const getMatchType = (value) =>
+    matchTypeOptions.find((item) => item.id === value) || matchTypeOptions[0];
+
+  const getMatchTypeBadgeClass = (type) => {
+    switch (type?.id) {
+      case 'friendly':
+        return 'bg-blue-100 text-blue-700';
+      case 'tournament':
+        return 'bg-purple-100 text-purple-700';
+      case 'league':
+      default:
+        return 'bg-yellow-100 text-yellow-800';
+    }
+  };
+
   const [activeSection, setActiveSection] = useState('news');
 
   const [newsItems, setNewsItems] = useState([]);
