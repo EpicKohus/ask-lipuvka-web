@@ -78,8 +78,8 @@ export default function Admin() {
   });
   const [dailyVisitStats, setDailyVisitStats] = useState([]);
   const [statsPeriod, setStatsPeriod] = useState(7);
-  const [scorerStatsSeason, setScorerStatsSeason] = useState(CURRENT_SEASON);
   const [currentSeason, setCurrentSeason] = useState(CURRENT_SEASON);
+  const [scorerStatsSeason, setScorerStatsSeason] = useState(CURRENT_SEASON);
   const [savingCurrentSeason, setSavingCurrentSeason] = useState(false);
   const [seasonTeamsSeason, setSeasonTeamsSeason] = useState(CURRENT_SEASON);
   const [seasonTeams, setSeasonTeams] = useState(getDefaultSeasonTeams);
@@ -490,7 +490,6 @@ export default function Admin() {
           setSeasonTeamsSeason(savedCurrentSeason);
           setMatchListSeasonFilter(savedCurrentSeason);
           setScorerStatsSeason(savedCurrentSeason);
-          applySeasonToNewForms(savedCurrentSeason);
         }
       } catch (seasonError) {
         console.warn('Nepodařilo se načíst nastavení sezony:', seasonError);
@@ -623,6 +622,43 @@ export default function Admin() {
       loadAdminRole();
     }
   }, [authLoading, authUser]);
+
+  useEffect(() => {
+    if (!currentSeason) return;
+
+    setMatchListSeasonFilter(currentSeason);
+    setScorerStatsSeason(currentSeason);
+    setSeasonTeamsSeason(currentSeason);
+
+    setNewsForm((prev) => ({ ...prev, season: currentSeason }));
+
+    if (!editingMatchId) {
+      setMatchForm((prev) => ({ ...prev, season: currentSeason }));
+    }
+
+    if (!editingTrainingId) {
+      setTrainingForm((prev) => ({ ...prev, season: currentSeason }));
+    }
+
+    if (!editingTrainingBreakId) {
+      setTrainingBreakForm((prev) => ({ ...prev, season: currentSeason }));
+    }
+
+    if (!editingCalendarEventId) {
+      setCalendarEventForm((prev) => ({ ...prev, season: currentSeason }));
+    }
+
+    if (!editingGalleryId) {
+      setGalleryForm((prev) => ({ ...prev, season: currentSeason }));
+    }
+  }, [
+    currentSeason,
+    editingMatchId,
+    editingTrainingId,
+    editingTrainingBreakId,
+    editingCalendarEventId,
+    editingGalleryId,
+  ]);
 
 
   const newsByCategory = useMemo(() => {
@@ -901,117 +937,84 @@ export default function Admin() {
       .filter(Boolean);
   };
 
-  const sortScorerRows = (items) =>
-    items.sort((a, b) => {
-      if (b.goals !== a.goals) return b.goals - a.goals;
-      if (b.matchCount !== a.matchCount) return b.matchCount - a.matchCount;
-      return a.name.localeCompare(b.name, 'cs');
-    });
-
-  const buildScorerStats = (sourceMatches) => {
-    const statsMap = categories.reduce((acc, category) => {
-      acc[category.id] = new Map();
-      return acc;
-    }, {});
-    const overallMap = new Map();
-
-    const addScorerToMap = (map, scorer, match, matchTitle, matchDate) => {
-      const scorerKey = scorer.name.toLocaleLowerCase('cs-CZ');
-      const existing = map.get(scorerKey) || {
-        name: scorer.name,
-        goals: 0,
-        matches: new Set(),
-        categories: new Set(),
-        lastGoalTime: 0,
-        lastGoalMatch: '',
-      };
-
-      existing.goals += scorer.goals;
-      existing.matches.add(match.id || `${matchDate}-${matchTitle}`);
-      if (match.category) existing.categories.add(match.category);
-
-      const currentDate = parseMatchDate(match);
-      const currentTime = currentDate.getTime();
-      const safeTime = Number.isNaN(currentTime) ? 0 : currentTime;
-      if (!existing.lastGoalTime || safeTime >= existing.lastGoalTime) {
-        existing.lastGoalTime = safeTime;
-        existing.lastGoalMatch = `${matchDate ? `${matchDate} • ` : ''}${matchTitle}`;
-      }
-
-      map.set(scorerKey, existing);
-    };
+  const buildScorerRows = (sourceMatches) => {
+    const scorerMap = new Map();
 
     sourceMatches.forEach((match) => {
-      const categoryId = match.category;
-      if (!statsMap[categoryId]) return;
-
       const matchTitle = match.home
         ? `ASK Lipůvka vs. ${match.opponent || 'soupeř'}`
         : `${match.opponent || 'Soupeř'} vs. ASK Lipůvka`;
       const matchDate = match.date || '';
-      const scorers = [
-        ...parseScorersForStats(match.scorers1),
-        ...parseScorersForStats(match.scorers2),
-      ];
+      const matchSeason = getItemSeason(match);
 
-      scorers.forEach((scorer) => {
-        addScorerToMap(statsMap[categoryId], scorer, match, matchTitle, matchDate);
-        addScorerToMap(overallMap, scorer, match, matchTitle, matchDate);
+      [...parseScorersForStats(match.scorers1), ...parseScorersForStats(match.scorers2)].forEach((scorer) => {
+        const scorerKey = scorer.name.toLocaleLowerCase('cs-CZ');
+        const existing = scorerMap.get(scorerKey) || {
+          name: scorer.name,
+          goals: 0,
+          matches: new Set(),
+          categories: new Set(),
+          seasons: new Set(),
+          lastGoalDate: '',
+          lastGoalMatch: '',
+        };
+
+        existing.goals += scorer.goals;
+        existing.matches.add(match.id || `${matchDate}-${matchTitle}`);
+        if (match.category) existing.categories.add(match.category);
+        if (matchSeason) existing.seasons.add(matchSeason);
+
+        const currentDate = parseMatchDate(match);
+        const lastDate = existing.lastGoalDate ? new Date(existing.lastGoalDate) : new Date(0);
+        if (!existing.lastGoalDate || currentDate >= lastDate) {
+          existing.lastGoalDate = match.dateISO || matchDate;
+          existing.lastGoalMatch = `${matchDate ? `${matchDate} • ` : ''}${matchTitle}`;
+        }
+
+        scorerMap.set(scorerKey, existing);
       });
     });
 
-    const finalizeScorers = (map) =>
-      sortScorerRows(
-        Array.from(map.values()).map((item) => ({
-          ...item,
-          matchCount: item.matches.size,
-          categoriesText: Array.from(item.categories)
-            .map((categoryId) => getCategoryShortLabel(categoryId))
-            .filter(Boolean)
-            .join(', '),
-          matches: undefined,
-          categories: undefined,
-          lastGoalTime: undefined,
-        }))
-      );
-
-    return {
-      byCategory: categories.map((category) => ({
-        ...category,
-        scorers: finalizeScorers(statsMap[category.id]),
-      })),
-      overall: finalizeScorers(overallMap),
-    };
+    return Array.from(scorerMap.values())
+      .map((item) => ({
+        ...item,
+        matchCount: item.matches.size,
+        categoryLabels: Array.from(item.categories)
+          .map((categoryId) => getCategoryShortLabel(categoryId))
+          .filter(Boolean)
+          .join(', '),
+        seasonLabels: Array.from(item.seasons).filter(Boolean).join(', '),
+        matches: undefined,
+        categories: undefined,
+        seasons: undefined,
+      }))
+      .sort((a, b) => {
+        if (b.goals !== a.goals) return b.goals - a.goals;
+        if (b.matchCount !== a.matchCount) return b.matchCount - a.matchCount;
+        return a.name.localeCompare(b.name, 'cs');
+      });
   };
 
-  const scorerStatsSeasonOptions = useMemo(() => {
-    const seasons = new Set(seasonOptions);
-    matches.forEach((match) => {
-      const season = getItemSeason(match);
-      if (season) seasons.add(season);
-    });
-    return Array.from(seasons).sort((a, b) => String(b).localeCompare(String(a), 'cs'));
+  const scorerSeasonMatches = useMemo(() => {
+    return matches.filter((match) => getItemSeason(match) === scorerStatsSeason);
+  }, [matches, scorerStatsSeason]);
+
+  const scorersByCategoryStats = useMemo(() => {
+    return categories.map((category) => ({
+      ...category,
+      scorers: buildScorerRows(
+        scorerSeasonMatches.filter((match) => match.category === category.id)
+      ),
+    }));
+  }, [scorerSeasonMatches]);
+
+  const scorerSeasonOverallStats = useMemo(() => {
+    return buildScorerRows(scorerSeasonMatches);
+  }, [scorerSeasonMatches]);
+
+  const scorerClubOverallStats = useMemo(() => {
+    return buildScorerRows(matches);
   }, [matches]);
-
-  const matchesForScorerStatsSeason = useMemo(
-    () => matches.filter((match) => getItemSeason(match) === scorerStatsSeason),
-    [matches, scorerStatsSeason]
-  );
-
-  const scorersByCategorySeasonStats = useMemo(
-    () => buildScorerStats(matchesForScorerStatsSeason).byCategory,
-    [matchesForScorerStatsSeason]
-  );
-
-  const scorersOverallSeasonStats = useMemo(
-    () => buildScorerStats(matchesForScorerStatsSeason).overall,
-    [matchesForScorerStatsSeason]
-  );
-
-  const scorersOverallAllTimeStats = useMemo(
-    () => buildScorerStats(matches).overall,
-    [matches]
-  );
 
   const linkedAlbumsCount = useMemo(() => {
     return matches.filter((match) => Boolean(match.galleryAlbumId)).length;
@@ -1075,17 +1078,6 @@ export default function Admin() {
         : 'border border-green-200 bg-white text-green-700 hover:bg-green-50'
     }`;
 
-  const applySeasonToNewForms = (season) => {
-    const nextSeason = season || CURRENT_SEASON;
-
-    setNewsForm((prev) => ({ ...prev, season: nextSeason }));
-    setMatchForm((prev) => editingMatchId ? prev : ({ ...prev, season: nextSeason }));
-    setTrainingForm((prev) => editingTrainingId ? prev : ({ ...prev, season: nextSeason }));
-    setTrainingBreakForm((prev) => editingTrainingBreakId ? prev : ({ ...prev, season: nextSeason }));
-    setCalendarEventForm((prev) => editingCalendarEventId ? prev : ({ ...prev, season: nextSeason }));
-    setGalleryForm((prev) => editingGalleryId ? prev : ({ ...prev, season: nextSeason }));
-  };
-
   const handleSaveCurrentSeason = async () => {
     try {
       setSavingCurrentSeason(true);
@@ -1101,9 +1093,6 @@ export default function Admin() {
         detail: 'Aktuální sezona webu',
       });
       setMatchListSeasonFilter(currentSeason);
-      setSeasonTeamsSeason(currentSeason);
-      setScorerStatsSeason(currentSeason);
-      applySeasonToNewForms(currentSeason);
       alert(`Aktuální sezona webu je nastavená na ${currentSeason}.`);
     } catch (error) {
       console.error('Chyba při ukládání aktuální sezony:', error);
@@ -1237,7 +1226,7 @@ export default function Admin() {
       setSaving(true);
 
       const payload = {
-        season: calendarEventForm.season || currentSeason || CURRENT_SEASON,
+        season: calendarEventForm.season || CURRENT_SEASON,
         category: calendarEventForm.category || 'all',
         title: calendarEventForm.title.trim(),
         date: calendarEventForm.date,
@@ -1359,7 +1348,7 @@ export default function Admin() {
       setSaving(true);
 
       const payload = {
-        season: trainingBreakForm.season || currentSeason || CURRENT_SEASON,
+        season: trainingBreakForm.season || CURRENT_SEASON,
         category: trainingBreakForm.category || 'all',
         title: trainingBreakForm.title.trim() || 'Pauza tréninků',
         dateFrom: trainingBreakForm.dateFrom,
@@ -1471,7 +1460,7 @@ export default function Admin() {
       setSaving(true);
 
       const payload = {
-        season: trainingForm.season || currentSeason || CURRENT_SEASON,
+        season: trainingForm.season || CURRENT_SEASON,
         category: trainingForm.category,
         weekday: String(trainingForm.weekday),
         timeFrom: trainingForm.timeFrom.trim(),
@@ -2124,7 +2113,7 @@ export default function Admin() {
       );
 
       const payload = {
-        season: newsForm.season || currentSeason || CURRENT_SEASON,
+        season: newsForm.season || CURRENT_SEASON,
         category: newsForm.category,
         title: newsForm.title.trim(),
         text: newsForm.text.trim(),
@@ -2219,7 +2208,7 @@ export default function Admin() {
       setSaving(true);
 
       const payload = {
-        season: matchForm.season || currentSeason || CURRENT_SEASON,
+        season: matchForm.season || CURRENT_SEASON,
         category: matchForm.category,
         date: matchForm.date.trim(),
         dateISO: matchForm.dateISO || formatDateToISO(matchForm.date),
@@ -2364,7 +2353,7 @@ export default function Admin() {
 
       const now = new Date().toISOString();
       const payload = {
-        season: galleryForm.season || currentSeason || CURRENT_SEASON,
+        season: galleryForm.season || CURRENT_SEASON,
         type: galleryForm.type,
         category: galleryForm.type === 'team' ? galleryForm.category : '',
         title: galleryForm.title.trim(),
@@ -2620,18 +2609,10 @@ export default function Admin() {
   const canEdit = Boolean(adminRole && ['owner', 'editor'].includes(adminRole));
   const canManageAdmins = adminRole === 'owner';
 
-  const renderScorerList = (scorers, emptyText, maxItems = 20) => {
-    if (!scorers.length) {
-      return (
-        <div className="rounded-xl bg-white px-4 py-3 text-sm text-gray-500 shadow-sm">
-          {emptyText}
-        </div>
-      );
-    }
-
-    return (
+  const renderScorerList = (scorers, emptyText, showCategoryLabel = false, showSeasonLabel = false) => (
+    scorers.length > 0 ? (
       <div className="space-y-3">
-        {scorers.slice(0, maxItems).map((scorer, index) => (
+        {scorers.map((scorer, index) => (
           <div
             key={`${scorer.name}-${index}`}
             className="rounded-xl bg-white px-4 py-3 shadow-sm"
@@ -2648,8 +2629,17 @@ export default function Admin() {
                 </div>
                 <div className="mt-2 text-xs text-gray-500">
                   Zápasů se vstřeleným gólem: {scorer.matchCount}
-                  {scorer.categoriesText ? ` • Kategorie: ${scorer.categoriesText}` : ''}
                 </div>
+                {showCategoryLabel && scorer.categoryLabels && (
+                  <div className="mt-1 text-xs text-gray-500">
+                    Kategorie: {scorer.categoryLabels}
+                  </div>
+                )}
+                {showSeasonLabel && scorer.seasonLabels && (
+                  <div className="mt-1 text-xs text-gray-500">
+                    Sezony: {scorer.seasonLabels}
+                  </div>
+                )}
                 {scorer.lastGoalMatch && (
                   <div className="mt-1 text-xs text-gray-500">
                     Poslední gól: {scorer.lastGoalMatch}
@@ -2668,15 +2658,13 @@ export default function Admin() {
             </div>
           </div>
         ))}
-
-        {scorers.length > maxItems && (
-          <div className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-gray-500 shadow-sm">
-            Další střelci: {scorers.length - maxItems}
-          </div>
-        )}
       </div>
-    );
-  };
+    ) : (
+      <div className="rounded-xl bg-white px-4 py-3 text-sm text-gray-500 shadow-sm">
+        {emptyText}
+      </div>
+    )
+  );
 
   const handleGoogleLogin = async () => {
     try {
@@ -4287,49 +4275,84 @@ L`}
 
 
                     <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
-                      <div className="mb-5">
-                        <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
-                          Střelci podle sezon
-                        </div>
-                        <h2 className="mt-2 text-2xl font-bold text-green-700">
-                          Tabulka střelců
-                        </h2>
-                        <p className="mt-2 text-sm text-gray-500">
-                          Počítá se automaticky ze střelců u 1. a 2. bloku zápasu. Umí pohled podle kategorií v ročníku, celkově v ročníku i celkově za Lipůvku.
-                        </p>
-                      </div>
-
-                      <div className="mb-6 rounded-2xl border border-green-100 bg-green-50/70 p-4">
-                        <label className={labelClass}>Sezona pro tabulky</label>
-                        <select
-                          value={scorerStatsSeason}
-                          onChange={(e) => setScorerStatsSeason(e.target.value)}
-                          className={inputClass}
-                        >
-                          {scorerStatsSeasonOptions.map((season) => (
-                            <option key={season} value={season}>{season}</option>
-                          ))}
-                        </select>
-                        <div className="mt-2 text-xs text-gray-500">
-                          Výchozí je aktuální sezona webu. Přepnutí tady nic nemaže, jen mění zobrazení tabulky.
-                        </div>
-                      </div>
-
-                      <div className="space-y-6">
+                      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                         <div>
-                          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                          <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
+                            Střelci podle sezon
+                          </div>
+                          <h2 className="mt-2 text-2xl font-bold text-green-700">
+                            Tabulka střelců
+                          </h2>
+                          <p className="mt-2 text-sm text-gray-500">
+                            Počítá se automaticky ze střelců u 1. a 2. bloku zápasu.
+                          </p>
+                        </div>
+
+                        <div className="w-full lg:w-44">
+                          <label className={labelClass}>Sezona střelců</label>
+                          <select
+                            value={scorerStatsSeason}
+                            onChange={(e) => setScorerStatsSeason(e.target.value)}
+                            className={inputClass}
+                          >
+                            {seasonOptions.map((season) => (
+                              <option key={season} value={season}>{season}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="space-y-5">
+                        <div className="rounded-2xl border border-green-200 bg-green-50/70 p-5">
+                          <div className="mb-4 flex items-center justify-between gap-3">
                             <div>
-                              <h3 className="text-xl font-black text-gray-900">
-                                Podle kategorií v ročníku {scorerStatsSeason}
-                              </h3>
-                              <p className="mt-1 text-sm text-gray-500">
-                                Každý tým má svoji tabulku střelců zvlášť.
-                              </p>
+                              <div className="text-lg font-black text-gray-900">
+                                Celkově v ročníku {scorerStatsSeason}
+                              </div>
+                              <div className="mt-1 text-sm text-gray-500">
+                                Všechny kategorie dohromady
+                              </div>
                             </div>
+                            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-700 shadow-sm">
+                              {scorerSeasonOverallStats.length} střelců
+                            </span>
+                          </div>
+                          {renderScorerList(
+                            scorerSeasonOverallStats,
+                            `V sezoně ${scorerStatsSeason} zatím nejsou vyplnění žádní střelci.`,
+                            true
+                          )}
+                        </div>
+
+                        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+                          <div className="mb-4 flex items-center justify-between gap-3">
+                            <div>
+                              <div className="text-lg font-black text-gray-900">
+                                Celkově za ASK Lipůvka
+                              </div>
+                              <div className="mt-1 text-sm text-gray-500">
+                                Všechny sezony a všechny kategorie dohromady
+                              </div>
+                            </div>
+                            <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-700 shadow-sm">
+                              {scorerClubOverallStats.length} střelců
+                            </span>
+                          </div>
+                          {renderScorerList(
+                            scorerClubOverallStats,
+                            'Zatím nejsou vyplnění žádní střelci napříč celým klubem.',
+                            true,
+                            true
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="mb-4 text-sm font-black uppercase tracking-wide text-green-700">
+                            Podle kategorií v ročníku {scorerStatsSeason}
                           </div>
 
                           <div className="space-y-4">
-                            {scorersByCategorySeasonStats.map((category) => (
+                            {scorersByCategoryStats.map((category) => (
                               <div key={category.id} className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
                                 <div className="mb-4 flex items-center justify-between gap-3">
                                   <div>
@@ -4347,48 +4370,14 @@ L`}
 
                                 {renderScorerList(
                                   category.scorers,
-                                  'U této kategorie zatím nejsou vyplnění střelci.',
-                                  12
+                                  'U této kategorie zatím nejsou vyplnění střelci.'
                                 )}
                               </div>
                             ))}
                           </div>
                         </div>
-
-                        <div className="rounded-2xl border border-green-200 bg-green-50/60 p-5">
-                          <div className="mb-4">
-                            <h3 className="text-xl font-black text-gray-900">
-                              Celkově v ročníku {scorerStatsSeason}
-                            </h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                              Všechny kategorie v dané sezoně dohromady.
-                            </p>
-                          </div>
-                          {renderScorerList(
-                            scorersOverallSeasonStats,
-                            'V této sezoně zatím nejsou vyplnění střelci.',
-                            25
-                          )}
-                        </div>
-
-                        <div className="rounded-2xl border border-gray-300 bg-gray-50 p-5">
-                          <div className="mb-4">
-                            <h3 className="text-xl font-black text-gray-900">
-                              Celkově za ASK Lipůvka
-                            </h3>
-                            <p className="mt-1 text-sm text-gray-500">
-                              Součet všech sezon a všech kategorií, které jsou v adminu uložené.
-                            </p>
-                          </div>
-                          {renderScorerList(
-                            scorersOverallAllTimeStats,
-                            'Zatím nejsou vyplnění žádní střelci.',
-                            30
-                          )}
-                        </div>
                       </div>
                     </div>
-
 
                     <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
                       <div className="mb-5">
