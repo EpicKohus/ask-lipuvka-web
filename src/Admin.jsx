@@ -78,6 +78,7 @@ export default function Admin() {
   });
   const [dailyVisitStats, setDailyVisitStats] = useState([]);
   const [statsPeriod, setStatsPeriod] = useState(7);
+  const [scorerStatsSeason, setScorerStatsSeason] = useState(CURRENT_SEASON);
   const [currentSeason, setCurrentSeason] = useState(CURRENT_SEASON);
   const [savingCurrentSeason, setSavingCurrentSeason] = useState(false);
   const [seasonTeamsSeason, setSeasonTeamsSeason] = useState(CURRENT_SEASON);
@@ -488,6 +489,7 @@ export default function Admin() {
           setCurrentSeason(savedCurrentSeason);
           setSeasonTeamsSeason(savedCurrentSeason);
           setMatchListSeasonFilter(savedCurrentSeason);
+          setScorerStatsSeason(savedCurrentSeason);
           applySeasonToNewForms(savedCurrentSeason);
         }
       } catch (seasonError) {
@@ -899,13 +901,47 @@ export default function Admin() {
       .filter(Boolean);
   };
 
-  const scorersByCategoryStats = useMemo(() => {
+  const sortScorerRows = (items) =>
+    items.sort((a, b) => {
+      if (b.goals !== a.goals) return b.goals - a.goals;
+      if (b.matchCount !== a.matchCount) return b.matchCount - a.matchCount;
+      return a.name.localeCompare(b.name, 'cs');
+    });
+
+  const buildScorerStats = (sourceMatches) => {
     const statsMap = categories.reduce((acc, category) => {
       acc[category.id] = new Map();
       return acc;
     }, {});
+    const overallMap = new Map();
 
-    matches.forEach((match) => {
+    const addScorerToMap = (map, scorer, match, matchTitle, matchDate) => {
+      const scorerKey = scorer.name.toLocaleLowerCase('cs-CZ');
+      const existing = map.get(scorerKey) || {
+        name: scorer.name,
+        goals: 0,
+        matches: new Set(),
+        categories: new Set(),
+        lastGoalTime: 0,
+        lastGoalMatch: '',
+      };
+
+      existing.goals += scorer.goals;
+      existing.matches.add(match.id || `${matchDate}-${matchTitle}`);
+      if (match.category) existing.categories.add(match.category);
+
+      const currentDate = parseMatchDate(match);
+      const currentTime = currentDate.getTime();
+      const safeTime = Number.isNaN(currentTime) ? 0 : currentTime;
+      if (!existing.lastGoalTime || safeTime >= existing.lastGoalTime) {
+        existing.lastGoalTime = safeTime;
+        existing.lastGoalMatch = `${matchDate ? `${matchDate} • ` : ''}${matchTitle}`;
+      }
+
+      map.set(scorerKey, existing);
+    };
+
+    sourceMatches.forEach((match) => {
       const categoryId = match.category;
       if (!statsMap[categoryId]) return;
 
@@ -913,46 +949,69 @@ export default function Admin() {
         ? `ASK Lipůvka vs. ${match.opponent || 'soupeř'}`
         : `${match.opponent || 'Soupeř'} vs. ASK Lipůvka`;
       const matchDate = match.date || '';
+      const scorers = [
+        ...parseScorersForStats(match.scorers1),
+        ...parseScorersForStats(match.scorers2),
+      ];
 
-      [...parseScorersForStats(match.scorers1), ...parseScorersForStats(match.scorers2)].forEach((scorer) => {
-        const scorerKey = scorer.name.toLocaleLowerCase('cs-CZ');
-        const existing = statsMap[categoryId].get(scorerKey) || {
-          name: scorer.name,
-          goals: 0,
-          matches: new Set(),
-          lastGoalDate: '',
-          lastGoalMatch: '',
-        };
-
-        existing.goals += scorer.goals;
-        existing.matches.add(match.id || `${matchDate}-${matchTitle}`);
-
-        const currentDate = parseMatchDate(match);
-        const lastDate = existing.lastGoalDate ? new Date(existing.lastGoalDate) : new Date(0);
-        if (!existing.lastGoalDate || currentDate >= lastDate) {
-          existing.lastGoalDate = match.dateISO || matchDate;
-          existing.lastGoalMatch = `${matchDate ? `${matchDate} • ` : ''}${matchTitle}`;
-        }
-
-        statsMap[categoryId].set(scorerKey, existing);
+      scorers.forEach((scorer) => {
+        addScorerToMap(statsMap[categoryId], scorer, match, matchTitle, matchDate);
+        addScorerToMap(overallMap, scorer, match, matchTitle, matchDate);
       });
     });
 
-    return categories.map((category) => ({
-      ...category,
-      scorers: Array.from(statsMap[category.id].values())
-        .map((item) => ({
+    const finalizeScorers = (map) =>
+      sortScorerRows(
+        Array.from(map.values()).map((item) => ({
           ...item,
           matchCount: item.matches.size,
+          categoriesText: Array.from(item.categories)
+            .map((categoryId) => getCategoryShortLabel(categoryId))
+            .filter(Boolean)
+            .join(', '),
           matches: undefined,
+          categories: undefined,
+          lastGoalTime: undefined,
         }))
-        .sort((a, b) => {
-          if (b.goals !== a.goals) return b.goals - a.goals;
-          if (b.matchCount !== a.matchCount) return b.matchCount - a.matchCount;
-          return a.name.localeCompare(b.name, 'cs');
-        }),
-    }));
+      );
+
+    return {
+      byCategory: categories.map((category) => ({
+        ...category,
+        scorers: finalizeScorers(statsMap[category.id]),
+      })),
+      overall: finalizeScorers(overallMap),
+    };
+  };
+
+  const scorerStatsSeasonOptions = useMemo(() => {
+    const seasons = new Set(seasonOptions);
+    matches.forEach((match) => {
+      const season = getItemSeason(match);
+      if (season) seasons.add(season);
+    });
+    return Array.from(seasons).sort((a, b) => String(b).localeCompare(String(a), 'cs'));
   }, [matches]);
+
+  const matchesForScorerStatsSeason = useMemo(
+    () => matches.filter((match) => getItemSeason(match) === scorerStatsSeason),
+    [matches, scorerStatsSeason]
+  );
+
+  const scorersByCategorySeasonStats = useMemo(
+    () => buildScorerStats(matchesForScorerStatsSeason).byCategory,
+    [matchesForScorerStatsSeason]
+  );
+
+  const scorersOverallSeasonStats = useMemo(
+    () => buildScorerStats(matchesForScorerStatsSeason).overall,
+    [matchesForScorerStatsSeason]
+  );
+
+  const scorersOverallAllTimeStats = useMemo(
+    () => buildScorerStats(matches).overall,
+    [matches]
+  );
 
   const linkedAlbumsCount = useMemo(() => {
     return matches.filter((match) => Boolean(match.galleryAlbumId)).length;
@@ -1043,6 +1102,7 @@ export default function Admin() {
       });
       setMatchListSeasonFilter(currentSeason);
       setSeasonTeamsSeason(currentSeason);
+      setScorerStatsSeason(currentSeason);
       applySeasonToNewForms(currentSeason);
       alert(`Aktuální sezona webu je nastavená na ${currentSeason}.`);
     } catch (error) {
@@ -2559,6 +2619,64 @@ export default function Admin() {
   const isAdminAllowed = Boolean(adminRole && ['owner', 'editor', 'viewer'].includes(adminRole));
   const canEdit = Boolean(adminRole && ['owner', 'editor'].includes(adminRole));
   const canManageAdmins = adminRole === 'owner';
+
+  const renderScorerList = (scorers, emptyText, maxItems = 20) => {
+    if (!scorers.length) {
+      return (
+        <div className="rounded-xl bg-white px-4 py-3 text-sm text-gray-500 shadow-sm">
+          {emptyText}
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3">
+        {scorers.slice(0, maxItems).map((scorer, index) => (
+          <div
+            key={`${scorer.name}-${index}`}
+            className="rounded-xl bg-white px-4 py-3 shadow-sm"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-100 text-sm font-black text-green-700">
+                    {index + 1}
+                  </span>
+                  <div className="truncate font-black text-gray-900">
+                    {scorer.name}
+                  </div>
+                </div>
+                <div className="mt-2 text-xs text-gray-500">
+                  Zápasů se vstřeleným gólem: {scorer.matchCount}
+                  {scorer.categoriesText ? ` • Kategorie: ${scorer.categoriesText}` : ''}
+                </div>
+                {scorer.lastGoalMatch && (
+                  <div className="mt-1 text-xs text-gray-500">
+                    Poslední gól: {scorer.lastGoalMatch}
+                  </div>
+                )}
+              </div>
+
+              <div className="shrink-0 rounded-xl bg-green-50 px-3 py-2 text-right">
+                <div className="text-2xl font-black text-green-700">
+                  {scorer.goals}
+                </div>
+                <div className="text-[11px] font-bold uppercase tracking-wide text-green-700">
+                  gólů
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+
+        {scorers.length > maxItems && (
+          <div className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-gray-500 shadow-sm">
+            Další střelci: {scorers.length - maxItems}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const handleGoogleLogin = async () => {
     try {
@@ -4171,87 +4289,106 @@ L`}
                     <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
                       <div className="mb-5">
                         <div className="text-sm font-semibold uppercase tracking-wide text-green-700">
-                          Střelci podle kategorií
+                          Střelci podle sezon
                         </div>
                         <h2 className="mt-2 text-2xl font-bold text-green-700">
                           Tabulka střelců
                         </h2>
                         <p className="mt-2 text-sm text-gray-500">
-                          Počítá se automaticky ze střelců u 1. a 2. bloku zápasu.
+                          Počítá se automaticky ze střelců u 1. a 2. bloku zápasu. Umí pohled podle kategorií v ročníku, celkově v ročníku i celkově za Lipůvku.
                         </p>
                       </div>
 
-                      <div className="space-y-4">
-                        {scorersByCategoryStats.map((category) => (
-                          <div key={category.id} className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
-                            <div className="mb-4 flex items-center justify-between gap-3">
-                              <div>
-                                <div className="text-lg font-bold text-gray-900">{category.label}</div>
-                                <div className="mt-1 text-sm text-gray-500">
-                                  {category.scorers.length > 0
-                                    ? `${category.scorers.length} střelců`
-                                    : 'Zatím bez střelců'}
-                                </div>
-                              </div>
-                              <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-700 shadow-sm">
-                                {category.shortLabel}
-                              </span>
+                      <div className="mb-6 rounded-2xl border border-green-100 bg-green-50/70 p-4">
+                        <label className={labelClass}>Sezona pro tabulky</label>
+                        <select
+                          value={scorerStatsSeason}
+                          onChange={(e) => setScorerStatsSeason(e.target.value)}
+                          className={inputClass}
+                        >
+                          {scorerStatsSeasonOptions.map((season) => (
+                            <option key={season} value={season}>{season}</option>
+                          ))}
+                        </select>
+                        <div className="mt-2 text-xs text-gray-500">
+                          Výchozí je aktuální sezona webu. Přepnutí tady nic nemaže, jen mění zobrazení tabulky.
+                        </div>
+                      </div>
+
+                      <div className="space-y-6">
+                        <div>
+                          <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <h3 className="text-xl font-black text-gray-900">
+                                Podle kategorií v ročníku {scorerStatsSeason}
+                              </h3>
+                              <p className="mt-1 text-sm text-gray-500">
+                                Každý tým má svoji tabulku střelců zvlášť.
+                              </p>
                             </div>
+                          </div>
 
-                            {category.scorers.length > 0 ? (
-                              <div className="space-y-3">
-                                {category.scorers.slice(0, 12).map((scorer, index) => (
-                                  <div
-                                    key={`${category.id}-${scorer.name}`}
-                                    className="rounded-xl bg-white px-4 py-3 shadow-sm"
-                                  >
-                                    <div className="flex items-start justify-between gap-4">
-                                      <div className="min-w-0">
-                                        <div className="flex items-center gap-2">
-                                          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-100 text-sm font-black text-green-700">
-                                            {index + 1}
-                                          </span>
-                                          <div className="truncate font-black text-gray-900">
-                                            {scorer.name}
-                                          </div>
-                                        </div>
-                                        <div className="mt-2 text-xs text-gray-500">
-                                          Zápasů se vstřeleným gólem: {scorer.matchCount}
-                                        </div>
-                                        {scorer.lastGoalMatch && (
-                                          <div className="mt-1 text-xs text-gray-500">
-                                            Poslední gól: {scorer.lastGoalMatch}
-                                          </div>
-                                        )}
-                                      </div>
-
-                                      <div className="shrink-0 rounded-xl bg-green-50 px-3 py-2 text-right">
-                                        <div className="text-2xl font-black text-green-700">
-                                          {scorer.goals}
-                                        </div>
-                                        <div className="text-[11px] font-bold uppercase tracking-wide text-green-700">
-                                          gólů
-                                        </div>
-                                      </div>
+                          <div className="space-y-4">
+                            {scorersByCategorySeasonStats.map((category) => (
+                              <div key={category.id} className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+                                <div className="mb-4 flex items-center justify-between gap-3">
+                                  <div>
+                                    <div className="text-lg font-bold text-gray-900">{category.label}</div>
+                                    <div className="mt-1 text-sm text-gray-500">
+                                      {category.scorers.length > 0
+                                        ? `${category.scorers.length} střelců`
+                                        : 'Zatím bez střelců'}
                                     </div>
                                   </div>
-                                ))}
+                                  <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-700 shadow-sm">
+                                    {category.shortLabel}
+                                  </span>
+                                </div>
 
-                                {category.scorers.length > 12 && (
-                                  <div className="rounded-xl bg-white px-4 py-3 text-sm font-semibold text-gray-500 shadow-sm">
-                                    Další střelci: {category.scorers.length - 12}
-                                  </div>
+                                {renderScorerList(
+                                  category.scorers,
+                                  'U této kategorie zatím nejsou vyplnění střelci.',
+                                  12
                                 )}
                               </div>
-                            ) : (
-                              <div className="rounded-xl bg-white px-4 py-3 text-sm text-gray-500 shadow-sm">
-                                U této kategorie zatím nejsou vyplnění střelci.
-                              </div>
-                            )}
+                            ))}
                           </div>
-                        ))}
+                        </div>
+
+                        <div className="rounded-2xl border border-green-200 bg-green-50/60 p-5">
+                          <div className="mb-4">
+                            <h3 className="text-xl font-black text-gray-900">
+                              Celkově v ročníku {scorerStatsSeason}
+                            </h3>
+                            <p className="mt-1 text-sm text-gray-500">
+                              Všechny kategorie v dané sezoně dohromady.
+                            </p>
+                          </div>
+                          {renderScorerList(
+                            scorersOverallSeasonStats,
+                            'V této sezoně zatím nejsou vyplnění střelci.',
+                            25
+                          )}
+                        </div>
+
+                        <div className="rounded-2xl border border-gray-300 bg-gray-50 p-5">
+                          <div className="mb-4">
+                            <h3 className="text-xl font-black text-gray-900">
+                              Celkově za ASK Lipůvka
+                            </h3>
+                            <p className="mt-1 text-sm text-gray-500">
+                              Součet všech sezon a všech kategorií, které jsou v adminu uložené.
+                            </p>
+                          </div>
+                          {renderScorerList(
+                            scorersOverallAllTimeStats,
+                            'Zatím nejsou vyplnění žádní střelci.',
+                            30
+                          )}
+                        </div>
                       </div>
                     </div>
+
 
                     <div className="rounded-3xl border border-green-100 bg-white p-6 shadow-sm">
                       <div className="mb-5">
