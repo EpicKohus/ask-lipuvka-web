@@ -182,7 +182,7 @@ export default function AskLipuvkaWeb() {
     {
       question: 'Kolik stojí fotbal?',
       answer:
-        'Členský příspěvek je 1 000 Kč za půl roku. Snažíme se, aby byl fotbal dostupný pro všechny děti, a zároveň aby to u nás mělo smysl a děti to bavilo.',
+        'Členský příspěvek je 1 500 Kč za půl roku. Snažíme se, aby byl fotbal dostupný pro všechny děti, a zároveň aby to u nás mělo smysl a děti to bavilo.',
     },
     {
       question: 'Co když dítě nikdy nehrálo fotbal?',
@@ -200,7 +200,7 @@ export default function AskLipuvkaWeb() {
     {
       question: 'Jaké soutěže hrajeme a pro jak staré děti?',
       answer:
-        'V sezóně 2025/2026 hrajeme soutěže v kategorii U9 v rámci okresu Blansko. Od sezóny 2026/2027 chceme přidat i kategorii U11, aby děti mohly přirozeně pokračovat dál. U9 je přibližně pro děti 7–9 let, U11 pak pro starší děti.',
+        'V sezóně 2026/2027 hrajeme soutěže v rámci okresu Blansko ve třech kategoriích: mladší přípravka U9 pro děti přibližně 7–9 let, starší přípravka U11 pro děti 9–11 let a mladší žáci U13 pro děti 11–13 let.',
     },
     {
       question: 'Od kolika let berete děti?',
