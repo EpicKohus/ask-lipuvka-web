@@ -7,10 +7,15 @@ export default function AskLipuvkaWeb() {
   const navigate = useNavigate();
   const location = useLocation();
   const isCalendarPage = location.pathname === '/kalendar';
+  const isRegistrationPage = location.pathname === '/registrace';
 
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isTrainersOpen, setIsTrainersOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    setIsRegistrationOpen(isRegistrationPage);
+  }, [isRegistrationPage]);
 
   const [isClubDropdownOpen, setIsClubDropdownOpen] = useState(false);
   const [isTeamsDropdownOpen, setIsTeamsDropdownOpen] = useState(false);
@@ -1336,7 +1341,7 @@ export default function AskLipuvkaWeb() {
         return;
       }
 
-      setIsRegistrationOpen(false);
+      closeRegistration();
       setIsTrainersOpen(false);
       setIsMobileMenuOpen(false);
       setClubPopupContent(null);
@@ -1375,7 +1380,7 @@ export default function AskLipuvkaWeb() {
       window.removeEventListener('keydown', handleArrowKeys);
       document.removeEventListener('click', handleClickOutside);
     };
-  }, [selectedPhotoIndex, selectedAlbum, isGalleryOpen, gallerySource]);
+  }, [selectedPhotoIndex, selectedAlbum, isGalleryOpen, gallerySource, isRegistrationPage]);
 
   useEffect(() => {
     const shouldLock =
@@ -1438,7 +1443,7 @@ export default function AskLipuvkaWeb() {
       alert('Registrace byla odeslána');
       e.target.reset();
       setTermsAccepted(false);
-      setIsRegistrationOpen(false);
+      closeRegistration();
     } catch (err) {
       alert('Chyba při odesílání');
       console.error(err);
@@ -1476,6 +1481,16 @@ export default function AskLipuvkaWeb() {
     setIsMobileClubDropdownOpen(false);
     setIsMobileTeamsDropdownOpen(false);
     setIsRegistrationOpen(true);
+    navigate('/registrace');
+  };
+
+  const closeRegistration = () => {
+    setIsRegistrationOpen(false);
+    setIsTermsOpen(false);
+
+    if (isRegistrationPage) {
+      navigate('/');
+    }
   };
 
   const openTrainers = () => {
@@ -1506,7 +1521,7 @@ export default function AskLipuvkaWeb() {
 
   const openRecruitmentFromPopup = () => {
     setClubPopupContent(null);
-    setIsRegistrationOpen(true);
+    openRegistration();
   };
 
   const renderMatchCard = (m, showResult = true) => {
@@ -4325,7 +4340,7 @@ export default function AskLipuvkaWeb() {
       {isRegistrationOpen && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 animate-[fadeIn_0.2s_ease-out]"
-          onClick={() => setIsRegistrationOpen(false)}
+          onClick={closeRegistration}
         >
           <div
             className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-2xl animate-[scaleIn_0.2s_ease-out]"
@@ -4333,7 +4348,7 @@ export default function AskLipuvkaWeb() {
           >
             <button
               type="button"
-              onClick={() => setIsRegistrationOpen(false)}
+              onClick={closeRegistration}
               className="absolute right-4 top-4 text-2xl text-gray-500 hover:text-black"
             >
               ×
