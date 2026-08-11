@@ -3415,7 +3415,7 @@ export default function Admin() {
                           type="button"
                           onClick={handleImportAutumn2026Matches}
                           disabled={importingAutumnMatches}
-                          className={`${primaryButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                          className={greenButtonClass}
                         >
                           {importingAutumnMatches
                             ? 'Nahrávám zápasy…'
