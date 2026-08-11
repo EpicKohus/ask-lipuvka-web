@@ -65,8 +65,8 @@ export default function AskLipuvkaWeb() {
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
   const [selectedNewsImage, setSelectedNewsImage] = useState(null);
   const [theme, setTheme] = useState(() => {
-    if (typeof window === 'undefined') return 'light';
-    return localStorage.getItem('ask-lipuvka-theme') || 'light';
+    if (typeof window === 'undefined') return 'dark';
+    return localStorage.getItem('ask-lipuvka-theme') || 'dark';
   });
 
 
