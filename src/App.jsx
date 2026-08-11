@@ -710,7 +710,7 @@ export default function AskLipuvkaWeb() {
       dates,
       ctz: 'Europe/Prague',
       details,
-      location: match.home ? 'Lipůvka' : match.venue || '',
+      location: match.venue || (match.home ? 'Lipůvka' : ''),
     });
 
     return `https://calendar.google.com/calendar/render?${params.toString()}`;
@@ -1561,7 +1561,7 @@ export default function AskLipuvkaWeb() {
 
               <div className={`mt-1 text-sm ${softMutedTextClass}`}>
                 {m.date} • {m.time} • {m.home ? 'Domácí zápas' : 'Venkovní zápas'}
-                {!m.home && m.venue ? ` • ${m.venue}` : ''}
+                {m.venue ? ` • ${m.venue}` : ''}
               </div>
             </div>
 
@@ -1781,7 +1781,7 @@ export default function AskLipuvkaWeb() {
                 </h3>
 
                 <div className="mt-2 text-sm text-white/90 md:text-base">
-                  {m.time} • {m.home ? 'Lipůvka' : m.venue || 'bude doplněno'}
+                  {m.time} • {m.venue || (m.home ? 'Lipůvka' : 'bude doplněno')}
                 </div>
               </div>
             </div>
@@ -2042,7 +2042,7 @@ export default function AskLipuvkaWeb() {
         start,
         end,
         time: match.time || 'čas bude doplněn',
-        note: match.home ? 'Lipůvka' : match.venue || '',
+        note: match.venue || (match.home ? 'Lipůvka' : ''),
         badge: categoryStyle.badge,
         button: categoryStyle.button,
         googleUrl: buildGoogleCalendarUrl(match),
@@ -4231,7 +4231,7 @@ export default function AskLipuvkaWeb() {
                               <div className={`mt-1 text-sm ${softMutedTextClass}`}>{m.date} • {m.time}</div>
 
                               <div className="mt-2 text-sm font-medium text-gray-700">
-                                Hraje se: {m.home ? 'Lipůvka' : m.venue || 'bude doplněno'}
+                                Hraje se: {m.venue || (m.home ? 'Lipůvka' : 'bude doplněno')}
                               </div>
 
                               <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition duration-200 group-hover:scale-[1.03] group-hover:shadow-md">

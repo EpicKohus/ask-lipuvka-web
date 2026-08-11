@@ -358,7 +358,7 @@ export default function MatchDetail() {
     { label: match.date },
     { label: match.time },
     { label: match.home ? 'Domácí zápas' : 'Venkovní zápas' },
-    { label: match.home ? 'Lipůvka' : match.venue || 'bude doplněno' },
+    { label: match.venue || (match.home ? 'Lipůvka' : 'bude doplněno') },
     { label: isPlayed ? 'Odehráno' : 'Zápas před námi' },
   ];
 

@@ -3904,7 +3904,7 @@ Večeřa 1x`}
                           </div>
 
                           <div className="mb-4 text-sm text-gray-500">
-                            {match.home ? 'Místo: Lipůvka' : `Místo: ${match.venue || 'bude doplněno'}`}
+                            Místo: {match.venue || (match.home ? 'Lipůvka' : 'bude doplněno')}
                           </div>
 
                           <div className="space-y-3 rounded-2xl bg-gray-50 p-4">
