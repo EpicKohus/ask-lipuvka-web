@@ -15,6 +15,7 @@ import {
   limit,
 } from 'firebase/firestore';
 import { onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
+import { importAutumn2026Matches } from './importMatches';
 
 export default function Admin() {
   const categories = [
@@ -130,6 +131,7 @@ export default function Admin() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [importingAutumnMatches, setImportingAutumnMatches] = useState(false);
   const [authUser, setAuthUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState('');
@@ -2550,6 +2552,35 @@ export default function Admin() {
     }
   };
 
+  const handleImportAutumn2026Matches = async () => {
+    const confirmed = window.confirm(
+      'Nahrát podzimní zápasy sezony 2026/27 pro U9, U11 a U13?'
+    );
+    if (!confirmed) return;
+
+    try {
+      setImportingAutumnMatches(true);
+      const result = await importAutumn2026Matches();
+      await loadAllData();
+
+      if (result.imported === 0) {
+        alert('Všechny podzimní zápasy už jsou nahrané. Nic se nepřidalo.');
+        return;
+      }
+
+      alert(
+        `Hotovo. Nahráno ${result.imported} zápasových karet.${
+          result.skipped ? ` Přeskočeno jako duplicita: ${result.skipped}.` : ''
+        }`
+      );
+    } catch (error) {
+      console.error('Chyba při importu podzimních zápasů:', error);
+      alert(`Import se nepodařil: ${error?.message || error}`);
+    } finally {
+      setImportingAutumnMatches(false);
+    }
+  };
+
   const handleEditMatch = (match) => {
     const hasSecondBlock = Boolean(
       match.hasSecondBlock || match.matchLabel2 || match.result2 || match.scorers2
@@ -3371,13 +3402,24 @@ export default function Admin() {
                         </h2>
                       </div>
 
-                      {editingMatchId && (
+                      {editingMatchId ? (
                         <button
                           type="button"
                           onClick={resetMatchForm}
                           className={outlineButtonClass}
                         >
                           Zrušit editaci
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleImportAutumn2026Matches}
+                          disabled={importingAutumnMatches}
+                          className={`${primaryButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
+                        >
+                          {importingAutumnMatches
+                            ? 'Nahrávám zápasy…'
+                            : 'Nahrát podzim 2026/27'}
                         </button>
                       )}
                     </div>
