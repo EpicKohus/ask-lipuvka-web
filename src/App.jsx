@@ -2,6 +2,28 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { db } from './firebase';
 import { collection, doc, getDocs, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { getOpponentLogos } from './teamLogos';
+
+function OpponentLogos({ match, size = 'md' }) {
+  const logos = getOpponentLogos(match);
+  if (logos.length === 0) return null;
+
+  const imageSize = size === 'lg' ? 'h-16 w-16 md:h-20 md:w-20' : 'h-11 w-11';
+
+  return (
+    <div className="flex shrink-0 -space-x-2" aria-label="Logo soupeře">
+      {logos.map((logo) => (
+        <span
+          key={logo.src}
+          className="inline-flex rounded-full bg-white p-1 shadow-md ring-1 ring-black/10"
+          title={logo.alt}
+        >
+          <img src={logo.src} alt={logo.alt} className={`${imageSize} object-contain`} />
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export default function AskLipuvkaWeb() {
   const navigate = useNavigate();
@@ -1555,6 +1577,7 @@ export default function AskLipuvkaWeb() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div>
               <div className="flex flex-wrap items-center gap-2">
+                <OpponentLogos match={m} />
                 <div className={`flex flex-wrap items-center gap-2 text-lg font-bold ${mainTextClass}`}>
                   <span>
                     {m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
@@ -1794,6 +1817,10 @@ export default function AskLipuvkaWeb() {
                 <h3 className="text-xl font-black leading-tight drop-shadow md:text-3xl">
                   {m.home ? `ASK Lipůvka vs. ${m.opponent}` : `${m.opponent} vs. ASK Lipůvka`}
                 </h3>
+
+                <div className="mt-3">
+                  <OpponentLogos match={m} size="lg" />
+                </div>
 
                 <div className="mt-2 text-sm text-white/90 md:text-base">
                   {m.time} • {m.venue || (m.home ? 'Lipůvka' : 'bude doplněno')}
@@ -4222,6 +4249,7 @@ export default function AskLipuvkaWeb() {
                           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                             <div>
                               <div className="flex flex-wrap items-center gap-2">
+                                <OpponentLogos match={m} />
                                 <div className="flex flex-wrap items-center gap-2 text-lg font-bold text-gray-900">
                                   <span>
                                     {m.home

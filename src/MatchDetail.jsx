@@ -2,6 +2,30 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from './firebase';
+import { getOpponentLogos } from './teamLogos';
+
+function OpponentLogos({ match }) {
+  const logos = getOpponentLogos(match);
+  if (logos.length === 0) return null;
+
+  return (
+    <div className="flex -space-x-3" aria-label="Logo soupeře">
+      {logos.map((logo) => (
+        <span
+          key={logo.src}
+          className="inline-flex rounded-full bg-white p-2 shadow-lg ring-1 ring-black/10"
+          title={logo.alt}
+        >
+          <img
+            src={logo.src}
+            alt={logo.alt}
+            className="h-16 w-16 object-contain md:h-20 md:w-20"
+          />
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export default function MatchDetail() {
   const { matchId } = useParams();
@@ -421,6 +445,14 @@ export default function MatchDetail() {
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/45 to-black/15" />
 
           <div className="absolute inset-0 flex flex-col justify-end p-6 md:p-8">
+            <div className="mb-4 flex items-center gap-4">
+              <span className="inline-flex rounded-full bg-white p-2 shadow-lg ring-1 ring-black/10">
+                <img src="/logo.png" alt="ASK Lipůvka" className="h-16 w-16 object-contain md:h-20 md:w-20" />
+              </span>
+              <span className="text-2xl font-black text-white drop-shadow">×</span>
+              <OpponentLogos match={match} />
+            </div>
+
             <div className="mb-4 flex flex-wrap gap-2">
               <span className={`rounded-full px-3 py-1 text-xs font-bold ${categoryStyle.badge}`}>
                 {getCategoryShortLabel(match.category)}
