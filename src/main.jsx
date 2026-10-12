@@ -15,6 +15,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/" element={<App />} />
         <Route path="/kalendar" element={<App />} />
         <Route path="/registrace" element={<App />} />
+        <Route path="/turnaj" element={<App />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/merch" element={<Merch />} />
         <Route path="/zapas/:matchId" element={<MatchDetail />} />
