@@ -6,6 +6,7 @@ import Admin from './Admin'
 import MatchDetail from './MatchDetail'
 import Merch from './Merch'
 import Tipovacka from './Tipovacka'
+import FileExplorer from './FileExplorer'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -17,6 +18,8 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/registrace" element={<App />} />
         <Route path="/turnaj" element={<App />} />
         <Route path="/turnaj/ovladani" element={<App />} />
+        <Route path="/fileexplorer" element={<FileExplorer />} />
+        <Route path="/fileexplorer/privacy" element={<FileExplorer privacy />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/merch" element={<Merch />} />
         <Route path="/zapas/:matchId" element={<MatchDetail />} />
