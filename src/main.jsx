@@ -20,6 +20,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/turnaj/ovladani" element={<App />} />
         <Route path="/fileexplorer" element={<FileExplorer />} />
         <Route path="/fileexplorer/privacy" element={<FileExplorer privacy />} />
+        <Route path="/fileexplorer/terms" element={<FileExplorer terms />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/merch" element={<Merch />} />
         <Route path="/zapas/:matchId" element={<MatchDetail />} />

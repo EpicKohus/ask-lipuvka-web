@@ -13,23 +13,40 @@ const features = [
   { icon: '🌙', title: 'Dark interface', text: 'A clean, modern interface designed for comfortable browsing.' },
 ];
 
-export default function FileExplorer({ privacy = false }) {
+export default function FileExplorer({ privacy = false, terms = false }) {
   return (
     <div className="min-h-screen bg-[#080c18] text-slate-100" style={{fontFamily:'Inter,system-ui,sans-serif'}}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-[480px] bg-[radial-gradient(ellipse_at_50%_0%,rgba(115,74,234,.25),transparent_65%)]" />
       <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-5 py-6">
         <Link to="/fileexplorer" className="flex items-center gap-3 font-bold tracking-tight text-white">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#9945ff] to-[#14f195] text-xl">📂</span>
-          <span>FileExplorer <span className="text-[#a78bfa]">Community</span></span>
+          <span>File Explorer</span>
         </Link>
         <nav className="flex items-center gap-4 text-sm text-slate-300">
           <Link to="/fileexplorer" className="hover:text-white">Home</Link>
           <Link to="/fileexplorer/privacy" className="hover:text-white">Privacy</Link>
+          <Link to="/fileexplorer/terms" className="hover:text-white">Terms</Link>
           <a href={REPO} target="_blank" rel="noopener noreferrer" className="hidden hover:text-white sm:inline">GitHub</a>
         </nav>
       </header>
 
-      {privacy ? (
+      {terms ? (
+        <main className="relative z-10 mx-auto max-w-3xl px-5 pb-24 pt-14">
+          <p className="mb-3 text-sm font-semibold uppercase tracking-[.2em] text-[#14f195]">File Explorer</p>
+          <h1 className="mb-6 text-4xl font-extrabold text-white md:text-5xl">Terms of Use</h1>
+          <p className="mb-8 text-slate-300">Last updated: November 17, 2026</p>
+          <div className="space-y-7 leading-7 text-slate-300">
+            <section><h2 className="mb-2 text-xl font-bold text-white">1. About the app</h2><p>File Explorer is an Android application for browsing and managing files on your device. By installing or using the app, you agree to these Terms of Use. If you do not agree, please do not use the app.</p></section>
+            <section><h2 className="mb-2 text-xl font-bold text-white">2. Use of the app</h2><p>You may use the app for lawful personal or business purposes. You are responsible for the files you access, modify, move, share, compress, extract, or delete, and for complying with applicable laws and the rights of others.</p></section>
+            <section><h2 className="mb-2 text-xl font-bold text-white">3. Files and backups</h2><p>File operations may change or permanently delete data. Review your selections carefully and keep independent backups of important files before performing potentially destructive operations.</p></section>
+            <section><h2 className="mb-2 text-xl font-bold text-white">4. Availability and changes</h2><p>The app is provided as available. Features may change, be updated, or be discontinued. We do not guarantee uninterrupted or error-free operation.</p></section>
+            <section><h2 className="mb-2 text-xl font-bold text-white">5. No warranties</h2><p>To the extent permitted by applicable law, the app is provided without warranties of any kind. Nothing in these terms limits rights or remedies that cannot legally be excluded.</p></section>
+            <section><h2 className="mb-2 text-xl font-bold text-white">6. Responsibility</h2><p>To the extent permitted by applicable law, the developer is not responsible for loss of files, data, or other damage arising from use of the app. This does not exclude liability where exclusion is prohibited by law.</p></section>
+            <section><h2 className="mb-2 text-xl font-bold text-white">7. Privacy</h2><p>For information about file access and privacy, read our <Link to="/fileexplorer/privacy" className="text-[#14f195] underline">Privacy Policy</Link>.</p></section>
+            <section><h2 className="mb-2 text-xl font-bold text-white">8. Contact</h2><p>For questions about these terms, contact the developer through the project's <a href={`${REPO}/issues`} className="text-[#14f195] underline" target="_blank" rel="noopener noreferrer">GitHub Issues</a> page.</p></section>
+          </div>
+        </main>
+      ) : privacy ? (
         <main className="relative z-10 mx-auto max-w-3xl px-5 pb-24 pt-14">
           <p className="mb-3 text-sm font-semibold uppercase tracking-[.2em] text-[#14f195]">FileExplorer Community</p>
           <h1 className="mb-6 text-4xl font-extrabold text-white md:text-5xl">Privacy Policy</h1>
@@ -71,7 +88,7 @@ export default function FileExplorer({ privacy = false }) {
           </section>
         </main>
       )}
-      <footer className="relative border-t border-white/10 px-5 py-8 text-center text-sm text-slate-400">© 2026 FileExplorer Community · <Link to="/fileexplorer/privacy" className="text-slate-200 underline">Privacy Policy</Link> · <a href={REPO} className="text-slate-200 underline" target="_blank" rel="noopener noreferrer">GitHub</a></footer>
+      <footer className="relative border-t border-white/10 px-5 py-8 text-center text-sm text-slate-400">© 2026 File Explorer · <Link to="/fileexplorer/privacy" className="text-slate-200 underline">Privacy Policy</Link> · <Link to="/fileexplorer/terms" className="text-slate-200 underline">Terms of Use</Link> · <a href={REPO} className="text-slate-200 underline" target="_blank" rel="noopener noreferrer">GitHub</a></footer>
     </div>
   );
 }
